@@ -203,7 +203,69 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div class="app">
+<style>
+#pin-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+}
+#pin-screen.hidden{display:none}
+.pin-box{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:40px 36px 32px;
+  width:320px;text-align:center;
+  box-shadow:0 8px 32px rgba(0,0,0,.08);
+}
+.pin-logo{font-size:22px;font-weight:700;margin-bottom:4px}
+.pin-sub{font-size:13px;color:var(--text3);margin-bottom:28px}
+.pin-dots{display:flex;gap:14px;justify-content:center;margin-bottom:28px}
+.pin-dot{
+  width:14px;height:14px;border-radius:50%;
+  background:var(--border2);transition:background .15s;
+}
+.pin-dot.filled{background:var(--purple)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pin-key{
+  height:58px;border-radius:12px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text);
+  font-size:20px;font-weight:500;cursor:pointer;
+  transition:all .12s;display:flex;align-items:center;justify-content:center;
+  width:100%;
+}
+.pin-key:active{background:var(--purple-light);border-color:var(--purple);transform:scale(.95)}
+.pin-zero{grid-column:2}
+.pin-del{font-size:16px;color:var(--text3)}
+.pin-error{
+  font-size:13px;color:var(--red);margin-top:14px;min-height:20px;
+}
+</style>
+
+<div id="pin-screen">
+  <div class="pin-box">
+    <div class="pin-logo">범초하우스</div>
+    <div class="pin-sub">PIN 번호를 입력하세요</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinInput('1')">1</button>
+      <button class="pin-key" onclick="pinInput('2')">2</button>
+      <button class="pin-key" onclick="pinInput('3')">3</button>
+      <button class="pin-key" onclick="pinInput('4')">4</button>
+      <button class="pin-key" onclick="pinInput('5')">5</button>
+      <button class="pin-key" onclick="pinInput('6')">6</button>
+      <button class="pin-key" onclick="pinInput('7')">7</button>
+      <button class="pin-key" onclick="pinInput('8')">8</button>
+      <button class="pin-key" onclick="pinInput('9')">9</button>
+      <button class="pin-key pin-zero" onclick="pinInput('0')">0</button>
+      <button class="pin-key pin-del" onclick="pinDel()">⌫</button>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+  </div>
+</div>
 <aside class="sidebar">
   <div class="logo">
     <div>
@@ -1224,6 +1286,53 @@ function addSave(group,name,dir){
   const monthly=store[name].monthly||0;
   store[name].bal=Math.max(0,store[name].bal+monthly*dir);
   saveAll();renderSavings();
+}
+
+/* ==============================
+   PIN 로그인
+============================== */
+const PIN_HASH='b95b5f6564c0cb2b942fc1eb1dc8b3a5'; /* SHA-MD5: 4925 */
+const CORRECT_PIN='4925';
+const SESSION_KEY='bch_pin_ok';
+let pinBuffer='';
+
+function pinInput(n){
+  if(pinBuffer.length>=4)return;
+  pinBuffer+=n;
+  updatePinDots();
+  if(pinBuffer.length===4)setTimeout(checkPin,120);
+}
+function pinDel(){
+  pinBuffer=pinBuffer.slice(0,-1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent='';
+}
+function updatePinDots(){
+  for(let i=0;i<4;i++){
+    document.getElementById('d'+i).classList.toggle('filled',i<pinBuffer.length);
+  }
+}
+function checkPin(){
+  if(pinBuffer===CORRECT_PIN){
+    sessionStorage.setItem(SESSION_KEY,'1');
+    document.getElementById('pin-screen').classList.add('hidden');
+  } else {
+    document.getElementById('pin-error').textContent='PIN 번호가 틀렸어요. 다시 입력해주세요.';
+    /* 틀리면 도트 빨간색으로 잠깐 표시 후 초기화 */
+    for(let i=0;i<4;i++){
+      const d=document.getElementById('d'+i);
+      d.style.background='var(--red)';
+    }
+    setTimeout(()=>{
+      pinBuffer='';
+      updatePinDots();
+      for(let i=0;i<4;i++)document.getElementById('d'+i).style.background='';
+    },600);
+  }
+}
+/* 세션 내 이미 인증된 경우 바로 통과 */
+if(sessionStorage.getItem(SESSION_KEY)==='1'){
+  document.getElementById('pin-screen').classList.add('hidden');
 }
 
 /* ==============================
