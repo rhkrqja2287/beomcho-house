@@ -1291,10 +1291,9 @@ function addSave(group,name,dir){
 /* ==============================
    PIN 로그인
 ============================== */
-const PIN_HASH='b95b5f6564c0cb2b942fc1eb1dc8b3a5'; /* SHA-MD5: 4925 */
 const CORRECT_PIN='4925';
-const SESSION_KEY='bch_pin_ok';
 let pinBuffer='';
+let pinUnlocked=false; /* 탭 메모리에만 저장 — 탭 닫으면 초기화 */
 
 function pinInput(n){
   if(pinBuffer.length>=4)return;
@@ -1314,11 +1313,10 @@ function updatePinDots(){
 }
 function checkPin(){
   if(pinBuffer===CORRECT_PIN){
-    sessionStorage.setItem(SESSION_KEY,'1');
+    pinUnlocked=true;
     document.getElementById('pin-screen').classList.add('hidden');
   } else {
     document.getElementById('pin-error').textContent='PIN 번호가 틀렸어요. 다시 입력해주세요.';
-    /* 틀리면 도트 빨간색으로 잠깐 표시 후 초기화 */
     for(let i=0;i<4;i++){
       const d=document.getElementById('d'+i);
       d.style.background='var(--red)';
@@ -1330,8 +1328,17 @@ function checkPin(){
     },600);
   }
 }
-/* 세션 내 이미 인증된 경우 바로 통과 */
-if(sessionStorage.getItem(SESSION_KEY)==='1'){
+/* 탭 닫힘/새로고침 감지 — 새로고침은 통과, 탭 닫으면 잠금 */
+window.addEventListener('beforeunload',()=>{
+  if(!pinUnlocked)return;
+  /* 새로고침(navigation)과 탭 닫기를 구분 */
+  sessionStorage.setItem('bch_tab_alive','1');
+});
+/* 새로고침이면 세션 유지, 탭 새로 열면 잠금 */
+const isRefresh=sessionStorage.getItem('bch_tab_alive')==='1';
+sessionStorage.removeItem('bch_tab_alive');
+if(isRefresh){
+  pinUnlocked=true;
   document.getElementById('pin-screen').classList.add('hidden');
 }
 
