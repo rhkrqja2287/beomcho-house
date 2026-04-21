@@ -377,13 +377,8 @@ tr:hover td{background:var(--surface2)}
         </select>
       </div>
     </div>
-    <table>
-      <thead><tr>
-        <th style="width:88px">날짜</th><th style="min-width:60px">내용</th>
-        <th style="width:68px">유형</th>
-        <th style="width:72px">카테고리</th>
-        <th style="width:80px;text-align:right">금액</th><th style="width:28px"></th>
-      </tr></thead>
+    <table style="display:none">
+      <thead><tr></tr></thead>
       <tbody id="tx-tbody"></tbody>
     </table>
     <div id="tx-card-list"></div>
@@ -839,16 +834,21 @@ function renderTxList(){
     if(!wrap)return;
     wrap.innerHTML=list.length?list.map(t=>{
       const cats=t.type==='expense'?EXPENSE_CATS:[];
-      return`<div style="display:grid;grid-template-columns:110px 1fr 48px 56px 65px 28px;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px">
-        <input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 3px;background:var(--surface);color:var(--text)">
-        <input type="text" value="${t.desc||''}" onchange="updateTxField(${t.id},'desc',this.value)" placeholder="내용" style="border:none;background:transparent;color:var(--text);font-size:11px;font-weight:500;padding:0;min-width:0">
-        <select onchange="updateTxField(${t.id},'type',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text)">
-          <option${t.type==='expense'?' selected':''} value="expense">지출</option>
-          <option${t.type==='income'?' selected':''} value="income">수입</option>
-        </select>
-        ${t.type==='income'?'<span style="font-size:10px;color:var(--text3);text-align:center">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text)">${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}</select>`}
-        <input type="text" value="${fmtN(t.amt)}" oninput="formatNumInput(this)" onchange="updateTxField(${t.id},'amt',this.value)" style="border:none;background:transparent;text-align:right;font-weight:700;color:${t.type==='income'?'var(--green)':'var(--red)'};font-size:11px;padding:0">
-        <button class="btn-ghost" onclick="delTx(${t.id})" style="font-size:12px;padding:1px 2px;color:var(--text3)">×</button>
+      return`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="display:grid;grid-template-columns:110px auto auto auto auto 28px;gap:6px;align-items:center;margin-bottom:6px">
+          <input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 3px;background:var(--surface);color:var(--text)">
+          <select onchange="updateTxField(${t.id},'type',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text)">
+            <option${t.type==='expense'?' selected':''} value="expense">지출</option>
+            <option${t.type==='income'?' selected':''} value="income">수입</option>
+          </select>
+          ${t.type==='income'?'<span style="font-size:10px;color:var(--text3);text-align:center">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text)">${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}</select>`}
+          <div style="flex:1"></div>
+          <button class="btn-ghost" onclick="delTx(${t.id})" style="font-size:12px;padding:1px 2px;color:var(--text3)">×</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center">
+          <input type="text" value="${t.desc||''}" onchange="updateTxField(${t.id},'desc',this.value)" placeholder="내용" style="border:none;background:transparent;color:var(--text);font-size:12px;font-weight:500;padding:0;min-width:0">
+          <input type="text" value="${fmtN(t.amt)}" oninput="formatNumInput(this)" onchange="updateTxField(${t.id},'amt',this.value)" style="border:none;background:transparent;text-align:right;font-weight:700;color:${t.type==='income'?'var(--green)':'var(--red)'};font-size:12px;padding:0;white-space:nowrap">
+        </div>
       </div>`;
     }).join(''):'<div style="text-align:center;padding:30px;color:var(--text3)">거래 내역이 없어요</div>';
   } else {
