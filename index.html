@@ -378,21 +378,18 @@ tr:hover td{background:var(--surface2)}
   <div class="page-sub">수입과 지출을 기록하세요</div>
   <div class="card">
     <div class="card-title">새 거래</div>
-    <div class="fg3">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div><label>날짜</label><input type="date" id="tx-date"></div>
-      <!-- ① 유형 선택 -->
       <div><label>유형</label>
         <select id="tx-type" onchange="updateCats()">
           <option value="expense">지출</option>
           <option value="income">수입</option>
         </select>
       </div>
-      <!-- ① 수입이면 카테고리 숨김 -->
-      <div id="cat-wrap"><label>카테고리</label><select id="tx-cat"></select></div>
     </div>
-    <div class="fg2">
+    <div id="cat-wrap" style="margin-bottom:12px"><label>카테고리</label><select id="tx-cat"></select></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div><label>내용</label><input type="text" id="tx-desc" placeholder="예: 마트 장보기"></div>
-      <!-- ⑧ 콤마 표기 -->
       <div><label>금액</label><input type="text" id="tx-amt" placeholder="0" class="num-input" oninput="formatNumInput(this)" inputmode="numeric"></div>
     </div>
     <div style="display:flex;gap:10px">
