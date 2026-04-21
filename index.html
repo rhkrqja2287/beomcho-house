@@ -509,8 +509,8 @@ const LONG_SAVE_DEFAULT={
   '초은 청약':{bal:8600000,monthly:0}
 };
 const SHORT_SAVE_DEFAULT={
-  '적금(2년 만기)':{bal:4200000,monthly:0,color:'#7F77DD'},
-  '적금(6개월 만기)':{bal:1800000,monthly:0,color:'#AFA9EC'},
+  '적금(2년)':{bal:4200000,monthly:0,color:'#7F77DD'},
+  '적금(6개월)':{bal:1800000,monthly:0,color:'#AFA9EC'},
   '비상금':{bal:5500000,monthly:0,color:'#1D9E75'},
   '주식':{bal:8770000,monthly:0,color:'#D85A30'}
 };
@@ -835,15 +835,14 @@ function renderTxList(){
     wrap.innerHTML=list.length?list.map(t=>{
       const cats=t.type==='expense'?EXPENSE_CATS:[];
       return`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
-        <div style="display:grid;grid-template-columns:110px auto auto auto auto 28px;gap:6px;align-items:center;margin-bottom:6px">
-          <input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 3px;background:var(--surface);color:var(--text)">
+        <div style="display:grid;grid-template-columns:85px auto auto auto 28px;gap:4px;align-items:center;margin-bottom:6px">
+          <input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:9px;padding:2px 2px;background:var(--surface);color:var(--text)">
           <select onchange="updateTxField(${t.id},'type',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text)">
             <option${t.type==='expense'?' selected':''} value="expense">지출</option>
             <option${t.type==='income'?' selected':''} value="income">수입</option>
           </select>
           ${t.type==='income'?'<span style="font-size:10px;color:var(--text3);text-align:center">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text)">${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}</select>`}
-          <div style="flex:1"></div>
-          <button class="btn-ghost" onclick="delTx(${t.id})" style="font-size:12px;padding:1px 2px;color:var(--text3)">×</button>
+          <button class="btn-ghost" onclick="delTx(${t.id})" style="font-size:12px;padding:1px 2px;color:var(--text3);justify-self:end">×</button>
         </div>
         <div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center">
           <input type="text" value="${t.desc||''}" onchange="updateTxField(${t.id},'desc',this.value)" placeholder="내용" style="border:none;background:transparent;color:var(--text);font-size:12px;font-weight:500;padding:0;min-width:0">
@@ -1242,19 +1241,19 @@ function renderSavings(){
   for(const[name,v] of Object.entries(longSaveOrdered)){
     html+=`<li class="fi save-li">
       <div class="save-li-inner">
-        <div class="save-li-main"><span class="save-li-name">${name}</span></div>
-        <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;justify-self:end">
+        <div class="save-li-main" style="flex:1"><span class="save-li-name">${name}</span></div>
+        <div style="display:flex;align-items:center;gap:6px;white-space:nowrap;margin-left:auto">
           <div style="display:flex;align-items:center;gap:2px">
-            <span style="font-size:10px;color:var(--text3)">보유액</span>
-            <input type="text" value="${fmtN(v.bal)}" oninput="formatNumInput(this)" onchange="updateSave('long','${name}','bal',this.value)" style="width:80px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:700;color:var(--blue);padding:2px 4px">
+            <span style="font-size:9px;color:var(--text3)">보유액</span>
+            <input type="text" value="${fmtN(v.bal)}" oninput="formatNumInput(this)" onchange="updateSave('long','${name}','bal',this.value)" style="width:70px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;font-weight:700;color:var(--blue);padding:2px 3px">
           </div>
           <div style="display:flex;align-items:center;gap:2px">
-            <span style="font-size:10px;color:var(--text3)">월저축</span>
-            <input type="text" value="${fmtN(v.monthly)}" oninput="formatNumInput(this)" onchange="updateSave('long','${name}','monthly',this.value)" style="width:65px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--green);padding:2px 4px">
+            <span style="font-size:9px;color:var(--text3)">월저축</span>
+            <input type="text" value="${fmtN(v.monthly)}" oninput="formatNumInput(this)" onchange="updateSave('long','${name}','monthly',this.value)" style="width:60px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--green);padding:2px 3px">
           </div>
-          <div style="display:flex;gap:3px">
-            <button class="btn btn-sm" onclick="addSave('long','${name}',1)" style="padding:2px 6px;font-size:10px">+</button>
-            <button class="btn btn-sm" onclick="addSave('long','${name}',-1)" style="padding:2px 6px;font-size:10px">−</button>
+          <div style="display:flex;gap:2px">
+            <button class="btn btn-sm" onclick="addSave('long','${name}',1)" style="padding:1px 5px;font-size:9px">+</button>
+            <button class="btn btn-sm" onclick="addSave('long','${name}',-1)" style="padding:1px 5px;font-size:9px">−</button>
           </div>
         </div>
       </div>
@@ -1293,23 +1292,23 @@ function renderSavings(){
     const pct=shortTotal>0?Math.round(v.bal/shortTotal*100):0;
     html+=`<li class="fi save-li">
       <div class="save-li-inner">
-        <div class="save-li-main">
+        <div class="save-li-main" style="flex:1">
           <span class="pct-dot" style="background:${v.color}"></span>
           <span class="save-li-name">${name}</span>
-          <span style="font-size:10px;color:var(--text3);white-space:nowrap">${pct}%</span>
+          <span style="font-size:9px;color:var(--text3);white-space:nowrap">${pct}%</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;justify-self:end">
+        <div style="display:flex;align-items:center;gap:6px;white-space:nowrap;margin-left:auto">
           <div style="display:flex;align-items:center;gap:2px">
-            <span style="font-size:10px;color:var(--text3)">보유액</span>
-            <input type="text" value="${fmtN(v.bal)}" oninput="formatNumInput(this)" onchange="updateSave('short','${name}','bal',this.value)" style="width:75px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:700;color:${v.color};padding:2px 4px">
+            <span style="font-size:9px;color:var(--text3)">보유액</span>
+            <input type="text" value="${fmtN(v.bal)}" oninput="formatNumInput(this)" onchange="updateSave('short','${name}','bal',this.value)" style="width:65px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;font-weight:700;color:${v.color};padding:2px 3px">
           </div>
           <div style="display:flex;align-items:center;gap:2px">
-            <span style="font-size:10px;color:var(--text3)">월저축</span>
-            <input type="text" value="${fmtN(v.monthly)}" oninput="formatNumInput(this)" onchange="updateSave('short','${name}','monthly',this.value)" style="width:60px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--green);padding:2px 4px">
+            <span style="font-size:9px;color:var(--text3)">월저축</span>
+            <input type="text" value="${fmtN(v.monthly)}" oninput="formatNumInput(this)" onchange="updateSave('short','${name}','monthly',this.value)" style="width:55px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--green);padding:2px 3px">
           </div>
-          <div style="display:flex;gap:3px">
-            <button class="btn btn-sm" onclick="addSave('short','${name}',1)" style="padding:2px 6px;font-size:10px">+</button>
-            <button class="btn btn-sm" onclick="addSave('short','${name}',-1)" style="padding:2px 6px;font-size:10px">−</button>
+          <div style="display:flex;gap:2px">
+            <button class="btn btn-sm" onclick="addSave('short','${name}',1)" style="padding:1px 5px;font-size:9px">+</button>
+            <button class="btn btn-sm" onclick="addSave('short','${name}',-1)" style="padding:1px 5px;font-size:9px">−</button>
           </div>
         </div>
       </div>
