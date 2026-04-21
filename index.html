@@ -403,12 +403,6 @@ tr:hover td{background:var(--surface2)}
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div class="card-title" style="margin-bottom:0">거래 내역</div>
-      <div style="display:flex;gap:8px">
-        <select id="filter-month" onchange="renderTxList()" style="width:auto;padding:6px 10px;font-size:12px"></select>
-        <select id="filter-type" onchange="renderTxList()" style="width:auto;padding:6px 10px;font-size:12px">
-          <option value="">전체</option><option value="income">수입</option><option value="expense">지출</option>
-        </select>
-      </div>
     </div>
     <table>
       <thead><tr>
@@ -872,25 +866,22 @@ function renderTxList(){
     if(!wrap)return;
     wrap.innerHTML=list.length?list.map(t=>{
       const cats=t.type==='expense'?EXPENSE_CATS:[];
-      return`<div style="border-bottom:1px solid var(--border);padding:10px 0">
-        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin-bottom:6px;font-size:11px">
-          <div style="display:flex;align-items:center;gap:4px">
-            <input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:4px 5px;background:var(--surface);color:var(--text);width:108px">
-            <input type="checkbox" style="width:16px;height:16px;cursor:pointer;margin:0">
-          </div>
-          <input type="text" value="${t.desc||''}" onchange="updateTxField(${t.id},'desc',this.value)" placeholder="내용" style="border:none;background:transparent;color:var(--text);font-size:12px;font-weight:600;padding:0;min-width:0">
-          <button class="btn-ghost" onclick="delTx(${t.id})" style="font-size:14px;padding:0;color:var(--text3)">×</button>
-        </div>
-        <div style="display:grid;grid-template-columns:auto auto auto 1fr;gap:8px;align-items:center;font-size:10px">
-          <select onchange="updateTxField(${t.id},'type',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:4px 6px;background:var(--surface);color:var(--text)">
+      return`<div style="border-bottom:1px solid var(--border);padding:8px 0">
+        <div style="display:grid;grid-template-columns:auto auto auto 1fr auto;gap:8px;align-items:center;margin-bottom:6px;font-size:11px">
+          <input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:3px 4px;background:var(--surface);color:var(--text);width:95px">
+          <select onchange="updateTxField(${t.id},'type',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:9px;padding:3px 4px;background:var(--surface);color:var(--text);width:48px">
             <option${t.type==='expense'?' selected':''} value="expense">지출</option>
             <option${t.type==='income'?' selected':''} value="income">수입</option>
           </select>
-          ${t.type==='income'?'<span style="font-size:10px;color:var(--text3);text-align:center;width:52px">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:4px 6px;background:var(--surface);color:var(--text)">${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}</select>`}
-          <span style="color:var(--text3)">|</span>
-          <div style="text-align:right;display:flex;justify-content:flex-end">
-            <span style="font-weight:700;color:${t.type==='income'?'var(--green)':'var(--red)'};font-size:13px">${fmtN(t.amt)}</span>
-            <span style="color:var(--text3);font-size:10px;margin-left:3px">원</span>
+          ${t.type==='income'?'<span style="font-size:9px;color:var(--text3);text-align:center;width:48px">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:9px;padding:3px 4px;background:var(--surface);color:var(--text);width:52px">${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}</select>`}
+          <span></span>
+          <button class="btn-ghost" onclick="delTx(${t.id})" style="font-size:12px;padding:0;color:var(--text3)">×</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;font-size:11px">
+          <input type="text" value="${t.desc||''}" onchange="updateTxField(${t.id},'desc',this.value)" placeholder="내용" style="border:none;background:transparent;color:var(--text);font-size:12px;font-weight:500;padding:0;min-width:0">
+          <div style="text-align:right;display:flex;align-items:center;gap:3px;white-space:nowrap">
+            <span style="font-weight:700;color:${t.type==='income'?'var(--green)':'var(--red)'};font-size:12px">${fmtN(t.amt)}</span>
+            <span style="color:var(--text3);font-size:10px">원</span>
           </div>
         </div>
       </div>`;
