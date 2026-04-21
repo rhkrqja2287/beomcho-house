@@ -2,6 +2,9 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<link rel="apple-touch-icon" href="icon.png"> 
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="범초하우스">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>범초하우스 가계부</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -492,12 +495,13 @@ function toggleVarCheck(name){
   saveAll();renderFixed();
 }
 const FIXED={
-  주거:[
+  주거/구독
+  :[
     {name:'전세 이자',amt:410000,day:21},{name:'관리비',amt:40000,day:15},{name:'전기세',amt:55000,day:5},
     {name:'수도세',amt:20000,day:30},{name:'가스비',amt:150000,day:25},{name:'인터넷+TV',amt:48400,day:15},
     {name:'토스프라임',amt:5900,day:4},{name:'톡플러스',amt:990,day:6},{name:'아이클라우드',amt:11100,day:15},{name:'쿠팡와우',amt:7890,day:24}
   ],
-  보험:[
+  보험/적금:[
     {name:'은우 적금',amt:10000,day:1},{name:'DB손해보험①',amt:139300,day:10},{name:'DB손해보험②',amt:9920,day:10},
     {name:'DB손해보험③',amt:10000,day:10},{name:'초은 메리츠',amt:39000,day:15},{name:'은우 보장보험',amt:83360,day:15},
     {name:'은우 실손보험',amt:18560,day:15},{name:'현대(범진)',amt:31080,day:25},{name:'현대(초은)',amt:25000,day:25}
