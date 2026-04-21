@@ -1071,13 +1071,19 @@ function renderBudget(){
   /* Col1 수입/적금 */
   let col1=`<div class="card" style="margin-bottom:0"><div class="card-title" style="font-size:14px">수입 / 적금</div>`;
   INCOME_GROUPS.forEach(cat=>{
-    col1+=`<div style="margin-bottom:9px"><label>${cat}</label>
-      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"></div>`;
+    col1+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="font-size:12px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
+      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"
+        style="width:148px;text-align:right;padding:6px 9px;font-size:13px">
+    </div>`;
   });
   col1+=`<div class="divider"></div>`;
   SAVING_GROUPS.forEach(cat=>{
-    col1+=`<div style="margin-bottom:9px"><label style="color:var(--purple-dark)">${cat}</label>
-      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"></div>`;
+    col1+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="font-size:12px;color:var(--purple-dark);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
+      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"
+        style="width:148px;text-align:right;padding:6px 9px;font-size:13px">
+    </div>`;
   });
   col1+=`</div>`;
 
@@ -1550,3 +1556,4 @@ db.ref('.info/connected').on('value',snap=>{
 </script>
 </body>
 </html>
+
