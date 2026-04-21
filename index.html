@@ -2,9 +2,6 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<link rel="apple-touch-icon" href="icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="범초하우스">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>범초하우스 가계부</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -12,7 +9,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 input[type=number]{-moz-appearance:textfield}
 /* ⑦ 테마 변수 */
@@ -74,8 +70,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px}
 input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:14px;outline:none;transition:border .15s;font-family:inherit}
 input:focus,select:focus{border-color:var(--purple)}
-.fg3{grid-template-columns:1fr 1fr !important;gap:8px !important}
-.fg2{grid-template-columns:1fr 1fr !important;gap:8px !important}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.fg2{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px}
 .btn{padding:9px 18px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;font-weight:500;transition:all .15s}
 .btn:hover{background:var(--surface2)}
 .btn-p{background:var(--purple);color:#fff;border-color:var(--purple)}
@@ -111,14 +107,6 @@ tr:hover td{background:var(--surface2)}
 .fi:last-child{border-bottom:none}
 .fi-name{font-size:14px}
 .fi-meta{font-size:11px;color:var(--text3);margin-top:1px}
-.fixed-item{align-items:center;gap:10px}
-.fixed-item-main{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
-.fixed-item-main>div{min-width:0}
-.fixed-item-amt{display:flex;align-items:center;gap:6px;flex-shrink:0;max-width:100%;justify-content:flex-end}
-.fixed-item-amt input{width:100px;min-width:0;text-align:right;padding:5px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);font-size:13px}
-.fixed-item-amt .var-check-btn{padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap}
-.budget-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}
-.budget-summary-amount{font-size:20px;font-weight:700;margin-top:5px;white-space:nowrap;word-break:keep-all;letter-spacing:-.3px}
 .tab-row{display:flex;gap:2px;margin-bottom:18px;border-bottom:1px solid var(--border)}
 .tab-btn{padding:8px 14px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
 .tab-btn.active{color:var(--purple-dark);border-bottom-color:var(--purple);font-weight:500}
@@ -164,8 +152,6 @@ tr:hover td{background:var(--surface2)}
   #budget-container [style*="grid-template-columns:260px"]{
     grid-template-columns:1fr !important;
   }
-  #budget-container .budget-summary-grid{gap:8px}
-  #budget-container .budget-summary-amount{font-size:16px;line-height:1.2}
   /* 저축 투자비율 패널 숨기기 */
   .row2{flex-direction:column}
 }
@@ -198,14 +184,9 @@ tr:hover td{background:var(--surface2)}
   /* 그리드 조정 */
   .g4{grid-template-columns:repeat(2,1fr);gap:8px}
   .g3{grid-template-columns:repeat(2,1fr);gap:8px}
-  #home-metrics,#cal-summary .g3,#fixed-summary .g3{grid-template-columns:repeat(3,minmax(0,1fr)) !important;gap:6px}
-  #home-metrics .metric,#cal-summary .metric,#fixed-summary .metric{padding:10px 7px}
-  #home-metrics .metric-label,#cal-summary .metric-label,#fixed-summary .metric-label{font-size:9px;line-height:1.2}
-  #home-metrics .metric-value,#cal-summary .metric-value,#fixed-summary .metric-value{font-size:14px;white-space:nowrap;letter-spacing:-.4px}
-  #home-metrics .metric-sub,#cal-summary .metric-sub,#fixed-summary .metric-sub{font-size:9px;line-height:1.2}
   .g2{grid-template-columns:1fr}
-  .fg3{grid-template-columns:1fr 1fr !important;gap:8px !important}
-  .fg2{grid-template-columns:1fr 1fr !important;gap:8px !important}
+  .fg3{grid-template-columns:1fr 1fr;gap:8px}
+  .fg2{grid-template-columns:1fr;gap:8px}
   .row2{flex-direction:column;gap:10px}
   .row2 .card{flex:none}
   /* 카드 */
@@ -230,13 +211,7 @@ tr:hover td{background:var(--surface2)}
   .btn{padding:8px 14px;font-size:13px}
   .btn-sm{padding:5px 8px;font-size:11px}
   /* 고정지출 입력칸 */
-  .fixed-item{align-items:flex-start;gap:6px}
-  .fixed-item-main{gap:6px}
-  .fixed-item-main .fi-name{font-size:12px}
-  .fixed-item-main .fi-meta{font-size:10px}
-  .fixed-item-amt{max-width:48%;flex-wrap:wrap;justify-content:flex-end;gap:4px}
-  .fixed-item-amt input{width:74px !important;font-size:11px !important;padding:4px 6px !important}
-  .fixed-item-amt .var-check-btn{padding:2px 6px !important;font-size:10px !important;max-width:84px;overflow:hidden;text-overflow:ellipsis}
+  .fi input[type=text]{width:80px}
   /* 테마 버튼 - 모바일에서 다시 표시 */
   .theme-btn{display:none}
 }
@@ -259,22 +234,14 @@ tr:hover td{background:var(--surface2)}
 .pin-error{font-size:13px;color:var(--red);margin-top:14px;min-height:20px}
 
 .save-li{padding:10px 0 !important;display:flex;align-items:center;gap:4px}
-.save-li-inner{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;column-gap:4px;row-gap:4px;width:100%}
-.save-li-name{font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.save-li-main{display:inline-flex;align-items:center;gap:4px;min-width:0}
-.save-li-main .save-li-name{flex:1}
-.save-li-group{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;min-width:0}
-.save-li-group input{min-width:0}
-.save-li-actions{display:inline-flex;align-items:center;justify-content:flex-end;gap:3px;justify-self:end;margin-left:auto}
+.save-li-inner{display:flex;align-items:center;flex-wrap:nowrap;gap:4px;width:100%;overflow:hidden}
+.save-li-name{font-size:13px;font-weight:600;min-width:72px;flex-shrink:0}
+.save-li-group{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;flex-shrink:0}
 @media(max-width:768px){
-  .save-li-inner{grid-template-columns:minmax(0,1fr) auto;align-items:start}
-  .save-li-group.save-li-bal{justify-self:end}
-  .save-li-group.save-li-monthly{grid-column:1}
-  .save-li-actions{grid-column:2;justify-self:end}
-  .save-li-group input{width:72px !important;font-size:10px !important;padding:2px 4px !important}
-  .save-li-name{font-size:11px;font-weight:600}
+  .save-li-group input{width:78px !important;font-size:11px !important;padding:2px 4px !important}
+  .save-li-name{min-width:52px;font-size:11px;font-weight:600}
   .save-li-group span{font-size:10px}
-  .save-li-actions .btn-sm{padding:2px 5px !important;font-size:10px !important}
+  .save-li-group .btn-sm{padding:2px 6px !important;font-size:11px !important}
 }
 /* 거래 내역: 모바일=카드리스트, PC=테이블 */
 @media(max-width:768px){
@@ -378,18 +345,21 @@ tr:hover td{background:var(--surface2)}
   <div class="page-sub">수입과 지출을 기록하세요</div>
   <div class="card">
     <div class="card-title">새 거래</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+    <div class="fg3">
       <div><label>날짜</label><input type="date" id="tx-date"></div>
+      <!-- ① 유형 선택 -->
       <div><label>유형</label>
         <select id="tx-type" onchange="updateCats()">
           <option value="expense">지출</option>
           <option value="income">수입</option>
         </select>
       </div>
+      <!-- ① 수입이면 카테고리 숨김 -->
+      <div id="cat-wrap"><label>카테고리</label><select id="tx-cat"></select></div>
     </div>
-    <div id="cat-wrap" style="margin-bottom:12px"><label>카테고리</label><select id="tx-cat"></select></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+    <div class="fg2">
       <div><label>내용</label><input type="text" id="tx-desc" placeholder="예: 마트 장보기"></div>
+      <!-- ⑧ 콤마 표기 -->
       <div><label>금액</label><input type="text" id="tx-amt" placeholder="0" class="num-input" oninput="formatNumInput(this)" inputmode="numeric"></div>
     </div>
     <div style="display:flex;gap:10px">
@@ -400,10 +370,16 @@ tr:hover td{background:var(--surface2)}
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div class="card-title" style="margin-bottom:0">거래 내역</div>
+      <div style="display:flex;gap:8px">
+        <select id="filter-month" onchange="renderTxList()" style="width:auto;padding:6px 10px;font-size:12px"></select>
+        <select id="filter-type" onchange="renderTxList()" style="width:auto;padding:6px 10px;font-size:12px">
+          <option value="">전체</option><option value="income">수입</option><option value="expense">지출</option>
+        </select>
+      </div>
     </div>
     <table>
       <thead><tr>
-        <th style="width:136px">날짜</th><th style="min-width:60px">내용</th>
+        <th style="width:88px">날짜</th><th style="min-width:60px">내용</th>
         <th style="width:68px">유형</th>
         <th style="width:72px">카테고리</th>
         <th style="width:80px;text-align:right">금액</th><th style="width:28px"></th>
@@ -863,24 +839,16 @@ function renderTxList(){
     if(!wrap)return;
     wrap.innerHTML=list.length?list.map(t=>{
       const cats=t.type==='expense'?EXPENSE_CATS:[];
-      return`<div style="border-bottom:1px solid var(--border);padding:8px 0">
-        <div style="display:grid;grid-template-columns:auto auto auto 1fr auto;gap:8px;align-items:center;margin-bottom:6px;font-size:11px">
-          <input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:3px 4px;background:var(--surface);color:var(--text);width:95px">
-          <select onchange="updateTxField(${t.id},'type',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:9px;padding:3px 4px;background:var(--surface);color:var(--text);width:48px">
-            <option${t.type==='expense'?' selected':''} value="expense">지출</option>
-            <option${t.type==='income'?' selected':''} value="income">수입</option>
-          </select>
-          ${t.type==='income'?'<span style="font-size:9px;color:var(--text3);text-align:center;width:48px">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:9px;padding:3px 4px;background:var(--surface);color:var(--text);width:52px">${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}</select>`}
-          <span></span>
-          <button class="btn-ghost" onclick="delTx(${t.id})" style="font-size:12px;padding:0;color:var(--text3)">×</button>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;font-size:11px">
-          <input type="text" value="${t.desc||''}" onchange="updateTxField(${t.id},'desc',this.value)" placeholder="내용" style="border:none;background:transparent;color:var(--text);font-size:12px;font-weight:500;padding:0;min-width:0">
-          <div style="text-align:right;display:flex;align-items:center;gap:3px;white-space:nowrap">
-            <span style="font-weight:700;color:${t.type==='income'?'var(--green)':'var(--red)'};font-size:12px">${fmtN(t.amt)}</span>
-            <span style="color:var(--text3);font-size:10px">원</span>
-          </div>
-        </div>
+      return`<div style="display:grid;grid-template-columns:110px 1fr 48px 56px 65px 28px;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px">
+        <input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 3px;background:var(--surface);color:var(--text)">
+        <input type="text" value="${t.desc||''}" onchange="updateTxField(${t.id},'desc',this.value)" placeholder="내용" style="border:none;background:transparent;color:var(--text);font-size:11px;font-weight:500;padding:0;min-width:0">
+        <select onchange="updateTxField(${t.id},'type',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text)">
+          <option${t.type==='expense'?' selected':''} value="expense">지출</option>
+          <option${t.type==='income'?' selected':''} value="income">수입</option>
+        </select>
+        ${t.type==='income'?'<span style="font-size:10px;color:var(--text3);text-align:center">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text)">${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}</select>`}
+        <input type="text" value="${fmtN(t.amt)}" oninput="formatNumInput(this)" onchange="updateTxField(${t.id},'amt',this.value)" style="border:none;background:transparent;text-align:right;font-weight:700;color:${t.type==='income'?'var(--green)':'var(--red)'};font-size:11px;padding:0">
+        <button class="btn-ghost" onclick="delTx(${t.id})" style="font-size:12px;padding:1px 2px;color:var(--text3)">×</button>
       </div>`;
     }).join(''):'<div style="text-align:center;padding:30px;color:var(--text3)">거래 내역이 없어요</div>';
   } else {
@@ -894,8 +862,7 @@ function renderTxList(){
             ${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}
           </select></td>`;
       return`<tr>
-        <td><input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)"
-            style="border:1px solid var(--border);border-radius:6px;font-size:12px;padding:3px 4px;background:var(--surface);color:var(--text);width:132px"></td>
+        <td style="color:var(--text2);font-size:12px;white-space:nowrap">${t.date}</td>
         <td><input type="text" value="${t.desc||''}" onchange="updateTxField(${t.id},'desc',this.value)"
             style="border:none;background:transparent;width:100%;padding:3px;color:var(--text);font-size:13px;min-width:60px"></td>
         <td><select onchange="updateTxField(${t.id},'type',this.value)"
@@ -1034,20 +1001,20 @@ function renderBudget(){
   const daily=Math.max(0,Math.round(varRemain/daysLeft));
 
   const summaryHtml=`
-    <div class="budget-summary-grid">
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px">
       <div class="card" style="margin-bottom:0;text-align:center;border-top:3px solid var(--green)">
         <div style="font-size:11px;color:var(--text3)">가용 수입</div>
-        <div class="budget-summary-amount" style="color:var(--green)">${fmt(realIncome)}</div>
+        <div style="font-size:20px;font-weight:700;color:var(--green);margin-top:5px">${fmt(realIncome)}</div>
         <div style="font-size:10px;color:var(--text3);margin-top:3px">총수입 − 적금·청약</div>
       </div>
       <div class="card" style="margin-bottom:0;text-align:center;border-top:3px solid var(--red)">
         <div style="font-size:11px;color:var(--text3)">예정 지출 합계</div>
-        <div class="budget-summary-amount" style="color:var(--red)">${fmt(totalExp)}</div>
+        <div style="font-size:20px;font-weight:700;color:var(--red);margin-top:5px">${fmt(totalExp)}</div>
         <div style="font-size:10px;color:var(--text3);margin-top:3px">유동 + 고정</div>
       </div>
       <div class="card" style="margin-bottom:0;text-align:center;border-top:3px solid var(--purple)">
         <div style="font-size:11px;color:var(--text3)">이달 예상 저축</div>
-        <div class="budget-summary-amount" style="color:${remaining>=0?'var(--purple-dark)':'var(--red)'}">${fmt(remaining)}</div>
+        <div style="font-size:20px;font-weight:700;color:${remaining>=0?'var(--purple-dark)':'var(--red)'};margin-top:5px">${fmt(remaining)}</div>
         <div style="font-size:10px;color:var(--text3);margin-top:3px">가용 수입 − 예정 지출</div>
       </div>
     </div>`;
@@ -1055,19 +1022,13 @@ function renderBudget(){
   /* Col1 수입/적금 */
   let col1=`<div class="card" style="margin-bottom:0"><div class="card-title" style="font-size:14px">수입 / 적금</div>`;
   INCOME_GROUPS.forEach(cat=>{
-    col1+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <span style="font-size:12px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
-      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"
-        style="width:148px;text-align:right;padding:6px 9px;font-size:13px">
-    </div>`;
+    col1+=`<div style="margin-bottom:9px"><label>${cat}</label>
+      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"></div>`;
   });
   col1+=`<div class="divider"></div>`;
   SAVING_GROUPS.forEach(cat=>{
-    col1+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <span style="font-size:12px;color:var(--purple-dark);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
-      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"
-        style="width:148px;text-align:right;padding:6px 9px;font-size:13px">
-    </div>`;
+    col1+=`<div style="margin-bottom:9px"><label style="color:var(--purple-dark)">${cat}</label>
+      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"></div>`;
   });
   col1+=`</div>`;
 
@@ -1229,21 +1190,21 @@ function renderFixed(){
       ${items.map(item=>{
         const k=fixedKey(item),isDone=localStorage.getItem(k)==='true',amt=getFixedAmt(item);
         const isToday=item.day===todayDay;
-        return`<li class="fi fixed-item" style="opacity:${isDone?.6:1};${isToday?'background:var(--amber-light);border-radius:8px;padding:10px 8px;margin:0 -8px;':''}">
-          <div class="fixed-item-main">
+        return`<li class="fi" style="opacity:${isDone?.6:1};${isToday?'background:var(--amber-light);border-radius:8px;padding:10px 8px;margin:0 -8px;':''}">
+          <div style="display:flex;align-items:center;gap:10px;flex:1">
             <input type="checkbox" ${isDone?'checked':''} onchange="toggleFixed('${k}')" style="width:17px;height:17px;cursor:pointer">
             <div>
               <div class="fi-name" style="${isDone?'text-decoration:line-through;':''}${isToday?'color:var(--amber);font-weight:600':''}">${isToday?'★ ':''}${item.name}</div>
               <div class="fi-meta">매달 ${item.day}일</div>
             </div>
           </div>
-          <div class="fixed-item-amt">
-            ${isVarFixed(item.name)?`<button class="var-check-btn" onclick="toggleVarCheck('${item.name}')"
+          <div style="display:flex;align-items:center;gap:6px">
+            ${isVarFixed(item.name)?`<button onclick="toggleVarCheck('${item.name}')"
               style="padding:3px 8px;border-radius:6px;border:1px solid ${isVarChecked(item.name)?'var(--green)':'var(--border2)'};background:${isVarChecked(item.name)?'var(--green-light)':'var(--surface)'};color:${isVarChecked(item.name)?'var(--green)':'var(--text3)'};font-size:11px;cursor:pointer;white-space:nowrap">
               ${isVarChecked(item.name)?'✓ 확인':'이번달 확인'}
             </button>`:''}
             <input type="text" value="${fmtN(amt)}" oninput="formatNumInput(this)" onchange="updateFixedAmt('${k}',this.value)"
-              style="text-align:right">
+              style="width:100px;text-align:right;padding:5px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);font-size:13px">
             <span style="font-size:12px;color:var(--text3)">원</span>
           </div>
         </li>`;
@@ -1298,8 +1259,7 @@ function renderSavings(){
         </div>
       </div>
     </li>`;
-  }
-  html+=`</ul></div>`;
+  }  html+=`</ul></div>`;
 
   /* 단기 저축 */
   const sVals=Object.values(shortSave);
@@ -1532,4 +1492,3 @@ db.ref('.info/connected').on('value',snap=>{
 </script>
 </body>
 </html>
-
