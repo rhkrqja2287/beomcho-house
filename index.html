@@ -233,24 +233,22 @@ tr:hover td{background:var(--surface2)}
 .pin-del{font-size:16px;color:var(--text3)}
 .pin-error{font-size:13px;color:var(--red);margin-top:14px;min-height:20px}
 
-.save-li{padding:10px 0 !important}
-.save-li-inner{width:100%;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.save-li-name{font-size:13px;font-weight:600;min-width:70px;flex-shrink:0}
-.save-li-group{display:flex;align-items:center;gap:4px;flex-wrap:nowrap}
-.save-li-group input{padding:4px 6px !important}
+.save-li{padding:10px 0 !important;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.save-li-inner{display:flex;align-items:center;flex-wrap:wrap;gap:6px;width:100%}
+.save-li-name{font-size:13px;font-weight:600;min-width:72px;flex-shrink:0}
+.save-li-group{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 @media(max-width:768px){
-  .save-li-inner{gap:4px}
-  .save-li-group input{width:80px !important;font-size:12px !important}
-  .save-li-name{min-width:55px;font-size:12px}
+  .save-li-group input{width:85px !important;font-size:12px !important;padding:3px 5px !important}
+  .save-li-name{min-width:60px;font-size:12px}
+  .save-li-group span{font-size:10px}
 }
-/* 모바일에서도 테이블 유지, 카드리스트 숨김 */
-#tx-card-list{display:none !important}
+/* 거래 내역: 모바일=카드리스트, PC=테이블 */
 @media(max-width:768px){
-  .tx-table-wrap{font-size:12px}
-  .tx-table-wrap table{min-width:0;width:100%}
-  .tx-table-wrap td,.tx-table-wrap th{padding:8px 3px;white-space:nowrap}
-  .tx-table-wrap select{font-size:11px;padding:2px 2px;min-width:0;max-width:70px}
-  .tx-table-wrap input[type=text]{font-size:12px}
+  .tx-table-wrap{display:none}
+  #tx-card-list{display:block}
+}
+@media(min-width:769px){
+  #tx-card-list{display:none}
 }
 
 </style>
