@@ -10,6 +10,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+html{-webkit-text-size-adjust:100%}
 input[type=number]{-moz-appearance:textfield}
 /* ⑦ 테마 변수 */
 :root{
@@ -107,6 +108,14 @@ tr:hover td{background:var(--surface2)}
 .fi:last-child{border-bottom:none}
 .fi-name{font-size:14px}
 .fi-meta{font-size:11px;color:var(--text3);margin-top:1px}
+.fixed-item{align-items:center;gap:10px}
+.fixed-item-main{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.fixed-item-main>div{min-width:0}
+.fixed-item-amt{display:flex;align-items:center;gap:6px;flex-shrink:0;max-width:100%;justify-content:flex-end}
+.fixed-item-amt input{width:100px;min-width:0;text-align:right;padding:5px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);font-size:13px}
+.fixed-item-amt .var-check-btn{padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap}
+.budget-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.budget-summary-amount{font-size:20px;font-weight:700;margin-top:5px;white-space:nowrap;word-break:keep-all;letter-spacing:-.3px}
 .tab-row{display:flex;gap:2px;margin-bottom:18px;border-bottom:1px solid var(--border)}
 .tab-btn{padding:8px 14px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
 .tab-btn.active{color:var(--purple-dark);border-bottom-color:var(--purple);font-weight:500}
@@ -152,6 +161,8 @@ tr:hover td{background:var(--surface2)}
   #budget-container [style*="grid-template-columns:260px"]{
     grid-template-columns:1fr !important;
   }
+  #budget-container .budget-summary-grid{gap:8px}
+  #budget-container .budget-summary-amount{font-size:16px;line-height:1.2}
   /* 저축 투자비율 패널 숨기기 */
   .row2{flex-direction:column}
 }
@@ -184,6 +195,11 @@ tr:hover td{background:var(--surface2)}
   /* 그리드 조정 */
   .g4{grid-template-columns:repeat(2,1fr);gap:8px}
   .g3{grid-template-columns:repeat(2,1fr);gap:8px}
+  #home-metrics,#cal-summary .g3,#fixed-summary .g3{grid-template-columns:repeat(3,minmax(0,1fr)) !important;gap:6px}
+  #home-metrics .metric,#cal-summary .metric,#fixed-summary .metric{padding:10px 7px}
+  #home-metrics .metric-label,#cal-summary .metric-label,#fixed-summary .metric-label{font-size:9px;line-height:1.2}
+  #home-metrics .metric-value,#cal-summary .metric-value,#fixed-summary .metric-value{font-size:14px;white-space:nowrap;letter-spacing:-.4px}
+  #home-metrics .metric-sub,#cal-summary .metric-sub,#fixed-summary .metric-sub{font-size:9px;line-height:1.2}
   .g2{grid-template-columns:1fr}
   .fg3{grid-template-columns:1fr 1fr;gap:8px}
   .fg2{grid-template-columns:1fr;gap:8px}
@@ -211,7 +227,13 @@ tr:hover td{background:var(--surface2)}
   .btn{padding:8px 14px;font-size:13px}
   .btn-sm{padding:5px 8px;font-size:11px}
   /* 고정지출 입력칸 */
-  .fi input[type=text]{width:80px}
+  .fixed-item{align-items:flex-start;gap:6px}
+  .fixed-item-main{gap:6px}
+  .fixed-item-main .fi-name{font-size:12px}
+  .fixed-item-main .fi-meta{font-size:10px}
+  .fixed-item-amt{max-width:48%;flex-wrap:wrap;justify-content:flex-end;gap:4px}
+  .fixed-item-amt input{width:74px !important;font-size:11px !important;padding:4px 6px !important}
+  .fixed-item-amt .var-check-btn{padding:2px 6px !important;font-size:10px !important;max-width:84px;overflow:hidden;text-overflow:ellipsis}
   /* 테마 버튼 - 모바일에서 다시 표시 */
   .theme-btn{display:none}
 }
@@ -234,14 +256,22 @@ tr:hover td{background:var(--surface2)}
 .pin-error{font-size:13px;color:var(--red);margin-top:14px;min-height:20px}
 
 .save-li{padding:10px 0 !important;display:flex;align-items:center;gap:4px}
-.save-li-inner{display:flex;align-items:center;flex-wrap:nowrap;gap:4px;width:100%;overflow:hidden}
-.save-li-name{font-size:13px;font-weight:600;min-width:72px;flex-shrink:0}
-.save-li-group{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;flex-shrink:0}
+.save-li-inner{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;column-gap:4px;row-gap:4px;width:100%}
+.save-li-name{font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.save-li-main{display:inline-flex;align-items:center;gap:4px;min-width:0}
+.save-li-main .save-li-name{flex:1}
+.save-li-group{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;min-width:0}
+.save-li-group input{min-width:0}
+.save-li-actions{display:inline-flex;align-items:center;justify-content:flex-end;gap:3px;justify-self:end;margin-left:auto}
 @media(max-width:768px){
-  .save-li-group input{width:78px !important;font-size:11px !important;padding:2px 4px !important}
-  .save-li-name{min-width:52px;font-size:11px;font-weight:600}
+  .save-li-inner{grid-template-columns:minmax(0,1fr) auto;align-items:start}
+  .save-li-group.save-li-bal{justify-self:end}
+  .save-li-group.save-li-monthly{grid-column:1}
+  .save-li-actions{grid-column:2;justify-self:end}
+  .save-li-group input{width:72px !important;font-size:10px !important;padding:2px 4px !important}
+  .save-li-name{font-size:11px;font-weight:600}
   .save-li-group span{font-size:10px}
-  .save-li-group .btn-sm{padding:2px 6px !important;font-size:11px !important}
+  .save-li-actions .btn-sm{padding:2px 5px !important;font-size:10px !important}
 }
 /* 거래 내역: 모바일=카드리스트, PC=테이블 */
 @media(max-width:768px){
@@ -1000,20 +1030,20 @@ function renderBudget(){
   const daily=Math.max(0,Math.round(varRemain/daysLeft));
 
   const summaryHtml=`
-    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px">
+    <div class="budget-summary-grid">
       <div class="card" style="margin-bottom:0;text-align:center;border-top:3px solid var(--green)">
         <div style="font-size:11px;color:var(--text3)">가용 수입</div>
-        <div style="font-size:20px;font-weight:700;color:var(--green);margin-top:5px">${fmt(realIncome)}</div>
+        <div class="budget-summary-amount" style="color:var(--green)">${fmt(realIncome)}</div>
         <div style="font-size:10px;color:var(--text3);margin-top:3px">총수입 − 적금·청약</div>
       </div>
       <div class="card" style="margin-bottom:0;text-align:center;border-top:3px solid var(--red)">
         <div style="font-size:11px;color:var(--text3)">예정 지출 합계</div>
-        <div style="font-size:20px;font-weight:700;color:var(--red);margin-top:5px">${fmt(totalExp)}</div>
+        <div class="budget-summary-amount" style="color:var(--red)">${fmt(totalExp)}</div>
         <div style="font-size:10px;color:var(--text3);margin-top:3px">유동 + 고정</div>
       </div>
       <div class="card" style="margin-bottom:0;text-align:center;border-top:3px solid var(--purple)">
         <div style="font-size:11px;color:var(--text3)">이달 예상 저축</div>
-        <div style="font-size:20px;font-weight:700;color:${remaining>=0?'var(--purple-dark)':'var(--red)'};margin-top:5px">${fmt(remaining)}</div>
+        <div class="budget-summary-amount" style="color:${remaining>=0?'var(--purple-dark)':'var(--red)'}">${fmt(remaining)}</div>
         <div style="font-size:10px;color:var(--text3);margin-top:3px">가용 수입 − 예정 지출</div>
       </div>
     </div>`;
@@ -1021,13 +1051,19 @@ function renderBudget(){
   /* Col1 수입/적금 */
   let col1=`<div class="card" style="margin-bottom:0"><div class="card-title" style="font-size:14px">수입 / 적금</div>`;
   INCOME_GROUPS.forEach(cat=>{
-    col1+=`<div style="margin-bottom:9px"><label>${cat}</label>
-      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"></div>`;
+    col1+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="font-size:12px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
+      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"
+        style="width:148px;text-align:right;padding:6px 9px;font-size:13px">
+    </div>`;
   });
   col1+=`<div class="divider"></div>`;
   SAVING_GROUPS.forEach(cat=>{
-    col1+=`<div style="margin-bottom:9px"><label style="color:var(--purple-dark)">${cat}</label>
-      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"></div>`;
+    col1+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="font-size:12px;color:var(--purple-dark);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
+      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"
+        style="width:148px;text-align:right;padding:6px 9px;font-size:13px">
+    </div>`;
   });
   col1+=`</div>`;
 
@@ -1038,11 +1074,11 @@ function renderBudget(){
     col2+=`<div style="font-size:12px;font-weight:600;color:var(--purple-dark);margin:12px 0 6px;display:flex;justify-content:space-between">
       <span>${gn}</span><span style="font-weight:400;color:var(--text3)">${fmt(gSum)}</span></div>`;
     items.forEach(cat=>{
-      col2+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
-        <span style="font-size:12px;flex:1;color:var(--text2)">${cat}</span>
+      col2+=`<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:7px;align-items:center">
+        <span style="font-size:12px;color:var(--text2)">${cat}</span>
         <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)"
           onchange="setBudget('${cat}',this.value);renderBudget()"
-          style="width:90px;text-align:right;padding:5px 8px;font-size:13px">
+          style="width:90px;text-align:right;padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)">
       </div>`;
     });
   }
@@ -1189,21 +1225,21 @@ function renderFixed(){
       ${items.map(item=>{
         const k=fixedKey(item),isDone=localStorage.getItem(k)==='true',amt=getFixedAmt(item);
         const isToday=item.day===todayDay;
-        return`<li class="fi" style="opacity:${isDone?.6:1};${isToday?'background:var(--amber-light);border-radius:8px;padding:10px 8px;margin:0 -8px;':''}">
-          <div style="display:flex;align-items:center;gap:10px;flex:1">
+        return`<li class="fi fixed-item" style="opacity:${isDone?.6:1};${isToday?'background:var(--amber-light);border-radius:8px;padding:10px 8px;margin:0 -8px;':''}">
+          <div class="fixed-item-main">
             <input type="checkbox" ${isDone?'checked':''} onchange="toggleFixed('${k}')" style="width:17px;height:17px;cursor:pointer">
             <div>
               <div class="fi-name" style="${isDone?'text-decoration:line-through;':''}${isToday?'color:var(--amber);font-weight:600':''}">${isToday?'★ ':''}${item.name}</div>
               <div class="fi-meta">매달 ${item.day}일</div>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:6px">
-            ${isVarFixed(item.name)?`<button onclick="toggleVarCheck('${item.name}')"
+          <div class="fixed-item-amt">
+            ${isVarFixed(item.name)?`<button class="var-check-btn" onclick="toggleVarCheck('${item.name}')"
               style="padding:3px 8px;border-radius:6px;border:1px solid ${isVarChecked(item.name)?'var(--green)':'var(--border2)'};background:${isVarChecked(item.name)?'var(--green-light)':'var(--surface)'};color:${isVarChecked(item.name)?'var(--green)':'var(--text3)'};font-size:11px;cursor:pointer;white-space:nowrap">
               ${isVarChecked(item.name)?'✓ 확인':'이번달 확인'}
             </button>`:''}
             <input type="text" value="${fmtN(amt)}" oninput="formatNumInput(this)" onchange="updateFixedAmt('${k}',this.value)"
-              style="width:100px;text-align:right;padding:5px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);font-size:13px">
+              style="text-align:right">
             <span style="font-size:12px;color:var(--text3)">원</span>
           </div>
         </li>`;
@@ -1294,7 +1330,7 @@ function renderSavings(){
       <div class="save-li-inner">
         <div class="save-li-main" style="flex:1">
           <span class="pct-dot" style="background:${v.color}"></span>
-          <span class="save-li-name">${name}</span>
+          <div class="save-li-main"><span class="save-li-name">${name}</span></div>
           <span style="font-size:9px;color:var(--text3);white-space:nowrap">${pct}%</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;white-space:nowrap;margin-left:auto">
