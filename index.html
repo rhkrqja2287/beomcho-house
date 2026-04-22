@@ -719,7 +719,7 @@ function toggleTheme(){
    네비
 ============================== */
 function goPage(p){
-  commitActiveField();
+  commitPendingFields();
   document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
@@ -734,8 +734,34 @@ function commitActiveField(){
   if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA'){
     try{el.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}
     try{el.blur();}catch(e){}
+    if(el.dataset)delete el.dataset.dirty;
   }
 }
+function commitDirtyFields(){
+  document.querySelectorAll('input[data-dirty=\"1\"],select[data-dirty=\"1\"],textarea[data-dirty=\"1\"]').forEach(el=>{
+    try{el.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}
+    try{el.blur();}catch(e){}
+    if(el.dataset)delete el.dataset.dirty;
+  });
+}
+function commitPendingFields(){
+  commitActiveField();
+  commitDirtyFields();
+}
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(!el||!el.tagName)return;
+  const tag=el.tagName;
+  if((tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA')&&el.dataset)el.dataset.dirty='1';
+},true);
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el&&el.dataset)delete el.dataset.dirty;
+},true);
+window.addEventListener('pagehide',commitPendingFields);
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden')commitPendingFields();
+});
 
 /* ==============================
    ⑨ 대시보드
