@@ -896,7 +896,9 @@ function renderTxList(){
   const tf=document.getElementById('filter-type').value;
   const list=txs.filter(t=>(!mf||t.date.startsWith(mf))&&(!tf||t.type===tf));
   const isMobile=window.innerWidth<=768;
+  const headRow=document.querySelector('#page-input table thead tr');
   if(isMobile){
+    if(headRow)headRow.innerHTML='';
     /* 모바일: 카드형 리스트 */
     document.getElementById('tx-tbody').innerHTML='';
     const wrap=document.getElementById('tx-card-list');
@@ -920,6 +922,9 @@ function renderTxList(){
       </div>`;
     }).join(''):'<div style="text-align:center;padding:30px;color:var(--text3)">거래 내역이 없어요</div>';
   } else {
+    if(headRow){
+      headRow.innerHTML='<th>날짜</th><th>내용</th><th>유형</th><th>카테고리</th><th style="text-align:right">금액</th><th></th>';
+    }
     /* PC: 기존 테이블 */
     if(document.getElementById('tx-card-list'))document.getElementById('tx-card-list').innerHTML='';
     document.getElementById('tx-tbody').innerHTML=list.length?list.map(t=>{
@@ -930,7 +935,8 @@ function renderTxList(){
             ${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}
           </select></td>`;
       return`<tr>
-        <td style="color:var(--text2);font-size:12px;white-space:nowrap">${t.date}</td>
+        <td><input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)"
+            style="border:1px solid var(--border);border-radius:6px;font-size:12px;padding:3px 6px;background:var(--surface);color:var(--text);width:130px"></td>
         <td><input type="text" value="${t.desc||''}" onchange="updateTxField(${t.id},'desc',this.value)"
             style="border:none;background:transparent;width:100%;padding:3px;color:var(--text);font-size:13px;min-width:60px"></td>
         <td><select onchange="updateTxField(${t.id},'type',this.value)"
@@ -1440,19 +1446,39 @@ function renderSavings(){
     return base;
   });
   dc('save-trend');
+  const trendCanvas=document.getElementById('save-trend');
+  const trendCtx=trendCanvas.getContext('2d');
+  const trendFill=trendCtx.createLinearGradient(0,0,0,200);
+  trendFill.addColorStop(0,'rgba(24,95,165,0.35)');
+  trendFill.addColorStop(1,'rgba(24,95,165,0.06)');
   charts['save-trend']=new Chart(document.getElementById('save-trend'),{
-    type:'bar',
+    type:'line',
     data:{
       labels:trendLabels,
       datasets:[{
-        label:'월 저축액',data:saveTrend,
-        backgroundColor:saveTrend.map(v=>v>0?'#7F77DD44':'#E24B4A44'),
-        borderColor:saveTrend.map(v=>v>0?'#7F77DD':'#E24B4A'),
-        borderWidth:2,borderRadius:6
+        label:'월 저축액',
+        data:saveTrend,
+        borderColor:'#0E6E8A',
+        backgroundColor:trendFill,
+        borderWidth:3,
+        tension:0.35,
+        fill:true,
+        pointRadius:4,
+        pointHoverRadius:5,
+        pointBackgroundColor:'#0E6E8A',
+        pointBorderColor:'#0E6E8A',
+        pointBorderWidth:1
       }]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{ticks:{autoSkip:false,maxRotation:0}},y:{ticks:{callback:v=>Math.round(v/10000)+'만'},beginAtZero:true}}}
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>` ${fmt(ctx.parsed.y)}`}}},
+      scales:{
+        x:{ticks:{autoSkip:false,maxRotation:35,minRotation:35,color:'#8a8a8a'},grid:{display:false}},
+        y:{ticks:{callback:v=>Math.round(v/10000)+'만',color:'#8a8a8a'},beginAtZero:true,grid:{color:'rgba(120,120,120,0.18)'}}
+      }
+    }
   });
 }
 function updateSave(group,name,field,val){
