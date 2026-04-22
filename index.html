@@ -410,7 +410,7 @@ tr:hover td{background:var(--surface2)}
         </select>
       </div>
     </div>
-    <table style="display:none">
+    <table>
       <thead><tr></tr></thead>
       <tbody id="tx-tbody"></tbody>
     </table>
@@ -719,12 +719,22 @@ function toggleTheme(){
    네비
 ============================== */
 function goPage(p){
+  commitActiveField();
   document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
   const idx={home:0,input:1,calendar:2,budget:3,fixed:4,savings:5};
   document.querySelectorAll('.nav-item')[idx[p]].classList.add('active');
   ({home:renderHome,input:renderInput,calendar:renderCalendar,budget:renderBudget,fixed:renderFixed,savings:renderSavings})[p]();
+}
+function commitActiveField(){
+  const el=document.activeElement;
+  if(!el)return;
+  const tag=el.tagName;
+  if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA'){
+    try{el.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}
+    try{el.blur();}catch(e){}
+  }
 }
 
 /* ==============================
@@ -867,15 +877,15 @@ function renderTxList(){
     if(!wrap)return;
     wrap.innerHTML=list.length?list.map(t=>{
       const cats=t.type==='expense'?EXPENSE_CATS:[];
-      return`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
-        <div style="display:grid;grid-template-columns:85px auto auto auto 28px;gap:4px;align-items:center;margin-bottom:6px">
+      return`<div style="position:relative;padding:10px 0 8px;border-bottom:1px solid var(--border)">
+        <button class="btn-ghost" onclick="delTx(${t.id})" style="position:absolute;top:8px;right:0;font-size:12px;padding:0 2px;color:var(--text3);line-height:1">×</button>
+        <div style="display:grid;grid-template-columns:85px auto auto auto;gap:4px;align-items:center;margin-bottom:6px;padding-right:18px">
           <input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:9px;padding:2px 2px;background:var(--surface);color:var(--text)">
           <select onchange="updateTxField(${t.id},'type',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text)">
             <option${t.type==='expense'?' selected':''} value="expense">지출</option>
             <option${t.type==='income'?' selected':''} value="income">수입</option>
           </select>
           ${t.type==='income'?'<span style="font-size:10px;color:var(--text3);text-align:center">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text)">${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}</select>`}
-          <button class="btn-ghost" onclick="delTx(${t.id})" style="font-size:12px;padding:1px 2px;color:var(--text3);justify-self:end">×</button>
         </div>
         <div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center">
           <input type="text" value="${t.desc||''}" onchange="updateTxField(${t.id},'desc',this.value)" placeholder="내용" style="border:none;background:transparent;color:var(--text);font-size:12px;font-weight:500;padding:0;min-width:0">
