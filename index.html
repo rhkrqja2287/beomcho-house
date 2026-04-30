@@ -453,8 +453,8 @@ tr:hover td{background:var(--surface2)}
   <div id="fixed-summary"></div>
   <div class="tab-row" id="fixed-tabs">
     <button class="tab-btn active" onclick="setFixedTab('전체')">전체</button>
-    <button class="tab-btn" onclick="setFixedTab('주거')">주거</button>
-    <button class="tab-btn" onclick="setFixedTab('보험')">보험</button>
+    <button class="tab-btn" onclick="setFixedTab('주거')">주거/구독</button>
+    <button class="tab-btn" onclick="setFixedTab('보험')">보험/적금</button>
     <button class="tab-btn" onclick="setFixedTab('통신')">통신</button>
     <button class="tab-btn" onclick="setFixedTab('차량')">차량</button>
   </div>
@@ -498,7 +498,7 @@ const FIXED={
   보험:[
     {name:'은우 적금',amt:10000,day:1},{name:'DB손해보험①',amt:139300,day:10},{name:'DB손해보험②',amt:9920,day:10},
     {name:'DB손해보험③',amt:10000,day:10},{name:'초은 메리츠',amt:39000,day:15},{name:'은우 보장보험',amt:83360,day:15},
-    {name:'은우 실손보험',amt:18560,day:15},{name:'현대①',amt:31080,day:25},{name:'현대②',amt:25000,day:25}
+    {name:'은우 실손보험',amt:18560,day:15},{name:'현대(범진)',amt:31080,day:25},{name:'현대(초은)',amt:25000,day:25}
   ],
   통신:[{name:'초은 통신비',amt:79265,day:21},{name:'범진 통신비',amt:85590,day:22}],
   차량:[{name:'주차비',amt:120000,day:20}]
@@ -688,7 +688,10 @@ function monthlyData(){
 function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 function allFixedList(){return Object.values(FIXED).flat();}
 function fixedKey(item){return`fx_${item.name}_${item.day}`;}
-function getFixedAmt(item){return parseInt(localStorage.getItem(fixedKey(item)+'_amt'))||item.amt;}
+function getFixedAmt(item){
+  const v=localStorage.getItem(fixedKey(item)+'_amt');
+  return v===null?item.amt:parseNum(v);
+}
 function totalVarBudget(){
   let s=0;
   for(const items of Object.values(BUDGET_GROUPS))s+=items.reduce((a,c)=>a+(budgets[c]||0),0);
