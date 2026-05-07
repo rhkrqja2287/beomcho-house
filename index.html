@@ -114,9 +114,12 @@ tr:hover td{background:var(--surface2)}
 .fixed-item{align-items:center;gap:10px}
 .fixed-item-main{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
 .fixed-item-main>div{min-width:0}
-.fixed-item-amt{display:flex;align-items:center;gap:6px;flex-shrink:0;max-width:100%;justify-content:flex-end}
+.fixed-item-amt{display:flex;align-items:center;gap:4px;flex-shrink:0;max-width:100%;justify-content:flex-end;flex-wrap:nowrap;white-space:nowrap}
 .fixed-item-amt input{width:100px;min-width:0;text-align:right;padding:5px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);font-size:13px}
-.fixed-item-amt .var-check-btn{padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap}
+.fixed-item-amt .var-check-btn{padding:3px 7px;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap}
+.fixed-del-btn{width:22px;height:22px;border-radius:999px;border:1px solid var(--border2);background:var(--surface);color:var(--text3);font-size:11px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
+.fixed-del-btn:hover{color:var(--red);border-color:var(--red);background:var(--red-light)}
+.fixed-manage-grid{display:grid;grid-template-columns:minmax(0,1fr) 130px 90px 120px auto;gap:8px;align-items:end}
 .budget-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}
 .budget-summary-amount{font-size:20px;font-weight:700;margin-top:5px;white-space:nowrap;word-break:keep-all;letter-spacing:-.3px}
 .tab-row{display:flex;gap:2px;margin-bottom:18px;border-bottom:1px solid var(--border)}
@@ -234,9 +237,14 @@ tr:hover td{background:var(--surface2)}
   .fixed-item-main{gap:6px}
   .fixed-item-main .fi-name{font-size:12px}
   .fixed-item-main .fi-meta{font-size:10px}
-  .fixed-item-amt{max-width:48%;flex-wrap:wrap;justify-content:flex-end;gap:4px}
+  .fixed-item-amt{max-width:58%;flex-wrap:nowrap;justify-content:flex-end;gap:3px}
   .fixed-item-amt input{width:74px !important;font-size:11px !important;padding:4px 6px !important}
-  .fixed-item-amt .var-check-btn{padding:2px 6px !important;font-size:10px !important;max-width:84px;overflow:hidden;text-overflow:ellipsis}
+  .fixed-item-amt .var-check-btn{padding:2px 5px !important;font-size:10px !important;max-width:58px;overflow:hidden;text-overflow:ellipsis}
+  .fixed-del-btn{width:20px;height:20px;font-size:10px}
+.fixed-manage-grid{grid-template-columns:minmax(0,1fr) 78px 64px 88px;gap:6px}
+  .fixed-manage-grid label{white-space:nowrap;font-size:11px;margin-bottom:3px}
+  .fixed-manage-grid input,.fixed-manage-grid select{padding:7px 8px;font-size:12px}
+  .fixed-manage-add-btn{grid-column:1/-1;width:100%;padding:7px 10px;font-size:12px}
   /* 테마 버튼 - 모바일에서 다시 표시 */
   .theme-btn{display:none}
 }
@@ -504,6 +512,30 @@ const FIXED={
   차량:[{name:'주차비',amt:120000,day:20}]
 };
 
+const FIXED_STORAGE_KEY='bch_fixed_custom';
+function normalizeFixedCustomItem(item){
+  if(!item||typeof item!=='object')return null;
+  const name=String(item.name||'').trim();
+  const group=String(item.group||'').trim();
+  const day=Math.max(1,Math.min(31,parseInt(item.day,10)||1));
+  const amt=parseNum(item.amt);
+  if(!name||!group)return null;
+  const id=String(item.id||`custom_${Date.now().toString(36)}${Math.random().toString(36).slice(2,6)}`);
+  return{id,name,group,amt,day};
+}
+function loadFixedCustom(){
+  try{
+    const parsed=JSON.parse(localStorage.getItem(FIXED_STORAGE_KEY)||'[]');
+    if(!Array.isArray(parsed))return[];
+    return parsed.map(normalizeFixedCustomItem).filter(Boolean);
+  }catch(_){
+    return[];
+  }
+}
+function persistFixedCustom(){
+  localStorage.setItem(FIXED_STORAGE_KEY,JSON.stringify(fixedCustom));
+}
+
 const ANNUAL_EVENTS_DEFAULT=[
   {month:'01',text:'차량 명의 이전(약 300만원) / 은경 생일(01.03) 10만원'},
   {month:'02',text:'장인어른 생신 / 빛나 생일(02.28) 5만원'},
@@ -572,6 +604,7 @@ let budgets=JSON.parse(localStorage.getItem('bch_budgets')||JSON.stringify(BUDGE
 let annualEvents=JSON.parse(localStorage.getItem('bch_events')||JSON.stringify(ANNUAL_EVENTS_DEFAULT));
 let longSave=JSON.parse(localStorage.getItem('bch_long_save')||JSON.stringify(LONG_SAVE_DEFAULT));
 let shortSave=JSON.parse(localStorage.getItem('bch_short_save')||JSON.stringify(SHORT_SAVE_DEFAULT));
+let fixedCustom=loadFixedCustom();
 let calDate=new Date();
 let currentFixedTab='전체';
 let calEditMode=false;
@@ -605,6 +638,7 @@ function saveLocal(){
   localStorage.setItem('bch_events',JSON.stringify(annualEvents));
   localStorage.setItem('bch_long_save',JSON.stringify(longSave));
   localStorage.setItem('bch_short_save',JSON.stringify(shortSave));
+  localStorage.setItem(FIXED_STORAGE_KEY,JSON.stringify(fixedCustom));
 }
 /* Firebase 저장 — 디바운스 적용 (연속 입력 시 500ms 후 1회만 전송) */
 let fbSaveTimer=null;
@@ -617,6 +651,8 @@ function saveAll(){
       txs,budgets,annualEvents,longSave,shortSave,
       fixedChecks:getFixedChecks(),
       fixedAmts:getFixedAmts(),
+      fixedDays:getFixedDays(),
+      fixedCustom,
       fixedBudgetManual:localStorage.getItem('bch_fixed_budget_manual')||null,
       theme:localStorage.getItem('bch_theme')||null,
       _updated:Date.now()
@@ -627,14 +663,19 @@ function saveAll(){
 /* 고정 지출 체크/금액 수집 헬퍼 */
 function getFixedChecks(){
   const o={};
-  allFixedList().forEach(i=>{const k=fixedKey(i);o[k]=localStorage.getItem(k)||'false';});
-  /* 변동항목 월별 확인 체크도 저장 */
+  rawFixedList().forEach(i=>{const k=fixedKey(i);o[k]=localStorage.getItem(k)||'false';});
+  /* 변동항목 별개 확인 체크도 저장 */
   VARIABLE_FIXED.forEach(name=>{const k=varFixedKey(name);const v=localStorage.getItem(k);if(v)o['var_'+k]=v;});
   return o;
 }
 function getFixedAmts(){
   const o={};
-  allFixedList().forEach(i=>{const k=fixedKey(i)+'_amt';const v=localStorage.getItem(k);if(v)o[k]=v;});
+  rawFixedList().forEach(i=>{const k=fixedKey(i)+'_amt';const v=localStorage.getItem(k);if(v)o[k]=v;});
+  return o;
+}
+function getFixedDays(){
+  const o={};
+  rawFixedList().forEach(i=>{const k=fixedKey(i)+'_day';const v=localStorage.getItem(k);if(v)o[k]=v;});
   return o;
 }
 /* Firebase → 로컬 상태에 반영 */
@@ -645,11 +686,17 @@ function applyFirebaseData(data){
   if(data.annualEvents)annualEvents=data.annualEvents;
   if(data.longSave)longSave=data.longSave;
   if(data.shortSave)shortSave=data.shortSave;
+  if(data.fixedCustom!==undefined){
+    const incoming=Array.isArray(data.fixedCustom)?data.fixedCustom:[];
+    fixedCustom=incoming.map(normalizeFixedCustomItem).filter(Boolean);
+    persistFixedCustom();
+  }
   if(data.fixedChecks)Object.entries(data.fixedChecks).forEach(([k,v])=>{
     if(k.startsWith('var_'))localStorage.setItem(k.slice(4),v);
     else localStorage.setItem(k,v);
   });
   if(data.fixedAmts)Object.entries(data.fixedAmts).forEach(([k,v])=>localStorage.setItem(k,v));
+  if(data.fixedDays)Object.entries(data.fixedDays).forEach(([k,v])=>localStorage.setItem(k,v));
   if(data.fixedBudgetManual)localStorage.setItem('bch_fixed_budget_manual',data.fixedBudgetManual);
   if(data.theme){
     localStorage.setItem('bch_theme',data.theme);
@@ -686,8 +733,28 @@ function monthlyData(){
   return m;
 }
 function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
-function allFixedList(){return Object.values(FIXED).flat();}
-function fixedKey(item){return`fx_${item.name}_${item.day}`;}
+function fixedKey(item){return item.id?`fxid_${item.id}`:`fx_${item.name}_${item.day}`;}
+function isFixedHidden(item){return localStorage.getItem(fixedKey(item)+'_hidden')==='1';}
+function rawFixedList(){return[...Object.values(FIXED).flat(),...fixedCustom];}
+function allFixedList(){return rawFixedList().filter(i=>!isFixedHidden(i));}
+function fixedGroup(item){
+  if(item.group)return item.group;
+  for(const [group,items] of Object.entries(FIXED))if(items.includes(item))return group;
+  return '';
+}
+function fixedItemsByTab(tab){
+  if(tab==='전체')return allFixedList();
+  return allFixedList().filter(i=>fixedGroup(i)===tab);
+}
+function getFixedDay(item){
+  const base=parseInt(item.day,10)||1;
+  const v=localStorage.getItem(fixedKey(item)+'_day');
+  const day=v===null?base:parseInt(v,10);
+  return Number.isFinite(day)?Math.max(1,Math.min(31,day)):base;
+}
+function clearFixedItemStorage(key){
+  ['','_amt','_day','_hidden'].forEach(s=>localStorage.removeItem(key+s));
+}
 function getFixedAmt(item){
   const v=localStorage.getItem(fixedKey(item)+'_amt');
   return v===null?item.amt:parseNum(v);
@@ -1205,6 +1272,57 @@ function updateFixedAmt(key,val){
   localStorage.setItem(key+'_amt',parseNum(val));
   saveAll();renderFixed();renderHome();
 }
+function updateFixedDay(key,val){
+  const day=parseInt(val,10);
+  if(!Number.isInteger(day)||day<1||day>31){
+    renderFixed();
+    return;
+  }
+  localStorage.setItem(key+'_day',String(day));
+  saveAll();renderFixed();renderHome();
+}
+function addFixedItemFromForm(){
+  const nameEl=document.getElementById('fixed-new-name');
+  const amtEl=document.getElementById('fixed-new-amt');
+  const dayEl=document.getElementById('fixed-new-day');
+  const groupEl=document.getElementById('fixed-new-group');
+  if(!nameEl||!amtEl||!dayEl||!groupEl)return;
+
+  const name=nameEl.value.trim();
+  const group=groupEl.value;
+  const day=parseInt(dayEl.value,10);
+  const amt=parseNum(amtEl.value);
+
+  if(!name){alert('항목명을 입력해주세요.');nameEl.focus();return;}
+  if(!Number.isInteger(day)||day<1||day>31){alert('날짜는 1~31일로 입력해주세요.');dayEl.focus();return;}
+
+  const item=normalizeFixedCustomItem({
+    id:`custom_${Date.now().toString(36)}${Math.random().toString(36).slice(2,6)}`,
+    name,group,day,amt
+  });
+  if(!item)return;
+
+  fixedCustom.push(item);
+  persistFixedCustom();
+  saveAll();
+  renderFixed();
+  renderHome();
+
+  nameEl.value='';
+  amtEl.value='';
+  dayEl.value='1';
+}
+function removeFixedItem(key){
+  const idx=fixedCustom.findIndex(i=>fixedKey(i)===key);
+  if(idx>=0){
+    fixedCustom.splice(idx,1);
+    persistFixedCustom();
+    clearFixedItemStorage(key);
+  }else{
+    localStorage.setItem(key+'_hidden','1');
+  }
+  saveAll();renderFixed();renderHome();
+}
 function toggleAllFixed(status){
   allFixedList().forEach(i=>localStorage.setItem(fixedKey(i),status));
   renderFixed();renderHome();
@@ -1212,12 +1330,14 @@ function toggleAllFixed(status){
 function renderFixed(){
   const all=allFixedList();
   const todayDay=new Date().getDate();
+  const tabs=Object.keys(FIXED);
   let doneAmt=0,doneCount=0,pendingAmt=0,pendingCount=0;
   const todayItems=[];
   all.forEach(item=>{
+    const day=getFixedDay(item);
     const k=fixedKey(item),isDone=localStorage.getItem(k)==='true',amt=getFixedAmt(item);
     if(isDone){doneAmt+=amt;doneCount++;}else{pendingAmt+=amt;pendingCount++;}
-    if(item.day===todayDay)todayItems.push({...item,curAmt:amt});
+    if(day===todayDay)todayItems.push({...item,curAmt:amt,curDay:day});
   });
   const total=doneAmt+pendingAmt;
 
@@ -1261,10 +1381,36 @@ function renderFixed(){
     <div class="pw" style="height:9px;margin-bottom:18px"><div class="pb ${fBarCls}" style="width:${pct}%"></div></div>`;
 
   /* 리스트 */
-  let items=currentFixedTab==='전체'?[...all]:[...(FIXED[currentFixedTab]||[])];
-  items.sort((a,b)=>a.day-b.day);
+  let items=fixedItemsByTab(currentFixedTab);
+  items.sort((a,b)=>getFixedDay(a)-getFixedDay(b));
+
+  const groupOptions=tabs.map(tab=>`<option value="${tab}" ${currentFixedTab===tab?'selected':''}>${tab}</option>`).join('');
+
   document.getElementById('fixed-list').innerHTML=`
-    <div style="display:flex;gap:10px;margin-bottom:12px">
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:10px">항목 관리</div>
+      <div class="fixed-manage-grid">
+        <div>
+          <label>항목명</label>
+          <input id="fixed-new-name" type="text" placeholder="예: 넷플릭스">
+        </div>
+        <div>
+          <label>금액</label>
+          <input id="fixed-new-amt" type="text" oninput="formatNumInput(this)" placeholder="0" class="num-input">
+        </div>
+        <div>
+          <label>날짜</label>
+          <input id="fixed-new-day" type="number" min="1" max="31" value="1">
+        </div>
+        <div>
+          <label>분류</label>
+          <select id="fixed-new-group">${groupOptions}</select>
+        </div>
+        <button class="btn btn-p fixed-manage-add-btn" onclick="addFixedItemFromForm()">항목 추가</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
       <button class="btn btn-sm" onclick="toggleAllFixed(true)">전체 체크</button>
       <button class="btn btn-sm" onclick="toggleAllFixed(false)">전체 해제</button>
     </div>
@@ -1272,23 +1418,28 @@ function renderFixed(){
       <ul class="fl">
       ${items.map(item=>{
         const k=fixedKey(item),isDone=localStorage.getItem(k)==='true',amt=getFixedAmt(item);
-        const isToday=item.day===todayDay;
+        const day=getFixedDay(item);
+        const isToday=day===todayDay;
         return`<li class="fi fixed-item" style="opacity:${isDone?.6:1};${isToday?'background:var(--amber-light);border-radius:8px;padding:10px 8px;margin:0 -8px;':''}">
           <div class="fixed-item-main">
             <input type="checkbox" ${isDone?'checked':''} onchange="toggleFixed('${k}')" style="width:17px;height:17px;cursor:pointer">
             <div>
               <div class="fi-name" style="${isDone?'text-decoration:line-through;':''}${isToday?'color:var(--amber);font-weight:600':''}">${isToday?'★ ':''}${item.name}</div>
-              <div class="fi-meta">매달 ${item.day}일</div>
+              <div class="fi-meta" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+                <span>매달</span>
+                <input type="number" min="1" max="31" value="${day}" onchange="updateFixedDay('${k}',this.value)" style="width:62px;padding:2px 6px;font-size:12px">
+                <span>일</span>
+              </div>
             </div>
           </div>
           <div class="fixed-item-amt">
             ${isVarFixed(item.name)?`<button class="var-check-btn" onclick="toggleVarCheck('${item.name}')"
               style="padding:3px 8px;border-radius:6px;border:1px solid ${isVarChecked(item.name)?'var(--green)':'var(--border2)'};background:${isVarChecked(item.name)?'var(--green-light)':'var(--surface)'};color:${isVarChecked(item.name)?'var(--green)':'var(--text3)'};font-size:11px;cursor:pointer;white-space:nowrap">
-              ${isVarChecked(item.name)?'✓ 확인':'이번달 확인'}
+              확인
             </button>`:''}
-            <input type="text" value="${fmtN(amt)}" oninput="formatNumInput(this)" onchange="updateFixedAmt('${k}',this.value)"
-              style="text-align:right">
+            <input type="text" value="${fmtN(amt)}" oninput="formatNumInput(this)" onchange="updateFixedAmt('${k}',this.value)" style="text-align:right">
             <span style="font-size:12px;color:var(--text3)">원</span>
+            <button class="fixed-del-btn" onclick="removeFixedItem('${k}')" title="항목 삭제" aria-label="항목 삭제">X</button>
           </div>
         </li>`;
       }).join('')}
