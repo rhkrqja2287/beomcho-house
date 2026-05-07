@@ -409,10 +409,14 @@ tr:hover td{background:var(--surface2)}
     </div>
   </div>
   <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px">
       <div class="card-title" style="margin-bottom:0">거래 내역</div>
-      <div style="display:flex;gap:8px">
-        <select id="filter-month" onchange="renderTxList()" style="width:auto;padding:6px 10px;font-size:12px"></select>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div class="month-nav" style="margin-bottom:0;gap:6px">
+          <button class="icon-btn" onclick="txPrevMonth()" aria-label="이전 달">&#8592;</button>
+          <span class="month-label" id="tx-month-label" style="font-size:15px;min-width:88px"></span>
+          <button class="icon-btn" onclick="txNextMonth()" aria-label="다음 달">&#8594;</button>
+        </div>
         <select id="filter-type" onchange="renderTxList()" style="width:auto;padding:6px 10px;font-size:12px">
           <option value="">전체</option><option value="income">수입</option><option value="expense">지출</option>
         </select>
@@ -606,6 +610,7 @@ let longSave=JSON.parse(localStorage.getItem('bch_long_save')||JSON.stringify(LO
 let shortSave=JSON.parse(localStorage.getItem('bch_short_save')||JSON.stringify(SHORT_SAVE_DEFAULT));
 let fixedCustom=loadFixedCustom();
 let calDate=new Date();
+let txListDate=new Date();
 let currentFixedTab='전체';
 let calEditMode=false;
 let charts={};
@@ -642,11 +647,15 @@ function saveLocal(){
 }
 /* Firebase 저장 — 디바운스 적용 (연속 입력 시 500ms 후 1회만 전송) */
 let fbSaveTimer=null;
+let myLastSaveTime=0;
 function saveAll(){
   saveLocal();
   clearTimeout(fbSaveTimer);
   fbSaveTimer=setTimeout(()=>{
     setSyncStatus('syncing');
+    const _now=Date.now();
+    myLastSaveTime=_now;
+    localStorage.setItem('bch_last_updated',_now);
     db.ref(ROOT).set({
       txs,budgets,annualEvents,longSave,shortSave,
       fixedChecks:getFixedChecks(),
@@ -655,7 +664,7 @@ function saveAll(){
       fixedCustom,
       fixedBudgetManual:localStorage.getItem('bch_fixed_budget_manual')||null,
       theme:localStorage.getItem('bch_theme')||null,
-      _updated:Date.now()
+      _updated:_now
     }).then(()=>setSyncStatus('ok'))
       .catch(()=>setSyncStatus('error'));
   },500);
@@ -957,12 +966,13 @@ function updateTxField(id,field,value){
 function renderInput(){
   document.getElementById('tx-date').value=todayStr();
   updateCats();
-  const months=[...new Set(txs.map(t=>t.date.slice(0,7)))].sort().reverse();
-  document.getElementById('filter-month').innerHTML=`<option value="">전체</option>`+months.map(m=>`<option>${m}</option>`).join('');
+  txListDate.setDate(1);
+  renderTxMonthLabel();
   renderTxList();
 }
 function renderTxList(){
-  const mf=document.getElementById('filter-month').value;
+  const mf=txMonthKey();
+  renderTxMonthLabel();
   const tf=document.getElementById('filter-type').value;
   const list=txs.filter(t=>(!mf||t.date.startsWith(mf))&&(!tf||t.type===tf));
   const isMobile=window.innerWidth<=768;
@@ -1116,6 +1126,14 @@ function updateAnnualEvent(mo,val){
 }
 function calPrev(){calDate.setMonth(calDate.getMonth()-1);renderCalendar();}
 function calNext(){calDate.setMonth(calDate.getMonth()+1);renderCalendar();}
+function txMonthKey(){return`${txListDate.getFullYear()}-${p2(txListDate.getMonth()+1)}`;}
+function renderTxMonthLabel(){
+  const el=document.getElementById('tx-month-label');
+  if(!el)return;
+  el.textContent=`${txListDate.getFullYear()}년 ${txListDate.getMonth()+1}월`;
+}
+function txPrevMonth(){txListDate.setDate(1);txListDate.setMonth(txListDate.getMonth()-1);renderTxList();}
+function txNextMonth(){txListDate.setDate(1);txListDate.setMonth(txListDate.getMonth()+1);renderTxList();}
 
 /* ==============================
    ③ 예산 관리
@@ -1719,9 +1737,11 @@ setSyncStatus('syncing');
 db.ref(ROOT).on('value', snapshot=>{
   const data=snapshot.val();
   if(data && data._updated){
-    /* 원격 데이터가 내 로컬보다 최신이거나, 첫 로드인 경우만 반영 */
-    const localUpdated=parseInt(localStorage.getItem('bch_last_updated')||'0');
-    if(data._updated>localUpdated || !fbReady){
+    /* 내가 방금 저장한 데이터면 무시 (race condition 방지) */
+    if(data._updated===myLastSaveTime){
+      /* 내 저장 확인 — 덮어쓰기 방지 */
+    } else if(data._updated>myLastSaveTime || !fbReady){
+      /* 다른 기기에서 온 최신 데이터만 반영 */
       applyFirebaseData(data);
       localStorage.setItem('bch_last_updated',data._updated);
     }
