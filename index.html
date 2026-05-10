@@ -75,6 +75,7 @@ label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px}
 input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:14px;outline:none;transition:border .15s;font-family:inherit}
 input:focus,select:focus{border-color:var(--purple)}
 .fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.tx-typecat-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .fg2{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px}
 .btn{padding:9px 18px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;font-weight:500;transition:all .15s}
 .btn:hover{background:var(--surface2)}
@@ -119,7 +120,11 @@ tr:hover td{background:var(--surface2)}
 .fixed-item-amt .var-check-btn{padding:3px 7px;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap}
 .fixed-del-btn{width:22px;height:22px;border-radius:999px;border:1px solid var(--border2);background:var(--surface);color:var(--text3);font-size:11px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
 .fixed-del-btn:hover{color:var(--red);border-color:var(--red);background:var(--red-light)}
-.fixed-manage-grid{display:grid;grid-template-columns:minmax(0,1fr) 130px 90px 120px auto;gap:8px;align-items:end}
+#fixed-list>.card:first-child{display:none}
+.fixed-add-actions{display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.fixed-action-left,.fixed-action-right{display:flex;gap:8px;align-items:center}
+.fixed-action-right{margin-left:auto}
+.budget-cat-actions{display:flex;gap:6px;align-items:center}
 .budget-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}
 .budget-summary-amount{font-size:20px;font-weight:700;margin-top:5px;white-space:nowrap;word-break:keep-all;letter-spacing:-.3px}
 .tab-row{display:flex;gap:2px;margin-bottom:18px;border-bottom:1px solid var(--border)}
@@ -241,10 +246,8 @@ tr:hover td{background:var(--surface2)}
   .fixed-item-amt input{width:74px !important;font-size:11px !important;padding:4px 6px !important}
   .fixed-item-amt .var-check-btn{padding:2px 5px !important;font-size:10px !important;max-width:58px;overflow:hidden;text-overflow:ellipsis}
   .fixed-del-btn{width:20px;height:20px;font-size:10px}
-.fixed-manage-grid{grid-template-columns:minmax(0,1fr) 78px 64px 88px;gap:6px}
-  .fixed-manage-grid label{white-space:nowrap;font-size:11px;margin-bottom:3px}
-  .fixed-manage-grid input,.fixed-manage-grid select{padding:7px 8px;font-size:12px}
-  .fixed-manage-add-btn{grid-column:1/-1;width:100%;padding:7px 10px;font-size:12px}
+  .fixed-add-actions{width:100%;gap:8px}
+  .fixed-action-left,.fixed-action-right{gap:6px}
   /* 테마 버튼 - 모바일에서 다시 표시 */
   .theme-btn{display:none}
 }
@@ -386,8 +389,8 @@ tr:hover td{background:var(--surface2)}
   <div class="page-sub">수입과 지출을 기록하세요</div>
   <div class="card">
     <div class="card-title">새 거래</div>
-    <div class="fg3">
-      <div><label>날짜</label><input type="date" id="tx-date"></div>
+    <div style="margin-bottom:12px"><label>날짜</label><input type="date" id="tx-date"></div>
+    <div class="tx-typecat-row">
       <!-- ① 유형 선택 -->
       <div><label>유형</label>
         <select id="tx-type" onchange="updateCats()">
@@ -494,10 +497,17 @@ const CAT_COLORS=['#7F77DD','#1D9E75','#378ADD','#D4537E','#E24B4A','#BA7517','#
 /* 매달 금액이 변동되는 고정지출 항목 (수기 수정 필요) */
 const VARIABLE_FIXED=['전세 이자','전기세','인터넷+TV','초은 통신비','범진 통신비','가스비','수도세'];
 function varFixedKey(name){return`vfx_${name}_${curMonth()}`;}
-function isVarFixed(name){return VARIABLE_FIXED.includes(name);}
-function isVarChecked(name){return localStorage.getItem(varFixedKey(name))==='1';}
-function toggleVarCheck(name){
-  const k=varFixedKey(name);
+function varCheckKey(itemOrKey,name){
+  if(typeof itemOrKey==='string'&&itemOrKey.startsWith('fxid_'))return`vfx_${itemOrKey}_${curMonth()}`;
+  return varFixedKey(name||itemOrKey);
+}
+function isVarFixed(item){
+  if(item&&typeof item==='object')return item.isVar===true||VARIABLE_FIXED.includes(item.name);
+  return VARIABLE_FIXED.includes(item);
+}
+function isVarChecked(itemOrKey,name){return localStorage.getItem(varCheckKey(itemOrKey,name))==='1';}
+function toggleVarCheck(itemOrKey,name){
+  const k=varCheckKey(itemOrKey,name);
   localStorage.setItem(k,localStorage.getItem(k)==='1'?'0':'1');
   saveAll();renderFixed();
 }
@@ -517,6 +527,7 @@ const FIXED={
 };
 
 const FIXED_STORAGE_KEY='bch_fixed_custom';
+const BUDGET_CUSTOM_KEY='bch_budget_custom';
 function normalizeFixedCustomItem(item){
   if(!item||typeof item!=='object')return null;
   const name=String(item.name||'').trim();
@@ -525,7 +536,8 @@ function normalizeFixedCustomItem(item){
   const amt=parseNum(item.amt);
   if(!name||!group)return null;
   const id=String(item.id||`custom_${Date.now().toString(36)}${Math.random().toString(36).slice(2,6)}`);
-  return{id,name,group,amt,day};
+  const isVar=item.isVar===true||item.isVar==='1';
+  return{id,name,group,amt,day,isVar};
 }
 function loadFixedCustom(){
   try{
@@ -538,6 +550,49 @@ function loadFixedCustom(){
 }
 function persistFixedCustom(){
   localStorage.setItem(FIXED_STORAGE_KEY,JSON.stringify(fixedCustom));
+}
+function normalizeBudgetCustom(raw){
+  const empty={incomeCustom:[],savingCustom:[],groupCustom:{},hiddenIncome:[],hiddenSaving:[],hiddenGroups:{}};
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))return empty;
+  const asList=v=>Array.isArray(v)?v.map(s=>String(s||'').trim()).filter(Boolean):[];
+  const hasNewShape=['incomeCustom','savingCustom','groupCustom','hiddenIncome','hiddenSaving','hiddenGroups'].some(k=>k in raw);
+  const out={
+    incomeCustom:[],
+    savingCustom:[],
+    groupCustom:{},
+    hiddenIncome:[],
+    hiddenSaving:[],
+    hiddenGroups:{}
+  };
+  if(hasNewShape){
+    out.incomeCustom=asList(raw.incomeCustom);
+    out.savingCustom=asList(raw.savingCustom);
+    out.hiddenIncome=asList(raw.hiddenIncome);
+    out.hiddenSaving=asList(raw.hiddenSaving);
+    const gc=(raw.groupCustom&&typeof raw.groupCustom==='object'&&!Array.isArray(raw.groupCustom))?raw.groupCustom:{};
+    const hg=(raw.hiddenGroups&&typeof raw.hiddenGroups==='object'&&!Array.isArray(raw.hiddenGroups))?raw.hiddenGroups:{};
+    Object.keys(BUDGET_GROUPS).forEach(group=>{
+      out.groupCustom[group]=asList(gc[group]);
+      out.hiddenGroups[group]=asList(hg[group]);
+    });
+  }else{
+    Object.keys(BUDGET_GROUPS).forEach(group=>{
+      out.groupCustom[group]=asList(raw[group]);
+      out.hiddenGroups[group]=[];
+    });
+  }
+  return out;
+}
+function loadBudgetCustom(){
+  try{
+    const parsed=JSON.parse(localStorage.getItem(BUDGET_CUSTOM_KEY)||'{}');
+    return normalizeBudgetCustom(parsed);
+  }catch(_){
+    return normalizeBudgetCustom({});
+  }
+}
+function persistBudgetCustom(){
+  localStorage.setItem(BUDGET_CUSTOM_KEY,JSON.stringify(budgetCustom));
 }
 
 const ANNUAL_EVENTS_DEFAULT=[
@@ -572,6 +627,89 @@ const BUDGET_DEFAULT={
 };
 
 /* 저축 기본값 */
+function mergeBudgetItems(base,custom,hidden){
+  const set=new Set([...(base||[]),...(custom||[])]);
+  (hidden||[]).forEach(h=>set.delete(h));
+  return Array.from(set);
+}
+function budgetIncomeItems(){
+  return mergeBudgetItems(INCOME_GROUPS,budgetCustom.incomeCustom,budgetCustom.hiddenIncome);
+}
+function budgetSavingItems(){
+  return mergeBudgetItems(SAVING_GROUPS,budgetCustom.savingCustom,budgetCustom.hiddenSaving);
+}
+function budgetGroupItems(group){
+  const custom=(budgetCustom.groupCustom&&budgetCustom.groupCustom[group])||[];
+  const hidden=(budgetCustom.hiddenGroups&&budgetCustom.hiddenGroups[group])||[];
+  return mergeBudgetItems(BUDGET_GROUPS[group]||[],custom,hidden);
+}
+function isBudgetCustomIncome(cat){return (budgetCustom.incomeCustom||[]).includes(cat);}
+function isBudgetCustomSaving(cat){return (budgetCustom.savingCustom||[]).includes(cat);}
+function isBudgetCustomCat(group,cat){
+  return !!(budgetCustom.groupCustom&&budgetCustom.groupCustom[group]&&budgetCustom.groupCustom[group].includes(cat));
+}
+function budgetCatExists(cat){
+  return budgetIncomeItems().includes(cat)
+    || budgetSavingItems().includes(cat)
+    || Object.keys(BUDGET_GROUPS).some(group=>budgetGroupItems(group).includes(cat));
+}
+function makeBudgetCatName(prefix){
+  let n=1,name=prefix;
+  while(budgetCatExists(name)){
+    n+=1;
+    name=`${prefix} ${n}`;
+  }
+  return name;
+}
+function addBudgetIncomeItem(){
+  const name=makeBudgetCatName('new income');
+  budgetCustom.incomeCustom=[...(budgetCustom.incomeCustom||[]),name];
+  budgetCustom.hiddenIncome=(budgetCustom.hiddenIncome||[]).filter(v=>v!==name);
+  budgets[name]=0;
+  persistBudgetCustom();saveAll();renderBudget();renderHome();
+}
+function addBudgetSavingItem(){
+  const name=makeBudgetCatName('new saving');
+  budgetCustom.savingCustom=[...(budgetCustom.savingCustom||[]),name];
+  budgetCustom.hiddenSaving=(budgetCustom.hiddenSaving||[]).filter(v=>v!==name);
+  budgets[name]=0;
+  persistBudgetCustom();saveAll();renderBudget();renderHome();
+}
+function addBudgetItem(group){
+  if(!group)return;
+  if(!budgetCustom.groupCustom)budgetCustom.groupCustom={};
+  if(!budgetCustom.hiddenGroups)budgetCustom.hiddenGroups={};
+  const name=makeBudgetCatName('new expense');
+  if(!budgetCustom.groupCustom[group])budgetCustom.groupCustom[group]=[];
+  if(!budgetCustom.hiddenGroups[group])budgetCustom.hiddenGroups[group]=[];
+  budgetCustom.groupCustom[group].push(name);
+  budgetCustom.hiddenGroups[group]=budgetCustom.hiddenGroups[group].filter(v=>v!==name);
+  budgets[name]=0;
+  persistBudgetCustom();saveAll();renderBudget();renderHome();
+}
+function removeBudgetIncomeItem(cat){
+  if(isBudgetCustomIncome(cat))budgetCustom.incomeCustom=budgetCustom.incomeCustom.filter(v=>v!==cat);
+  else budgetCustom.hiddenIncome=Array.from(new Set([...(budgetCustom.hiddenIncome||[]),cat]));
+  delete budgets[cat];
+  persistBudgetCustom();saveAll();renderBudget();renderHome();
+}
+function removeBudgetSavingItem(cat){
+  if(isBudgetCustomSaving(cat))budgetCustom.savingCustom=budgetCustom.savingCustom.filter(v=>v!==cat);
+  else budgetCustom.hiddenSaving=Array.from(new Set([...(budgetCustom.hiddenSaving||[]),cat]));
+  delete budgets[cat];
+  persistBudgetCustom();saveAll();renderBudget();renderHome();
+}
+function removeBudgetItem(group,cat){
+  if(isBudgetCustomCat(group,cat)){
+    budgetCustom.groupCustom[group]=budgetCustom.groupCustom[group].filter(v=>v!==cat);
+  }else{
+    if(!budgetCustom.hiddenGroups)budgetCustom.hiddenGroups={};
+    budgetCustom.hiddenGroups[group]=Array.from(new Set([...(budgetCustom.hiddenGroups[group]||[]),cat]));
+  }
+  delete budgets[cat];
+  persistBudgetCustom();saveAll();renderBudget();renderHome();
+}
+
 const LONG_SAVE_DEFAULT={
   '전세보증금':{bal:50000000,monthly:0},
   '범진 청약':{bal:6600000,monthly:0},
@@ -609,6 +747,7 @@ let annualEvents=JSON.parse(localStorage.getItem('bch_events')||JSON.stringify(A
 let longSave=JSON.parse(localStorage.getItem('bch_long_save')||JSON.stringify(LONG_SAVE_DEFAULT));
 let shortSave=JSON.parse(localStorage.getItem('bch_short_save')||JSON.stringify(SHORT_SAVE_DEFAULT));
 let fixedCustom=loadFixedCustom();
+let budgetCustom=loadBudgetCustom();
 let calDate=new Date();
 let txListDate=new Date();
 let currentFixedTab='전체';
@@ -644,6 +783,7 @@ function saveLocal(){
   localStorage.setItem('bch_long_save',JSON.stringify(longSave));
   localStorage.setItem('bch_short_save',JSON.stringify(shortSave));
   localStorage.setItem(FIXED_STORAGE_KEY,JSON.stringify(fixedCustom));
+  localStorage.setItem(BUDGET_CUSTOM_KEY,JSON.stringify(budgetCustom));
 }
 /* Firebase 저장 — 디바운스 적용 (연속 입력 시 500ms 후 1회만 전송) */
 let fbSaveTimer=null;
@@ -662,6 +802,7 @@ function saveAll(){
       fixedAmts:getFixedAmts(),
       fixedDays:getFixedDays(),
       fixedCustom,
+      budgetCustom,
       fixedBudgetManual:localStorage.getItem('bch_fixed_budget_manual')||null,
       theme:localStorage.getItem('bch_theme')||null,
       _updated:_now
@@ -674,7 +815,17 @@ function getFixedChecks(){
   const o={};
   rawFixedList().forEach(i=>{const k=fixedKey(i);o[k]=localStorage.getItem(k)||'false';});
   /* 변동항목 별개 확인 체크도 저장 */
-  VARIABLE_FIXED.forEach(name=>{const k=varFixedKey(name);const v=localStorage.getItem(k);if(v)o['var_'+k]=v;});
+  rawFixedList().forEach(i=>{
+    if(!isVarFixed(i))return;
+    const k=varCheckKey(fixedKey(i),i.name);
+    const v=localStorage.getItem(k);
+    if(v)o['var_'+k]=v;
+  });
+  VARIABLE_FIXED.forEach(name=>{
+    const legacy=varFixedKey(name);
+    const v=localStorage.getItem(legacy);
+    if(v)o['var_'+legacy]=v;
+  });
   return o;
 }
 function getFixedAmts(){
@@ -699,6 +850,10 @@ function applyFirebaseData(data){
     const incoming=Array.isArray(data.fixedCustom)?data.fixedCustom:[];
     fixedCustom=incoming.map(normalizeFixedCustomItem).filter(Boolean);
     persistFixedCustom();
+  }
+  if(data.budgetCustom!==undefined){
+    budgetCustom=normalizeBudgetCustom(data.budgetCustom);
+    persistBudgetCustom();
   }
   if(data.fixedChecks)Object.entries(data.fixedChecks).forEach(([k,v])=>{
     if(k.startsWith('var_'))localStorage.setItem(k.slice(4),v);
@@ -770,7 +925,7 @@ function getFixedAmt(item){
 }
 function totalVarBudget(){
   let s=0;
-  for(const items of Object.values(BUDGET_GROUPS))s+=items.reduce((a,c)=>a+(budgets[c]||0),0);
+  for(const group of Object.keys(BUDGET_GROUPS))s+=budgetGroupItems(group).reduce((a,c)=>a+(budgets[c]||0),0);
   return s;
 }
 /* ⑧ 콤마 포맷 */
@@ -779,6 +934,7 @@ function formatNumInput(el){
   el.value=raw?parseInt(raw).toLocaleString('ko-KR'):'';
 }
 function parseNum(val){return parseInt(String(val).replace(/[^0-9]/g,''))||0;}
+function escJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 
 /* ==============================
    ⑦ 테마 토글
@@ -1143,8 +1299,8 @@ function renderBudget(){
   const monthData=monthlyData()[mStr]||{cats:{}};
 
   let totalIncome=0,totalSaving=0;
-  INCOME_GROUPS.forEach(c=>totalIncome+=(budgets[c]||0));
-  SAVING_GROUPS.forEach(c=>totalSaving+=(budgets[c]||0));
+  budgetIncomeItems().forEach(c=>totalIncome+=(budgets[c]||0));
+  budgetSavingItems().forEach(c=>totalSaving+=(budgets[c]||0));
   /* ③ 유동 지출 예산 = 지출 예산 설정 합산 */
   const varB=totalVarBudget();
   const fixedB=parseInt(localStorage.getItem('bch_fixed_budget_manual'))||allFixedList().reduce((s,i)=>s+getFixedAmt(i),0);
@@ -1182,36 +1338,55 @@ function renderBudget(){
     </div>`;
 
   /* Col1 수입/적금 */
-  let col1=`<div class="card" style="margin-bottom:0"><div class="card-title" style="font-size:14px">수입 / 적금</div>`;
-  INCOME_GROUPS.forEach(cat=>{
-    col1+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <span style="font-size:12px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
+  const incomeItems=budgetIncomeItems();
+  const savingItems=budgetSavingItems();
+  let col1=`<div class="card" style="margin-bottom:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="card-title" style="font-size:14px;margin-bottom:0">수입</div>
+      <button class="btn btn-sm" onclick="addBudgetIncomeItem()">+</button>
+    </div>`;
+  incomeItems.forEach(cat=>{
+    col1+=`<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:8px;align-items:center">
+      <span style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"
-        style="width:148px;text-align:right;padding:6px 9px;font-size:13px">
+        style="width:92px;text-align:right;padding:6px 8px;font-size:13px">
+      <button class="fixed-del-btn" onclick="removeBudgetIncomeItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
     </div>`;
   });
-  col1+=`<div class="divider"></div>`;
-  SAVING_GROUPS.forEach(cat=>{
-    col1+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <span style="font-size:12px;color:var(--purple-dark);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
+  col1+=`<div class="divider"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="card-title" style="font-size:14px;margin-bottom:0">적금</div>
+      <button class="btn btn-sm" onclick="addBudgetSavingItem()">+</button>
+    </div>`;
+  savingItems.forEach(cat=>{
+    col1+=`<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:8px;align-items:center">
+      <span style="font-size:12px;color:var(--purple-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"
-        style="width:148px;text-align:right;padding:6px 9px;font-size:13px">
+        style="width:92px;text-align:right;padding:6px 8px;font-size:13px">
+      <button class="fixed-del-btn" onclick="removeBudgetSavingItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
     </div>`;
   });
   col1+=`</div>`;
 
   /* ③ Col2 지출 예산 - 오른쪽에 합산 표기 */
   let col2=`<div class="card" style="margin-bottom:0"><div class="card-title" style="font-size:14px">지출 예산 설정 <span style="font-size:12px;color:var(--text3);font-weight:400">합계 ${fmt(varB)}</span></div>`;
-  for(const[gn,items] of Object.entries(BUDGET_GROUPS)){
-    const gSum=items.reduce((s,c)=>s+(budgets[c]||0),0);
-    col2+=`<div style="font-size:12px;font-weight:600;color:var(--purple-dark);margin:12px 0 6px;display:flex;justify-content:space-between">
-      <span>${gn}</span><span style="font-weight:400;color:var(--text3)">${fmt(gSum)}</span></div>`;
-    items.forEach(cat=>{
-      col2+=`<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:7px;align-items:center">
+  for(const[gn] of Object.entries(BUDGET_GROUPS)){
+    const cats=budgetGroupItems(gn);
+    const gSum=cats.reduce((s,c)=>s+(budgets[c]||0),0);
+    col2+=`<div style="font-size:12px;font-weight:600;color:var(--purple-dark);margin:12px 0 6px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <span>${gn}</span>
+      <div class="budget-cat-actions">
+        <span style="font-weight:400;color:var(--text3)">${fmt(gSum)}</span>
+        <button class="btn btn-sm" onclick="addBudgetItem('${gn}')">+</button>
+      </div>
+    </div>`;
+    cats.forEach(cat=>{
+      col2+=`<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:7px;align-items:center">
         <span style="font-size:12px;color:var(--text2)">${cat}</span>
         <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)"
           onchange="setBudget('${cat}',this.value);renderBudget()"
-          style="width:90px;text-align:right;padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)">
+          style="width:76px;text-align:right;padding:5px 7px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)">
+        <button class="fixed-del-btn" onclick="removeBudgetItem('${escJs(gn)}','${escJs(cat)}')" title="remove" aria-label="remove">X</button>
       </div>`;
     });
   }
@@ -1237,8 +1412,8 @@ function renderBudget(){
     <div class="card-title" style="font-size:14px">예산 대비 잔액</div>`;
 
   /* 대분류별 예산 = BUDGET_GROUPS 소분류 합산, 지출 = txs 대분류 합산 */
-  for(const[gn,items] of Object.entries(BUDGET_GROUPS)){
-    const gBudget=items.reduce((s,c)=>s+(budgets[c]||0),0);
+  for(const[gn] of Object.entries(BUDGET_GROUPS)){
+    const gBudget=budgetGroupItems(gn).reduce((s,c)=>s+(budgets[c]||0),0);
     const gSpent=expByBigCat[gn]||0; /* 대분류명으로 조회 */
     const gRemain=gBudget-gSpent;
     const pct=gBudget>0?Math.max(0,Math.min(100,Math.round(gRemain/gBudget*100))):0;
@@ -1330,12 +1505,41 @@ function addFixedItemFromForm(){
   amtEl.value='';
   dayEl.value='1';
 }
+function updateFixedName(key,val){
+  const idx=fixedCustom.findIndex(i=>fixedKey(i)===key);
+  if(idx<0)return;
+  fixedCustom[idx].name=String(val||'').trim()||'new fixed item';
+  persistFixedCustom();
+  saveAll();renderFixed();renderHome();
+}
+function addFixedItemToCurrentTab(asVar){
+  const tabs=Object.keys(FIXED);
+  if(!tabs.includes(currentFixedTab)){
+    alert('탭에서 추가해주세요.');
+    return;
+  }
+  const item=normalizeFixedCustomItem({
+    id:`custom_${Date.now().toString(36)}${Math.random().toString(36).slice(2,6)}`,
+    name:'new fixed item',
+    group:currentFixedTab,
+    day:new Date().getDate(),
+    amt:0,
+    isVar:!!asVar
+  });
+  if(!item)return;
+  fixedCustom.push(item);
+  persistFixedCustom();
+  if(asVar)localStorage.setItem(varCheckKey(fixedKey(item),item.name),'0');
+  saveAll();renderFixed();renderHome();
+}
 function removeFixedItem(key){
   const idx=fixedCustom.findIndex(i=>fixedKey(i)===key);
   if(idx>=0){
+    const removed=fixedCustom[idx];
     fixedCustom.splice(idx,1);
     persistFixedCustom();
     clearFixedItemStorage(key);
+    localStorage.removeItem(varCheckKey(key,removed.name));
   }else{
     localStorage.setItem(key+'_hidden','1');
   }
@@ -1402,8 +1606,6 @@ function renderFixed(){
   let items=fixedItemsByTab(currentFixedTab);
   items.sort((a,b)=>getFixedDay(a)-getFixedDay(b));
 
-  const groupOptions=tabs.map(tab=>`<option value="${tab}" ${currentFixedTab===tab?'selected':''}>${tab}</option>`).join('');
-
   document.getElementById('fixed-list').innerHTML=`
     <div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:10px">항목 관리</div>
@@ -1422,27 +1624,33 @@ function renderFixed(){
         </div>
         <div>
           <label>분류</label>
-          <select id="fixed-new-group">${groupOptions}</select>
+          <select id="fixed-new-group"></select>
         </div>
         <button class="btn btn-p fixed-manage-add-btn" onclick="addFixedItemFromForm()">항목 추가</button>
       </div>
     </div>
 
-    <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-      <button class="btn btn-sm" onclick="toggleAllFixed(true)">전체 체크</button>
-      <button class="btn btn-sm" onclick="toggleAllFixed(false)">전체 해제</button>
+    <div class="fixed-add-actions" style="margin-bottom:12px">
+      <div class="fixed-action-left">
+        <button class="btn btn-sm" onclick="toggleAllFixed(true)">전체 체크</button>
+        <button class="btn btn-sm" onclick="toggleAllFixed(false)">전체 해제</button>
+      </div>
+      <div class="fixed-action-right">
+        <button class="btn btn-sm btn-p" onclick="addFixedItemToCurrentTab(false)">+ 일반</button>
+        <button class="btn btn-sm" onclick="addFixedItemToCurrentTab(true)">+ 변동</button>
+      </div>
     </div>
     <div class="card">
       <ul class="fl">
       ${items.map(item=>{
-        const k=fixedKey(item),isDone=localStorage.getItem(k)==='true',amt=getFixedAmt(item);
+        const k=fixedKey(item),isDone=localStorage.getItem(k)==='true',amt=getFixedAmt(item),isCustom=!!item.id;
         const day=getFixedDay(item);
         const isToday=day===todayDay;
         return`<li class="fi fixed-item" style="opacity:${isDone?.6:1};${isToday?'background:var(--amber-light);border-radius:8px;padding:10px 8px;margin:0 -8px;':''}">
           <div class="fixed-item-main">
             <input type="checkbox" ${isDone?'checked':''} onchange="toggleFixed('${k}')" style="width:17px;height:17px;cursor:pointer">
             <div>
-              <div class="fi-name" style="${isDone?'text-decoration:line-through;':''}${isToday?'color:var(--amber);font-weight:600':''}">${isToday?'★ ':''}${item.name}</div>
+              ${isCustom?`<input type="text" value="${item.name}" onchange="updateFixedName('${k}',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:12px;width:100%;max-width:180px">`:`<div class="fi-name" style="${isDone?'text-decoration:line-through;':''}${isToday?'color:var(--amber);font-weight:600':''}">${isToday?'★ ':''}${item.name}</div>`}
               <div class="fi-meta" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
                 <span>매달</span>
                 <input type="number" min="1" max="31" value="${day}" onchange="updateFixedDay('${k}',this.value)" style="width:62px;padding:2px 6px;font-size:12px">
@@ -1451,8 +1659,8 @@ function renderFixed(){
             </div>
           </div>
           <div class="fixed-item-amt">
-            ${isVarFixed(item.name)?`<button class="var-check-btn" onclick="toggleVarCheck('${item.name}')"
-              style="padding:3px 8px;border-radius:6px;border:1px solid ${isVarChecked(item.name)?'var(--green)':'var(--border2)'};background:${isVarChecked(item.name)?'var(--green-light)':'var(--surface)'};color:${isVarChecked(item.name)?'var(--green)':'var(--text3)'};font-size:11px;cursor:pointer;white-space:nowrap">
+            ${isVarFixed(item)?`<button class="var-check-btn" onclick="toggleVarCheck('${k}','${escJs(item.name)}')"
+              style="padding:3px 8px;border-radius:6px;border:1px solid ${isVarChecked(k,item.name)?'var(--green)':'var(--border2)'};background:${isVarChecked(k,item.name)?'var(--green-light)':'var(--surface)'};color:${isVarChecked(k,item.name)?'var(--green)':'var(--text3)'};font-size:11px;cursor:pointer;white-space:nowrap">
               확인
             </button>`:''}
             <input type="text" value="${fmtN(amt)}" oninput="formatNumInput(this)" onchange="updateFixedAmt('${k}',this.value)" style="text-align:right">
