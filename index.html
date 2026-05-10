@@ -296,6 +296,19 @@ tr:hover td{background:var(--surface2)}
   #tx-card-list{display:none}
 }
 
+
+/* 편집 모드 - 예산/고정지출 추가/삭제 버튼 */
+.budget-del-btn,.budget-add-btn,.fixed-item-del-btn,.fixed-add-action-btn{
+  display:none !important;
+}
+.budget-edit-on .budget-del-btn,
+.budget-edit-on .budget-add-btn{
+  display:inline-flex !important;
+}
+.fixed-edit-on .fixed-item-del-btn,
+.fixed-edit-on .fixed-add-action-btn{
+  display:inline-flex !important;
+}
 </style>
 </head>
 <body>
@@ -389,7 +402,10 @@ tr:hover td{background:var(--surface2)}
   <div class="page-sub">수입과 지출을 기록하세요</div>
   <div class="card">
     <div class="card-title">새 거래</div>
-    <div style="margin-bottom:12px"><label>날짜</label><input type="date" id="tx-date"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;align-items:end">
+      <div><label>날짜</label><input type="date" id="tx-date" style="font-size:13px;padding:8px 8px"></div>
+      <div></div>
+    </div>
     <div class="tx-typecat-row">
       <!-- ① 유형 선택 -->
       <div><label>유형</label>
@@ -455,14 +471,20 @@ tr:hover td{background:var(--surface2)}
 
 <!-- 예산 관리 -->
 <div id="page-budget" class="page">
-  <div class="page-title">예산 관리</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div class="page-title">예산 관리</div>
+    <button class="btn btn-sm" id="budget-edit-toggle" onclick="toggleBudgetEdit()">✏ 수정 모드</button>
+  </div>
   <div class="page-sub">카테고리별 예산 설정 및 잔여 확인</div>
   <div id="budget-container"></div>
 </div>
 
 <!-- 고정 지출 -->
 <div id="page-fixed" class="page">
-  <div class="page-title">고정 지출</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div class="page-title">고정 지출</div>
+    <button class="btn btn-sm" id="fixed-edit-toggle" onclick="toggleFixedEdit()">✏ 수정 모드</button>
+  </div>
   <div class="page-sub">매달 정기적으로 나가는 비용을 체크하세요</div>
   <div id="fixed-today-alert"></div>
   <div id="fixed-summary"></div>
@@ -688,18 +710,21 @@ function addBudgetItem(group){
   persistBudgetCustom();saveAll();renderBudget();renderHome();
 }
 function removeBudgetIncomeItem(cat){
+  if(!confirm(`"${cat}" 항목을 삭제할까요?`))return;
   if(isBudgetCustomIncome(cat))budgetCustom.incomeCustom=budgetCustom.incomeCustom.filter(v=>v!==cat);
   else budgetCustom.hiddenIncome=Array.from(new Set([...(budgetCustom.hiddenIncome||[]),cat]));
   delete budgets[cat];
   persistBudgetCustom();saveAll();renderBudget();renderHome();
 }
 function removeBudgetSavingItem(cat){
+  if(!confirm(`"${cat}" 항목을 삭제할까요?`))return;
   if(isBudgetCustomSaving(cat))budgetCustom.savingCustom=budgetCustom.savingCustom.filter(v=>v!==cat);
   else budgetCustom.hiddenSaving=Array.from(new Set([...(budgetCustom.hiddenSaving||[]),cat]));
   delete budgets[cat];
   persistBudgetCustom();saveAll();renderBudget();renderHome();
 }
 function removeBudgetItem(group,cat){
+  if(!confirm(`"${cat}" 항목을 삭제할까요?`))return;
   if(isBudgetCustomCat(group,cat)){
     budgetCustom.groupCustom[group]=budgetCustom.groupCustom[group].filter(v=>v!==cat);
   }else{
@@ -753,7 +778,9 @@ let txListDate=new Date();
 let currentFixedTab='전체';
 let calEditMode=false;
 let charts={};
-let fbReady=false; /* Firebase 로드 완료 여부 */
+let fbReady=false;
+let budgetEditMode=false; /* 예산 편집 모드 */
+let fixedEditMode=false;  /* 고정지출 편집 모드 */ /* Firebase 로드 완료 여부 */
 
 /* ==============================
    동기화 상태 UI
@@ -1343,27 +1370,27 @@ function renderBudget(){
   let col1=`<div class="card" style="margin-bottom:0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div class="card-title" style="font-size:14px;margin-bottom:0">수입</div>
-      <button class="btn btn-sm" onclick="addBudgetIncomeItem()">+</button>
+      <button class="btn btn-sm budget-add-btn" onclick="addBudgetIncomeItem()">+</button>
     </div>`;
   incomeItems.forEach(cat=>{
     col1+=`<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:8px;align-items:center">
       <span style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"
         style="width:92px;text-align:right;padding:6px 8px;font-size:13px">
-      <button class="fixed-del-btn" onclick="removeBudgetIncomeItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
+      <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetIncomeItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
     </div>`;
   });
   col1+=`<div class="divider"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div class="card-title" style="font-size:14px;margin-bottom:0">적금</div>
-      <button class="btn btn-sm" onclick="addBudgetSavingItem()">+</button>
+      <button class="btn btn-sm budget-add-btn" onclick="addBudgetSavingItem()">+</button>
     </div>`;
   savingItems.forEach(cat=>{
     col1+=`<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:8px;align-items:center">
       <span style="font-size:12px;color:var(--purple-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" onchange="setBudget('${cat}',this.value);renderBudget()"
         style="width:92px;text-align:right;padding:6px 8px;font-size:13px">
-      <button class="fixed-del-btn" onclick="removeBudgetSavingItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
+      <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetSavingItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
     </div>`;
   });
   col1+=`</div>`;
@@ -1377,7 +1404,7 @@ function renderBudget(){
       <span>${gn}</span>
       <div class="budget-cat-actions">
         <span style="font-weight:400;color:var(--text3)">${fmt(gSum)}</span>
-        <button class="btn btn-sm" onclick="addBudgetItem('${gn}')">+</button>
+        <button class="btn btn-sm budget-add-btn" onclick="addBudgetItem('${gn}')">+</button>
       </div>
     </div>`;
     cats.forEach(cat=>{
@@ -1386,7 +1413,7 @@ function renderBudget(){
         <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)"
           onchange="setBudget('${cat}',this.value);renderBudget()"
           style="width:76px;text-align:right;padding:5px 7px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)">
-        <button class="fixed-del-btn" onclick="removeBudgetItem('${escJs(gn)}','${escJs(cat)}')" title="remove" aria-label="remove">X</button>
+        <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetItem('${escJs(gn)}','${escJs(cat)}')" title="remove" aria-label="remove">X</button>
       </div>`;
     });
   }
@@ -1443,8 +1470,14 @@ function renderBudget(){
     </div>
   </div>`;
 
+  /* budget-container 렌더 후 편집 상태 복원은 아래 */
   document.getElementById('budget-container').innerHTML=summaryHtml+
     `<div style="display:grid;grid-template-columns:260px 1fr 260px;gap:14px;align-items:start">${col1}${col2}${col3}</div>`;
+  /* 편집 상태 복원 */
+  if(budgetEditMode){
+    const c2=document.getElementById('budget-container');
+    if(c2)c2.classList.add('budget-edit-on');
+  }
 }
 function setBudget(cat,val){budgets[cat]=parseNum(val);saveAll();}
 
@@ -1533,6 +1566,7 @@ function addFixedItemToCurrentTab(asVar){
   saveAll();renderFixed();renderHome();
 }
 function removeFixedItem(key){
+  if(!confirm('이 항목을 삭제할까요?'))return;
   const idx=fixedCustom.findIndex(i=>fixedKey(i)===key);
   if(idx>=0){
     const removed=fixedCustom[idx];
@@ -1863,11 +1897,6 @@ function renderSavings(){
 }
 function updateSave(group,name,field,val){
   const store=group==='long'?longSave:shortSave;
-  store[name][field]=parseNum(val);
-  saveAll();renderSavings();
-}
-function addSave(group,name,dir){
-  const store=group==='long'?longSave:shortSave;
   const monthly=store[name].monthly||0;
   const delta=monthly*dir;
   store[name].bal=Math.max(0,store[name].bal+delta);
@@ -1876,6 +1905,29 @@ function addSave(group,name,dir){
   if(!store[name][mKey])store[name][mKey]=0;
   store[name][mKey]+=delta;
   saveAll();renderSavings();
+}
+
+
+function toggleBudgetEdit(){
+  budgetEditMode=!budgetEditMode;
+  const btn=document.getElementById('budget-edit-toggle');
+  const container=document.getElementById('budget-container');
+  if(btn)btn.textContent=budgetEditMode?'✓ 완료':'✏ 수정 모드';
+  if(btn)btn.style.background=budgetEditMode?'var(--amber)':'';
+  if(btn)btn.style.color=budgetEditMode?'#fff':'';
+  if(btn)btn.style.borderColor=budgetEditMode?'var(--amber)':'';
+  if(container)container.classList.toggle('budget-edit-on',budgetEditMode);
+}
+function toggleFixedEdit(){
+  fixedEditMode=!fixedEditMode;
+  const btn=document.getElementById('fixed-edit-toggle');
+  if(btn)btn.textContent=fixedEditMode?'✓ 완료':'✏ 수정 모드';
+  if(btn)btn.style.background=fixedEditMode?'var(--amber)':'';
+  if(btn)btn.style.color=fixedEditMode?'#fff':'';
+  if(btn)btn.style.borderColor=fixedEditMode?'var(--amber)':'';
+  /* fixed-list에 클래스 토글 */
+  const fl=document.getElementById('fixed-list');
+  if(fl)fl.classList.toggle('fixed-edit-on',fixedEditMode);
 }
 
 /* ==============================
