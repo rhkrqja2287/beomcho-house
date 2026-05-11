@@ -850,8 +850,10 @@ function saveLocal(){
 /* Firebase 저장 — 디바운스 적용 (연속 입력 시 500ms 후 1회만 전송) */
 let fbSaveTimer=null;
 let myLastSaveTime=0;
+let isSavePending=false; /* 저장 대기 중 — Firebase 응답 무시 */
 function saveAll(){
   saveLocal();
+  isSavePending=true;
   clearTimeout(fbSaveTimer);
   fbSaveTimer=setTimeout(()=>{
     setSyncStatus('syncing');
@@ -868,8 +870,13 @@ function saveAll(){
       fixedBudgetManual:localStorage.getItem('bch_fixed_budget_manual')||null,
       theme:localStorage.getItem('bch_theme')||null,
       _updated:_now
-    }).then(()=>setSyncStatus('ok'))
-      .catch(()=>setSyncStatus('error'));
+    }).then(()=>{
+      isSavePending=false;
+      setSyncStatus('ok');
+    }).catch(()=>{
+      isSavePending=false;
+      setSyncStatus('error');
+    });
   },500);
 }
 /* 고정 지출 체크/금액 수집 헬퍼 */
@@ -2035,9 +2042,9 @@ setSyncStatus('syncing');
 db.ref(ROOT).on('value', snapshot=>{
   const data=snapshot.val();
   if(data && data._updated){
-    /* 내가 방금 저장한 데이터면 무시 (race condition 방지) */
-    if(data._updated===myLastSaveTime){
-      /* 내 저장 확인 — 덮어쓰기 방지 */
+    /* 내가 저장 중이거나 방금 저장한 데이터면 무시 (race condition 방지) */
+    if(isSavePending || data._updated===myLastSaveTime){
+      /* 무시 */
     } else if(data._updated>myLastSaveTime || !fbReady){
       /* 다른 기기에서 온 최신 데이터만 반영 */
       applyFirebaseData(data);
