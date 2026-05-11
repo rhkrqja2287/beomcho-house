@@ -286,6 +286,25 @@ tr:hover td{background:var(--surface2)}
   .save-li-name{font-size:11px;font-weight:600}
   .save-li-group span{font-size:10px}
   .save-li-actions .btn-sm{padding:2px 5px !important;font-size:10px !important}
+/* 저축 input - 기본 읽기 전용 */
+#page-savings input{
+  pointer-events:none;
+  background:var(--surface2) !important;
+  color:var(--text2);
+  border-color:transparent !important;
+  cursor:default;
+}
+/* 수정 모드에서만 편집 가능 */
+#page-savings.savings-edit-on input{
+  pointer-events:auto;
+  background:var(--surface) !important;
+  color:var(--text);
+  border-color:var(--border) !important;
+  cursor:text;
+}
+/* +/- 버튼도 수정 모드에서만 */
+#page-savings .save-li-actions{display:none}
+#page-savings.savings-edit-on .save-li-actions{display:inline-flex}
 }
 /* 거래 내역: 모바일=카드리스트, PC=테이블 */
 @media(max-width:768px){
@@ -498,7 +517,7 @@ tr:hover td{background:var(--surface2)}
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div class="card-title" style="margin-bottom:0">연간 주요 일정</div>
-      <button class="btn btn-sm" onclick="toggleCalEdit()" id="cal-edit-btn">✏ 수정 모드</button>
+      <button class="btn btn-sm" onclick="toggleCalEdit()" id="cal-edit-btn">수정 모드</button>
     </div>
     <div id="cal-events"></div>
   </div>
@@ -535,7 +554,10 @@ tr:hover td{background:var(--surface2)}
 
 <!-- 저축 금액 -->
 <div id="page-savings" class="page">
-  <div class="page-title">저축 금액</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div class="page-title">저축 금액</div>
+    <button class="btn btn-sm" id="savings-edit-toggle" onclick="toggleSavingsEdit()">✏ 수정 모드</button>
+  </div>
   <div class="page-sub">장기 저축과 단기 저축 현황을 확인하세요</div>
   <div id="save-content"></div>
 </div>
@@ -815,7 +837,8 @@ let calEditMode=false;
 let charts={};
 let fbReady=false;
 let budgetEditMode=false; /* 예산 편집 모드 */
-let fixedEditMode=false;  /* 고정지출 편집 모드 */ /* Firebase 로드 완료 여부 */
+let fixedEditMode=false;  /* 고정지출 편집 모드 */
+let savingsEditMode=false; /* 저축 편집 모드 */ /* Firebase 로드 완료 여부 */
 
 /* ==============================
    동기화 상태 UI
@@ -1343,7 +1366,7 @@ function renderCalEvents(){
 }
 function toggleCalEdit(){
   calEditMode=!calEditMode;
-  document.getElementById('cal-edit-btn').textContent=calEditMode?'완료':'✏ 수정 모드';
+  document.getElementById('cal-edit-btn').textContent=calEditMode?'완료':'수정 모드';
   if(!calEditMode)saveAll();
   renderCalEvents();
 }
@@ -1964,6 +1987,18 @@ function toggleBudgetEdit(){
   if(btn)btn.style.color=budgetEditMode?'#fff':'';
   if(btn)btn.style.borderColor=budgetEditMode?'var(--amber)':'';
   if(container)container.classList.toggle('budget-edit-on',budgetEditMode);
+}
+function toggleSavingsEdit(){
+  savingsEditMode=!savingsEditMode;
+  const btn=document.getElementById('savings-edit-toggle');
+  const page=document.getElementById('page-savings');
+  if(btn){
+    btn.textContent=savingsEditMode?'✓ 완료':'✏ 수정 모드';
+    btn.style.background=savingsEditMode?'var(--amber)':'';
+    btn.style.color=savingsEditMode?'#fff':'';
+    btn.style.borderColor=savingsEditMode?'var(--amber)':'';
+  }
+  if(page)page.classList.toggle('savings-edit-on',savingsEditMode);
 }
 function toggleFixedEdit(){
   fixedEditMode=!fixedEditMode;
