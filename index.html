@@ -517,7 +517,7 @@ tr:hover td{background:var(--surface2)}
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div class="card-title" style="margin-bottom:0">연간 주요 일정</div>
-      <button class="btn btn-sm" onclick="toggleCalEdit()" id="cal-edit-btn">수정 모드</button>
+      <button class="btn btn-sm" onclick="toggleCalEdit()" id="cal-edit-btn">✏ 수정</button>
     </div>
     <div id="cal-events"></div>
   </div>
@@ -527,7 +527,7 @@ tr:hover td{background:var(--surface2)}
 <div id="page-budget" class="page">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
     <div class="page-title">예산 관리</div>
-    <button class="btn btn-sm" id="budget-edit-toggle" onclick="toggleBudgetEdit()">✏ 수정 모드</button>
+    <button class="btn btn-sm" id="budget-edit-toggle" onclick="toggleBudgetEdit()">✏ 수정</button>
   </div>
   <div class="page-sub">카테고리별 예산 설정 및 잔여 확인</div>
   <div id="budget-container"></div>
@@ -537,7 +537,7 @@ tr:hover td{background:var(--surface2)}
 <div id="page-fixed" class="page">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
     <div class="page-title">고정 지출</div>
-    <button class="btn btn-sm" id="fixed-edit-toggle" onclick="toggleFixedEdit()">✏ 수정 모드</button>
+    <button class="btn btn-sm" id="fixed-edit-toggle" onclick="toggleFixedEdit()">✏ 수정</button>
   </div>
   <div class="page-sub">매달 정기적으로 나가는 비용을 체크하세요</div>
   <div id="fixed-today-alert"></div>
@@ -556,7 +556,7 @@ tr:hover td{background:var(--surface2)}
 <div id="page-savings" class="page">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
     <div class="page-title">저축 금액</div>
-    <button class="btn btn-sm" id="savings-edit-toggle" onclick="toggleSavingsEdit()">✏ 수정 모드</button>
+    <button class="btn btn-sm" id="savings-edit-toggle" onclick="toggleSavingsEdit()">✏ 수정</button>
   </div>
   <div class="page-sub">장기 저축과 단기 저축 현황을 확인하세요</div>
   <div id="save-content"></div>
@@ -1366,7 +1366,13 @@ function renderCalEvents(){
 }
 function toggleCalEdit(){
   calEditMode=!calEditMode;
-  document.getElementById('cal-edit-btn').textContent=calEditMode?'완료':'수정 모드';
+  const calBtn=document.getElementById('cal-edit-btn');
+  if(calBtn){
+    calBtn.textContent=calEditMode?'✓ 완료':'✏ 수정';
+    calBtn.style.background=calEditMode?'var(--amber)':'';
+    calBtn.style.color=calEditMode?'#fff':'';
+    calBtn.style.borderColor=calEditMode?'var(--amber)':'';
+  }
   if(!calEditMode)saveAll();
   renderCalEvents();
 }
@@ -1967,6 +1973,13 @@ function renderSavings(){
 }
 function updateSave(group,name,field,val){
   const store=group==='long'?longSave:shortSave;
+  if(!store[name])return;
+  store[name][field]=parseNum(val);
+  saveAll();renderSavings();
+}
+function addSave(group,name,dir){
+  const store=group==='long'?longSave:shortSave;
+  if(!store[name])return;
   const monthly=store[name].monthly||0;
   const delta=monthly*dir;
   store[name].bal=Math.max(0,store[name].bal+delta);
@@ -1982,18 +1995,27 @@ function toggleBudgetEdit(){
   budgetEditMode=!budgetEditMode;
   const btn=document.getElementById('budget-edit-toggle');
   const container=document.getElementById('budget-container');
-  if(btn)btn.textContent=budgetEditMode?'✓ 완료':'✏ 수정 모드';
+  if(btn)btn.textContent=budgetEditMode?'✓ 완료':'✏ 수정';
   if(btn)btn.style.background=budgetEditMode?'var(--amber)':'';
   if(btn)btn.style.color=budgetEditMode?'#fff':'';
   if(btn)btn.style.borderColor=budgetEditMode?'var(--amber)':'';
   if(container)container.classList.toggle('budget-edit-on',budgetEditMode);
 }
 function toggleSavingsEdit(){
+  if(savingsEditMode){
+    /* 완료 누를 때 — 모든 저축 input 값을 강제로 메모리에 반영 후 저장 */
+    document.querySelectorAll('#page-savings input[type=text]').forEach(el=>{
+      const onch=el.getAttribute('onchange');
+      if(onch)el.dispatchEvent(new Event('change'));
+    });
+    /* 약간 delay 후 저장 (change 이벤트 처리 후) */
+    setTimeout(()=>saveAll(),50);
+  }
   savingsEditMode=!savingsEditMode;
   const btn=document.getElementById('savings-edit-toggle');
   const page=document.getElementById('page-savings');
   if(btn){
-    btn.textContent=savingsEditMode?'✓ 완료':'✏ 수정 모드';
+    btn.textContent=savingsEditMode?'✓ 완료':'✏ 수정';
     btn.style.background=savingsEditMode?'var(--amber)':'';
     btn.style.color=savingsEditMode?'#fff':'';
     btn.style.borderColor=savingsEditMode?'var(--amber)':'';
@@ -2003,7 +2025,7 @@ function toggleSavingsEdit(){
 function toggleFixedEdit(){
   fixedEditMode=!fixedEditMode;
   const btn=document.getElementById('fixed-edit-toggle');
-  if(btn)btn.textContent=fixedEditMode?'✓ 완료':'✏ 수정 모드';
+  if(btn)btn.textContent=fixedEditMode?'✓ 완료':'✏ 수정';
   if(btn)btn.style.background=fixedEditMode?'var(--amber)':'';
   if(btn)btn.style.color=fixedEditMode?'#fff':'';
   if(btn)btn.style.borderColor=fixedEditMode?'var(--amber)':'';
