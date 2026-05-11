@@ -498,7 +498,7 @@ tr:hover td{background:var(--surface2)}
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div class="card-title" style="margin-bottom:0">연간 주요 일정</div>
-      <button class="btn btn-sm" onclick="toggleCalEdit()" id="cal-edit-btn">수정 모드</button>
+      <button class="btn btn-sm" onclick="toggleCalEdit()" id="cal-edit-btn">✏ 수정 모드</button>
     </div>
     <div id="cal-events"></div>
   </div>
@@ -1343,7 +1343,7 @@ function renderCalEvents(){
 }
 function toggleCalEdit(){
   calEditMode=!calEditMode;
-  document.getElementById('cal-edit-btn').textContent=calEditMode?'완료':'수정 모드';
+  document.getElementById('cal-edit-btn').textContent=calEditMode?'완료':'✏ 수정 모드';
   if(!calEditMode)saveAll();
   renderCalEvents();
 }
