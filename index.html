@@ -467,7 +467,7 @@ tr:hover td{background:var(--surface2)}
   <div class="page-title">대시보드</div>
   <div class="page-sub" id="home-sub"></div>
   <!-- ⑨ 유동/고정 잔액 + 권장 일일 금액 -->
-  <div class="g3" id="home-metrics"></div>
+  <div class="g3" id="home-metrics" style="min-height:90px"></div>
   <div class="row2">
     <div class="card" style="flex:1.3">
       <div class="card-title">이번 달 지출 내역</div>
@@ -742,16 +742,21 @@ function mergeBudgetItems(base,custom,hidden){
   (hidden||[]).forEach(h=>set.delete(h));
   return Array.from(set);
 }
+function applyRenames(items,rmap){
+  if(!rmap)return items;
+  return items.map(item=>rmap[item]||item);
+}
 function budgetIncomeItems(){
-  return mergeBudgetItems(INCOME_GROUPS,budgetCustom.incomeCustom,budgetCustom.hiddenIncome);
+  return applyRenames(mergeBudgetItems(INCOME_GROUPS,budgetCustom.incomeCustom,budgetCustom.hiddenIncome),budgetCustom.renamedIncome);
 }
 function budgetSavingItems(){
-  return mergeBudgetItems(SAVING_GROUPS,budgetCustom.savingCustom,budgetCustom.hiddenSaving);
+  return applyRenames(mergeBudgetItems(SAVING_GROUPS,budgetCustom.savingCustom,budgetCustom.hiddenSaving),budgetCustom.renamedSaving);
 }
 function budgetGroupItems(group){
   const custom=(budgetCustom.groupCustom&&budgetCustom.groupCustom[group])||[];
   const hidden=(budgetCustom.hiddenGroups&&budgetCustom.hiddenGroups[group])||[];
-  return mergeBudgetItems(BUDGET_GROUPS[group]||[],custom,hidden);
+  const rmap=(budgetCustom.renamedGroups&&budgetCustom.renamedGroups[group])||{};
+  return applyRenames(mergeBudgetItems(BUDGET_GROUPS[group]||[],custom,hidden),rmap);
 }
 function isBudgetCustomIncome(cat){return (budgetCustom.incomeCustom||[]).includes(cat);}
 function isBudgetCustomSaving(cat){return (budgetCustom.savingCustom||[]).includes(cat);}
@@ -1182,11 +1187,11 @@ function renderHome(){
       ${k} ${Math.round(cats[k]/total*100)}%
     </span>`).join('');
   dc('donut-home');
-  if(catKeys.length)charts['donut-home']=new Chart(document.getElementById('donut-home'),{
+  if(catKeys.length)requestAnimationFrame(()=>{charts['donut-home']=new Chart(document.getElementById('donut-home'),{
     type:'doughnut',
     data:{labels:catKeys,datasets:[{data:catKeys.map(k=>cats[k]),backgroundColor:CAT_COLORS,borderWidth:2,borderColor:'#fff'}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'65%'}
-  });
+  });});
 
   /* 최근 거래 */
   document.getElementById('home-recent').innerHTML=txs.slice(0,6).map(t=>`
@@ -1477,15 +1482,11 @@ function renderBudget(){
       <button class="btn btn-sm budget-add-btn" onclick="addBudgetIncomeItem()">+</button>
     </div>`;
   incomeItems.forEach(cat=>{
-    const isCustomIncome=isBudgetCustomIncome(cat);
-    col1+=`<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:8px;align-items:center">
-      ${isCustomIncome
-        ?`<input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetIncome('${escJs(cat)}',this.value)"
-            style="font-size:12px;color:var(--text2);padding:4px 6px;border:1px solid var(--border);border-radius:6px;width:100%">`
-        :`<span style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>`
-      }
+    col1+=`<div style="display:grid;grid-template-columns:1fr 96px 24px;gap:6px;margin-bottom:8px;align-items:center">
+      <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetIncome('${escJs(cat)}',this.value)"
+        style="font-size:12px;padding:4px 6px;border-radius:6px;width:100%;min-width:0;color:var(--text2)">
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);renderBudget()"
-        style="width:92px;text-align:right;padding:6px 8px;font-size:13px">
+        style="width:100%;text-align:right;padding:6px 8px;font-size:13px">
       <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetIncomeItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
     </div>`;
   });
@@ -1495,15 +1496,11 @@ function renderBudget(){
       <button class="btn btn-sm budget-add-btn" onclick="addBudgetSavingItem()">+</button>
     </div>`;
   savingItems.forEach(cat=>{
-    const isCustomSaving=isBudgetCustomSaving(cat);
-    col1+=`<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:8px;align-items:center">
-      ${isCustomSaving
-        ?`<input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetSaving('${escJs(cat)}',this.value)"
-            style="font-size:12px;color:var(--purple-dark);padding:4px 6px;border:1px solid var(--border);border-radius:6px;width:100%">`
-        :`<span style="font-size:12px;color:var(--purple-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>`
-      }
+    col1+=`<div style="display:grid;grid-template-columns:1fr 96px 24px;gap:6px;margin-bottom:8px;align-items:center">
+      <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetSaving('${escJs(cat)}',this.value)"
+        style="font-size:12px;padding:4px 6px;border-radius:6px;width:100%;min-width:0;color:var(--purple-dark)">
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);renderBudget()"
-        style="width:92px;text-align:right;padding:6px 8px;font-size:13px">
+        style="width:100%;text-align:right;padding:6px 8px;font-size:13px">
       <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetSavingItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
     </div>`;
   });
@@ -1522,16 +1519,12 @@ function renderBudget(){
       </div>
     </div>`;
     cats.forEach(cat=>{
-      const isCustomGroup=isBudgetCustomCat(gn,cat);
-      col2+=`<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:7px;align-items:center">
-        ${isCustomGroup
-          ?`<input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetGroup('${escJs(gn)}','${escJs(cat)}',this.value)"
-              style="font-size:12px;color:var(--text2);padding:4px 6px;border:1px solid var(--border);border-radius:6px;width:100%">`
-          :`<span style="font-size:12px;color:var(--text2)">${cat}</span>`
-        }
+      col2+=`<div style="display:grid;grid-template-columns:1fr 80px 24px;gap:6px;margin-bottom:7px;align-items:center">
+        <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetGroup('${escJs(gn)}','${escJs(cat)}',this.value)"
+          style="font-size:12px;color:var(--text2);padding:4px 6px;border-radius:6px;width:100%;min-width:0">
         <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric"
           onchange="setBudget('${cat}',this.value);renderBudget()"
-          style="width:76px;text-align:right;padding:5px 7px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)">
+          style="width:100%;text-align:right;padding:5px 7px;font-size:13px">
         <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetItem('${escJs(gn)}','${escJs(cat)}')" title="remove" aria-label="remove">X</button>
       </div>`;
     });
@@ -1599,6 +1592,48 @@ function renderBudget(){
   }
 }
 function setBudget(cat,val){budgets[cat]=parseNum(val);saveAll();}
+function _budgetRename(oldName,newName){
+  /* 금액 이전 */
+  if(budgets[oldName]!==undefined){budgets[newName]=budgets[oldName];delete budgets[oldName];}
+}
+function renameBudgetIncome(oldName,newName){
+  if(!newName.trim()||newName===oldName)return;
+  const idx=(budgetCustom.incomeCustom||[]).indexOf(oldName);
+  if(idx>=0){budgetCustom.incomeCustom[idx]=newName;}
+  else{
+    if(!budgetCustom.renamedIncome)budgetCustom.renamedIncome={};
+    const orig=Object.keys(budgetCustom.renamedIncome).find(k=>budgetCustom.renamedIncome[k]===oldName)||oldName;
+    budgetCustom.renamedIncome[orig]=newName;
+  }
+  _budgetRename(oldName,newName);
+  persistBudgetCustom();saveAll();renderBudget();
+}
+function renameBudgetSaving(oldName,newName){
+  if(!newName.trim()||newName===oldName)return;
+  const idx=(budgetCustom.savingCustom||[]).indexOf(oldName);
+  if(idx>=0){budgetCustom.savingCustom[idx]=newName;}
+  else{
+    if(!budgetCustom.renamedSaving)budgetCustom.renamedSaving={};
+    const orig=Object.keys(budgetCustom.renamedSaving).find(k=>budgetCustom.renamedSaving[k]===oldName)||oldName;
+    budgetCustom.renamedSaving[orig]=newName;
+  }
+  _budgetRename(oldName,newName);
+  persistBudgetCustom();saveAll();renderBudget();
+}
+function renameBudgetGroup(group,oldName,newName){
+  if(!newName.trim()||newName===oldName)return;
+  if(!budgetCustom.groupCustom)budgetCustom.groupCustom={};
+  const idx=(budgetCustom.groupCustom[group]||[]).indexOf(oldName);
+  if(idx>=0){budgetCustom.groupCustom[group][idx]=newName;}
+  else{
+    if(!budgetCustom.renamedGroups)budgetCustom.renamedGroups={};
+    if(!budgetCustom.renamedGroups[group])budgetCustom.renamedGroups[group]={};
+    const orig=Object.keys(budgetCustom.renamedGroups[group]).find(k=>budgetCustom.renamedGroups[group][k]===oldName)||oldName;
+    budgetCustom.renamedGroups[group][orig]=newName;
+  }
+  _budgetRename(oldName,newName);
+  persistBudgetCustom();saveAll();renderBudget();
+}
 function renameBudgetIncome(oldName,newName){
   if(!newName.trim()||newName===oldName)return;
   const idx=(budgetCustom.incomeCustom||[]).indexOf(oldName);
@@ -2056,11 +2091,19 @@ function renderSavings(){
     }
   });
 }
+function _restoreSavingsLock(){
+  const pg=document.getElementById('page-savings');
+  if(!pg)return;
+  pg.querySelectorAll('input').forEach(el=>{
+    el.readOnly=!savingsEditMode;
+    el.tabIndex=savingsEditMode?0:-1;
+  });
+}
 function updateSave(group,name,field,val){
   const store=group==='long'?longSave:shortSave;
   if(!store[name])return;
   store[name][field]=parseNum(val);
-  saveAll();renderSavings();
+  saveAll();renderSavings();_restoreSavingsLock();
 }
 function addSave(group,name,dir){
   const store=group==='long'?longSave:shortSave;
@@ -2068,11 +2111,10 @@ function addSave(group,name,dir){
   const monthly=store[name].monthly||0;
   const delta=monthly*dir;
   store[name].bal=Math.max(0,store[name].bal+delta);
-  /* 이번달 저축 누계 추적 */
   const mKey='savedThisMonth_'+curMonth();
   if(!store[name][mKey])store[name][mKey]=0;
   store[name][mKey]+=delta;
-  saveAll();renderSavings();
+  saveAll();renderSavings();_restoreSavingsLock();
 }
 
 
@@ -2105,7 +2147,13 @@ function toggleSavingsEdit(){
     btn.style.color=savingsEditMode?'#fff':'';
     btn.style.borderColor=savingsEditMode?'var(--amber)':'';
   }
-  if(page)page.classList.toggle('savings-edit-on',savingsEditMode);
+  if(page){
+    page.classList.toggle('savings-edit-on',savingsEditMode);
+    page.querySelectorAll('input').forEach(el=>{
+      el.readOnly=!savingsEditMode;
+      el.tabIndex=savingsEditMode?0:-1;
+    });
+  }
 }
 function toggleFixedEdit(){
   fixedEditMode=!fixedEditMode;
