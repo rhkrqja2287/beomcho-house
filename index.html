@@ -286,6 +286,7 @@ tr:hover td{background:var(--surface2)}
   .save-li-name{font-size:11px;font-weight:600}
   .save-li-group span{font-size:10px}
   .save-li-actions .btn-sm{padding:2px 5px !important;font-size:10px !important}
+}
 /* 저축 input - 기본 읽기 전용 */
 #page-savings input{
   pointer-events:none;
@@ -293,6 +294,8 @@ tr:hover td{background:var(--surface2)}
   color:var(--text2);
   border-color:transparent !important;
   cursor:default;
+  user-select:none;
+  -webkit-user-select:none;
 }
 /* 수정 모드에서만 편집 가능 */
 #page-savings.savings-edit-on input{
@@ -301,11 +304,12 @@ tr:hover td{background:var(--surface2)}
   color:var(--text);
   border-color:var(--border) !important;
   cursor:text;
+  user-select:auto;
+  -webkit-user-select:auto;
 }
 /* +/- 버튼도 수정 모드에서만 */
 #page-savings .save-li-actions{display:none}
 #page-savings.savings-edit-on .save-li-actions{display:inline-flex}
-}
 /* 거래 내역: 모바일=카드리스트, PC=테이블 */
 @media(max-width:768px){
   .tx-table-wrap{display:none}
@@ -332,8 +336,21 @@ tr:hover td{background:var(--surface2)}
   border-color:transparent !important;
   cursor:default;
 }
+#budget-container .budget-name-input{
+  pointer-events:none;
+  background:transparent !important;
+  border-color:transparent !important;
+  cursor:default;
+  font-weight:500;
+}
+#budget-container.budget-edit-on .budget-name-input{
+  pointer-events:auto;
+  background:var(--surface) !important;
+  border-color:var(--border) !important;
+  cursor:text;
+}
 /* 수정 모드에서만 편집 가능 */
-#budget-container.budget-edit-on input{
+#budget-container.budget-edit-on input:not(.budget-name-input){
   pointer-events:auto;
   background:var(--surface) !important;
   color:var(--text);
@@ -361,6 +378,20 @@ tr:hover td{background:var(--surface2)}
   color:var(--text);
   border-color:var(--border2) !important;
   cursor:text;
+}
+#fixed-list .fixed-name-input {
+  pointer-events:none;
+  background:transparent !important;
+  border-color:transparent !important;
+  cursor:default;
+  color:inherit;
+}
+#fixed-list.fixed-edit-on .fixed-name-input {
+  pointer-events:auto;
+  background:var(--surface) !important;
+  border-color:var(--border2) !important;
+  cursor:text;
+  color:var(--text);
 }
 
 </style>
@@ -741,14 +772,14 @@ function makeBudgetCatName(prefix){
   return name;
 }
 function addBudgetIncomeItem(){
-  const name=makeBudgetCatName('new income');
+  const name=makeBudgetCatName('내용');
   budgetCustom.incomeCustom=[...(budgetCustom.incomeCustom||[]),name];
   budgetCustom.hiddenIncome=(budgetCustom.hiddenIncome||[]).filter(v=>v!==name);
   budgets[name]=0;
   persistBudgetCustom();saveAll();renderBudget();renderHome();
 }
 function addBudgetSavingItem(){
-  const name=makeBudgetCatName('new saving');
+  const name=makeBudgetCatName('내용');
   budgetCustom.savingCustom=[...(budgetCustom.savingCustom||[]),name];
   budgetCustom.hiddenSaving=(budgetCustom.hiddenSaving||[]).filter(v=>v!==name);
   budgets[name]=0;
@@ -758,7 +789,7 @@ function addBudgetItem(group){
   if(!group)return;
   if(!budgetCustom.groupCustom)budgetCustom.groupCustom={};
   if(!budgetCustom.hiddenGroups)budgetCustom.hiddenGroups={};
-  const name=makeBudgetCatName('new expense');
+  const name=makeBudgetCatName('내용');
   if(!budgetCustom.groupCustom[group])budgetCustom.groupCustom[group]=[];
   if(!budgetCustom.hiddenGroups[group])budgetCustom.hiddenGroups[group]=[];
   budgetCustom.groupCustom[group].push(name);
@@ -1446,8 +1477,13 @@ function renderBudget(){
       <button class="btn btn-sm budget-add-btn" onclick="addBudgetIncomeItem()">+</button>
     </div>`;
   incomeItems.forEach(cat=>{
+    const isCustomIncome=isBudgetCustomIncome(cat);
     col1+=`<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:8px;align-items:center">
-      <span style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
+      ${isCustomIncome
+        ?`<input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetIncome('${escJs(cat)}',this.value)"
+            style="font-size:12px;color:var(--text2);padding:4px 6px;border:1px solid var(--border);border-radius:6px;width:100%">`
+        :`<span style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>`
+      }
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);renderBudget()"
         style="width:92px;text-align:right;padding:6px 8px;font-size:13px">
       <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetIncomeItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
@@ -1459,8 +1495,13 @@ function renderBudget(){
       <button class="btn btn-sm budget-add-btn" onclick="addBudgetSavingItem()">+</button>
     </div>`;
   savingItems.forEach(cat=>{
+    const isCustomSaving=isBudgetCustomSaving(cat);
     col1+=`<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:8px;align-items:center">
-      <span style="font-size:12px;color:var(--purple-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
+      ${isCustomSaving
+        ?`<input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetSaving('${escJs(cat)}',this.value)"
+            style="font-size:12px;color:var(--purple-dark);padding:4px 6px;border:1px solid var(--border);border-radius:6px;width:100%">`
+        :`<span style="font-size:12px;color:var(--purple-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>`
+      }
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);renderBudget()"
         style="width:92px;text-align:right;padding:6px 8px;font-size:13px">
       <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetSavingItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
@@ -1481,8 +1522,13 @@ function renderBudget(){
       </div>
     </div>`;
     cats.forEach(cat=>{
+      const isCustomGroup=isBudgetCustomCat(gn,cat);
       col2+=`<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:7px;align-items:center">
-        <span style="font-size:12px;color:var(--text2)">${cat}</span>
+        ${isCustomGroup
+          ?`<input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetGroup('${escJs(gn)}','${escJs(cat)}',this.value)"
+              style="font-size:12px;color:var(--text2);padding:4px 6px;border:1px solid var(--border);border-radius:6px;width:100%">`
+          :`<span style="font-size:12px;color:var(--text2)">${cat}</span>`
+        }
         <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric"
           onchange="setBudget('${cat}',this.value);renderBudget()"
           style="width:76px;text-align:right;padding:5px 7px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)">
@@ -1553,6 +1599,31 @@ function renderBudget(){
   }
 }
 function setBudget(cat,val){budgets[cat]=parseNum(val);saveAll();}
+function renameBudgetIncome(oldName,newName){
+  if(!newName.trim()||newName===oldName)return;
+  const idx=(budgetCustom.incomeCustom||[]).indexOf(oldName);
+  if(idx<0)return;
+  budgetCustom.incomeCustom[idx]=newName;
+  if(budgets[oldName]!==undefined){budgets[newName]=budgets[oldName];delete budgets[oldName];}
+  persistBudgetCustom();saveAll();renderBudget();
+}
+function renameBudgetSaving(oldName,newName){
+  if(!newName.trim()||newName===oldName)return;
+  const idx=(budgetCustom.savingCustom||[]).indexOf(oldName);
+  if(idx<0)return;
+  budgetCustom.savingCustom[idx]=newName;
+  if(budgets[oldName]!==undefined){budgets[newName]=budgets[oldName];delete budgets[oldName];}
+  persistBudgetCustom();saveAll();renderBudget();
+}
+function renameBudgetGroup(group,oldName,newName){
+  if(!newName.trim()||newName===oldName)return;
+  if(!budgetCustom.groupCustom||!budgetCustom.groupCustom[group])return;
+  const idx=budgetCustom.groupCustom[group].indexOf(oldName);
+  if(idx<0)return;
+  budgetCustom.groupCustom[group][idx]=newName;
+  if(budgets[oldName]!==undefined){budgets[newName]=budgets[oldName];delete budgets[oldName];}
+  persistBudgetCustom();saveAll();renderBudget();
+}
 
 /* ==============================
    ④⑥ 고정 지출
@@ -1611,10 +1682,21 @@ function addFixedItemFromForm(){
   amtEl.value='';
   dayEl.value='1';
 }
+function updateFixedItemName(key,val,isCustom){
+  if(!val.trim())return;
+  if(isCustom){
+    updateFixedName(key,val);
+  } else {
+    /* 기본 항목 이름 localStorage에 저장 */
+    localStorage.setItem(key+'_name',val);
+    saveAll();
+    renderFixed();
+  }
+}
 function updateFixedName(key,val){
   const idx=fixedCustom.findIndex(i=>fixedKey(i)===key);
   if(idx<0)return;
-  fixedCustom[idx].name=String(val||'').trim()||'new fixed item';
+  fixedCustom[idx].name=String(val||'').trim()||'내용';
   persistFixedCustom();
   saveAll();renderFixed();renderHome();
 }
@@ -1626,7 +1708,7 @@ function addFixedItemToCurrentTab(asVar){
   }
   const item=normalizeFixedCustomItem({
     id:`custom_${Date.now().toString(36)}${Math.random().toString(36).slice(2,6)}`,
-    name:'new fixed item',
+    name:'내용',
     group:currentFixedTab,
     day:new Date().getDate(),
     amt:0,
@@ -1757,7 +1839,10 @@ function renderFixed(){
           <div class="fixed-item-main">
             <input type="checkbox" ${isDone?'checked':''} onchange="toggleFixed('${k}')" style="width:17px;height:17px;cursor:pointer">
             <div>
-              ${isCustom?`<input type="text" value="${item.name}" onchange="updateFixedName('${k}',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:12px;width:100%;max-width:180px">`:`<div class="fi-name" style="${isDone?'text-decoration:line-through;':''}${isToday?'color:var(--amber);font-weight:600':''}">${isToday?'★ ':''}${item.name}</div>`}
+              <div style="display:flex; align-items:center; flex:1;">
+            ${isToday?'<span style="color:var(--amber);font-weight:600;margin-right:4px;">★</span>':''}
+            <input type="text" class="fixed-name-input" value="${localStorage.getItem(k+'_name') || item.name}" onchange="updateFixedItemName('${k}',this.value,${isCustom})" style="font-size:14px; width:100%; max-width:180px; padding:2px 4px; border-radius:6px; border:1px solid transparent; ${isDone?'text-decoration:line-through; opacity:0.6;':''} ${isToday?'color:var(--amber);font-weight:600;':''}">
+          </div>
               <div class="fi-meta" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
                 <span>매달</span>
                 <input type="number" min="1" max="31" inputmode="numeric" value="${day}" onchange="updateFixedDay('${k}',this.value)" style="width:62px;padding:2px 6px;font-size:12px" class="fixed-day-input">
