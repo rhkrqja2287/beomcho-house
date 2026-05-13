@@ -324,76 +324,127 @@ tr:hover td{background:var(--surface2)}
 .budget-del-btn,.budget-add-btn,.fixed-item-del-btn,.fixed-add-action-btn{
   display:none !important;
 }
+.budget-del-btn,
+.budget-add-btn{
+  visibility:hidden;
+  width:0 !important;
+  padding:0 !important;
+  margin:0 !important;
+  overflow:hidden;
+  min-width:0 !important;
+}
 .budget-edit-on .budget-del-btn,
 .budget-edit-on .budget-add-btn{
   display:inline-flex !important;
+  visibility:visible;
+  width:auto !important;
+  padding:3px 8px !important;
+  min-width:unset !important;
+  overflow:visible;
 }
-/* 예산 input - 기본은 읽기 전용처럼 보이게 */
+/* 예산 - 비수정 모드: 박스 없음, 텍스트처럼 표시 */
 #budget-container input{
-  pointer-events:none;
-  background:var(--surface2) !important;
-  color:var(--text2);
-  border-color:transparent !important;
-  cursor:default;
-}
-#budget-container .budget-name-input{
   pointer-events:none;
   background:transparent !important;
   border-color:transparent !important;
+  box-shadow:none !important;
   cursor:default;
+  color:var(--text);
+  padding:2px 4px;
+}
+/* 이름 input: 왼쪽 정렬 */
+#budget-container .budget-name-input{
+  text-align:left;
   font-weight:500;
+  color:var(--text);
+}
+/* 금액 input: 오른쪽 정렬 */
+#budget-container .num-input{
+  text-align:right;
+  color:var(--text);
+}
+/* 수정 모드: 박스 표시, 편집 가능 */
+#budget-container.budget-edit-on input{
+  pointer-events:auto;
+  background:var(--surface) !important;
+  border:1px solid var(--border) !important;
+  cursor:text;
+  padding:4px 8px;
 }
 #budget-container.budget-edit-on .budget-name-input{
-  pointer-events:auto;
-  background:var(--surface) !important;
   border-color:var(--border) !important;
-  cursor:text;
 }
-/* 수정 모드에서만 편집 가능 */
-#budget-container.budget-edit-on input:not(.budget-name-input){
-  pointer-events:auto;
-  background:var(--surface) !important;
-  color:var(--text);
-  border-color:var(--border) !important;
-  cursor:text;
+#budget-container.budget-edit-on .num-input{
+  text-align:right;
 }
 .fixed-edit-on .fixed-item-del-btn,
 .fixed-edit-on .fixed-add-action-btn{
   display:inline-flex !important;
 }
-/* 고정지출 input - 기본은 읽기 전용 */
+/* 고정지출 - 비수정 모드: 박스 없음, 텍스트처럼 */
 #fixed-list input[type="text"],
 #fixed-list input[type="number"]{
   pointer-events:none;
-  background:var(--surface2) !important;
-  color:var(--text2);
-  border-color:transparent !important;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
   cursor:default;
+  color:var(--text);
+  padding:2px 4px;
 }
-/* 수정 모드에서만 편집 가능 */
+#fixed-list input[type="number"]{
+  text-align:right;
+}
+/* 수정 모드에서만 박스+편집 */
 #fixed-list.fixed-edit-on input[type="text"],
 #fixed-list.fixed-edit-on input[type="number"]{
   pointer-events:auto;
-  background:var(--surface) !important;
-  color:var(--text);
-  border-color:var(--border2) !important;
+  background:var(--surface2) !important;
+  border:1px solid var(--border2) !important;
   cursor:text;
+  padding:5px 8px;
 }
-#fixed-list .fixed-name-input {
+#fixed-list .fixed-name-input{
   pointer-events:none;
   background:transparent !important;
-  border-color:transparent !important;
+  border:none !important;
   cursor:default;
-  color:inherit;
-}
-#fixed-list.fixed-edit-on .fixed-name-input {
-  pointer-events:auto;
-  background:var(--surface) !important;
-  border-color:var(--border2) !important;
-  cursor:text;
   color:var(--text);
+  font-weight:500;
+}
+#fixed-list.fixed-edit-on .fixed-name-input{
+  pointer-events:auto;
+  background:var(--surface2) !important;
+  border:1px solid var(--border2) !important;
+  cursor:text;
 }
 
+
+/* 예산 행 그리드 - 수정모드 아닐때 버튼 칸 축소 */
+#budget-container .budget-row-grid{
+  display:grid;
+  grid-template-columns:1fr 96px 0px;
+  gap:6px;
+  margin-bottom:8px;
+  align-items:center;
+  overflow:hidden;
+}
+#budget-container.budget-edit-on .budget-row-grid{
+  grid-template-columns:1fr 96px 24px;
+  gap:6px;
+}
+#budget-container .budget-row-grid-sm{
+  display:grid;
+  grid-template-columns:1fr 80px 0px;
+  gap:6px;
+  margin-bottom:7px;
+  align-items:center;
+  overflow:hidden;
+}
+#budget-container.budget-edit-on .budget-row-grid-sm{
+  grid-template-columns:1fr 80px 24px;
+  gap:6px;
+}
 </style>
 </head>
 <body>
@@ -1482,7 +1533,7 @@ function renderBudget(){
       <button class="btn btn-sm budget-add-btn" onclick="addBudgetIncomeItem()">+</button>
     </div>`;
   incomeItems.forEach(cat=>{
-    col1+=`<div style="display:grid;grid-template-columns:1fr 96px 24px;gap:6px;margin-bottom:8px;align-items:center">
+    col1+=`<div class="budget-row-grid">
       <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetIncome('${escJs(cat)}',this.value)"
         style="font-size:12px;padding:4px 6px;border-radius:6px;width:100%;min-width:0;color:var(--text2)">
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);renderBudget()"
@@ -1496,7 +1547,7 @@ function renderBudget(){
       <button class="btn btn-sm budget-add-btn" onclick="addBudgetSavingItem()">+</button>
     </div>`;
   savingItems.forEach(cat=>{
-    col1+=`<div style="display:grid;grid-template-columns:1fr 96px 24px;gap:6px;margin-bottom:8px;align-items:center">
+    col1+=`<div class="budget-row-grid">
       <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetSaving('${escJs(cat)}',this.value)"
         style="font-size:12px;padding:4px 6px;border-radius:6px;width:100%;min-width:0;color:var(--purple-dark)">
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);renderBudget()"
@@ -1519,7 +1570,7 @@ function renderBudget(){
       </div>
     </div>`;
     cats.forEach(cat=>{
-      col2+=`<div style="display:grid;grid-template-columns:1fr 80px 24px;gap:6px;margin-bottom:7px;align-items:center">
+      col2+=`<div class="budget-row-grid-sm">
         <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetGroup('${escJs(gn)}','${escJs(cat)}',this.value)"
           style="font-size:12px;color:var(--text2);padding:4px 6px;border-radius:6px;width:100%;min-width:0">
         <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric"
