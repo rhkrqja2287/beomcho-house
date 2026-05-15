@@ -1678,6 +1678,7 @@ function renderBudget(){
 }
 function setBudget(cat,val){budgets[cat]=parseNum(val);}
 function saveBudgetEdit(){
+  commitPendingFields();
   budgetEditMode=false;
   budgetsBeforeEdit=null;
   saveAll();
@@ -2010,6 +2011,7 @@ function renderFixed(){
 }
 let fixedBeforeEdit = null;
 function saveFixedEdit(){
+  commitPendingFields();
   fixedEditMode=false;
   fixedBeforeEdit=null;
   saveAll();
@@ -2254,6 +2256,7 @@ function renderSavings(){
 }
 let savingsBeforeEdit = null;
 function saveSavingsEdit(){
+  commitPendingFields();
   savingsEditMode=false;
   savingsBeforeEdit=null;
   saveAll();
