@@ -360,7 +360,7 @@ tr:hover td{background:var(--surface2)}
 }
 /* 금액 input: 오른쪽 정렬 */
 #budget-container .num-input{
-  text-align:right;
+  text-align:right !important;
   color:var(--text);
 }
 /* 수정 모드: 박스 표시, 편집 가능 */
@@ -370,6 +370,7 @@ tr:hover td{background:var(--surface2)}
   border:1px solid var(--border) !important;
   cursor:text;
   padding:4px 8px;
+  text-align:right !important;
 }
 #budget-container.budget-edit-on .budget-name-input{
   border-color:var(--border) !important;
@@ -423,27 +424,32 @@ tr:hover td{background:var(--surface2)}
 /* 예산 행 그리드 - 수정모드 아닐때 버튼 칸 축소 */
 #budget-container .budget-row-grid{
   display:grid;
-  grid-template-columns:1fr 96px 0px;
-  gap:6px;
+  grid-template-columns:1fr 90px 22px 0px;
+  gap:2px;
   margin-bottom:8px;
   align-items:center;
   overflow:hidden;
 }
 #budget-container.budget-edit-on .budget-row-grid{
-  grid-template-columns:1fr 96px 24px;
-  gap:6px;
+  grid-template-columns:1fr 90px 22px 24px;
+  gap:2px;
 }
 #budget-container .budget-row-grid-sm{
   display:grid;
-  grid-template-columns:1fr 80px 0px;
-  gap:6px;
+  grid-template-columns:1fr 90px 22px 0px;
+  gap:2px;
   margin-bottom:7px;
   align-items:center;
   overflow:hidden;
 }
 #budget-container.budget-edit-on .budget-row-grid-sm{
-  grid-template-columns:1fr 80px 24px;
-  gap:6px;
+  grid-template-columns:1fr 90px 22px 24px;
+  gap:2px;
+}
+#budget-container .budget-unit{
+  font-size:12px;
+  color:var(--text3);
+  text-align:right;
 }
 </style>
 </head>
@@ -948,7 +954,11 @@ function setSyncStatus(status){
    유틸
 ============================== */
 /* 로컬 저장 (빠른 로드용 캐시) */
+let _memoMonthlyData = null;
+function clearMemo(){ _memoMonthlyData = null; }
+
 function saveLocal(){
+  clearMemo();
   localStorage.setItem('bch_txs',JSON.stringify(txs));
   localStorage.setItem('bch_budgets',JSON.stringify(budgets));
   localStorage.setItem('bch_events',JSON.stringify(annualEvents));
@@ -1062,6 +1072,7 @@ function p2(n){return String(n).padStart(2,'0')}
 function todayStr(){const d=new Date();return`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`}
 function curMonth(){const d=new Date();return`${d.getFullYear()}-${p2(d.getMonth()+1)}`}
 function monthlyData(){
+  if(_memoMonthlyData) return _memoMonthlyData;
   const m={};
   txs.forEach(t=>{
     const k=t.date.slice(0,7);
@@ -1075,6 +1086,7 @@ function monthlyData(){
       m[k].expByDay[t.date]=(m[k].expByDay[t.date]||0)+t.amt;
     }
   });
+  _memoMonthlyData = m;
   return m;
 }
 function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
@@ -1481,6 +1493,7 @@ function txNextMonth(){txListDate.setDate(1);txListDate.setMonth(txListDate.getM
 /* ==============================
    ③ 예산 관리
 ============================== */
+let budgetsBeforeEdit = null;
 function renderBudget(){
   const mStr=curMonth();
   const monthData=monthlyData()[mStr]||{cats:{}};
@@ -1537,7 +1550,8 @@ function renderBudget(){
       <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetIncome('${escJs(cat)}',this.value)"
         style="font-size:12px;padding:4px 6px;border-radius:6px;width:100%;min-width:0;color:var(--text2)">
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);renderBudget()"
-        style="width:100%;text-align:right;padding:6px 8px;font-size:13px">
+        style="width:100%;text-align:right;padding:6px 2px 6px 8px;font-size:13px">
+      <span class="budget-unit">원</span>
       <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetIncomeItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
     </div>`;
   });
@@ -1551,7 +1565,8 @@ function renderBudget(){
       <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetSaving('${escJs(cat)}',this.value)"
         style="font-size:12px;padding:4px 6px;border-radius:6px;width:100%;min-width:0;color:var(--purple-dark)">
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);renderBudget()"
-        style="width:100%;text-align:right;padding:6px 8px;font-size:13px">
+        style="width:100%;text-align:right;padding:6px 2px 6px 8px;font-size:13px">
+      <span class="budget-unit">원</span>
       <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetSavingItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
     </div>`;
   });
@@ -1575,7 +1590,8 @@ function renderBudget(){
           style="font-size:12px;color:var(--text2);padding:4px 6px;border-radius:6px;width:100%;min-width:0">
         <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric"
           onchange="setBudget('${cat}',this.value);renderBudget()"
-          style="width:100%;text-align:right;padding:5px 7px;font-size:13px">
+          style="width:100%;text-align:right;padding:5px 2px 5px 7px;font-size:13px">
+        <span class="budget-unit">원</span>
         <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetItem('${escJs(gn)}','${escJs(cat)}')" title="remove" aria-label="remove">X</button>
       </div>`;
     });
@@ -1585,9 +1601,12 @@ function renderBudget(){
     <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:8px">고정 지출 (직접 입력)</div>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:12px;flex:1;color:var(--text2)">월 고정지출 합계</span>
-      <input type="text" class="num-input" value="${fmtN(fixedB)}" oninput="formatNumInput(this)" inputmode="numeric"
-        onchange="localStorage.setItem('bch_fixed_budget_manual',parseNum(this.value));renderBudget();renderHome()"
-        style="width:120px;text-align:right;font-weight:700;color:var(--blue);padding:5px 8px;font-size:13px">
+      <div style="display:flex;align-items:center;gap:4px">
+        <input type="text" class="num-input" value="${fmtN(fixedB)}" oninput="formatNumInput(this)" inputmode="numeric"
+          onchange="localStorage.setItem('bch_fixed_budget_manual',parseNum(this.value));renderBudget();renderHome()"
+          style="width:100px;text-align:right;font-weight:700;color:var(--blue);padding:5px 8px;font-size:13px">
+        <span class="budget-unit" style="color:var(--blue)">원</span>
+      </div>
     </div>
   </div>`;
 
@@ -1637,12 +1656,51 @@ function renderBudget(){
   document.getElementById('budget-container').innerHTML=summaryHtml+
     `<div style="display:grid;grid-template-columns:260px 1fr 260px;gap:14px;align-items:start">${col1}${col2}${col3}</div>`;
   /* 편집 상태 복원 */
-  if(budgetEditMode){
-    const c2=document.getElementById('budget-container');
-    if(c2)c2.classList.add('budget-edit-on');
+  const c2=document.getElementById('budget-container');
+  if(c2) c2.classList.toggle('budget-edit-on', budgetEditMode);
+
+  /* 헤더 버튼 업데이트 */
+  const header = document.querySelector('#page-budget > div:first-child');
+  if (header) {
+    if (budgetEditMode) {
+      header.innerHTML = `
+        <div class="page-title">예산 관리</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" style="background:var(--amber);color:#fff;border-color:var(--amber)" onclick="saveBudgetEdit()">✓ 저장</button>
+          <button class="btn btn-sm" onclick="cancelBudgetEdit()">✕ 취소</button>
+        </div>`;
+    } else {
+      header.innerHTML = `
+        <div class="page-title">예산 관리</div>
+        <button class="btn btn-sm" id="budget-edit-toggle" onclick="toggleBudgetEdit()">✏ 수정</button>`;
+    }
   }
 }
-function setBudget(cat,val){budgets[cat]=parseNum(val);saveAll();}
+function setBudget(cat,val){budgets[cat]=parseNum(val);}
+function saveBudgetEdit(){
+  budgetEditMode=false;
+  budgetsBeforeEdit=null;
+  saveAll();
+  renderBudget();
+  /* renderBudget 내부에서 처리하지만 명시적으로 한번 더 제거 */
+  const container=document.getElementById('budget-container');
+  if(container) container.classList.remove('budget-edit-on');
+}
+function cancelBudgetEdit(){
+  if(budgetsBeforeEdit){
+    budgets = JSON.parse(JSON.stringify(budgetsBeforeEdit));
+    budgetsBeforeEdit=null;
+  }
+  budgetEditMode=false;
+  const container=document.getElementById('budget-container');
+  if(container)container.classList.remove('budget-edit-on');
+  renderBudget();
+}
+function toggleBudgetEdit(){
+  budgetsBeforeEdit = JSON.parse(JSON.stringify(budgets));
+  budgetEditMode=true;
+  renderBudget();
+}
 function _budgetRename(oldName,newName){
   /* 금액 이전 */
   if(budgets[oldName]!==undefined){budgets[newName]=budgets[oldName];delete budgets[oldName];}
@@ -1657,7 +1715,7 @@ function renameBudgetIncome(oldName,newName){
     budgetCustom.renamedIncome[orig]=newName;
   }
   _budgetRename(oldName,newName);
-  persistBudgetCustom();saveAll();renderBudget();
+  persistBudgetCustom();renderBudget();
 }
 function renameBudgetSaving(oldName,newName){
   if(!newName.trim()||newName===oldName)return;
@@ -1669,7 +1727,7 @@ function renameBudgetSaving(oldName,newName){
     budgetCustom.renamedSaving[orig]=newName;
   }
   _budgetRename(oldName,newName);
-  persistBudgetCustom();saveAll();renderBudget();
+  persistBudgetCustom();renderBudget();
 }
 function renameBudgetGroup(group,oldName,newName){
   if(!newName.trim()||newName===oldName)return;
@@ -1683,32 +1741,7 @@ function renameBudgetGroup(group,oldName,newName){
     budgetCustom.renamedGroups[group][orig]=newName;
   }
   _budgetRename(oldName,newName);
-  persistBudgetCustom();saveAll();renderBudget();
-}
-function renameBudgetIncome(oldName,newName){
-  if(!newName.trim()||newName===oldName)return;
-  const idx=(budgetCustom.incomeCustom||[]).indexOf(oldName);
-  if(idx<0)return;
-  budgetCustom.incomeCustom[idx]=newName;
-  if(budgets[oldName]!==undefined){budgets[newName]=budgets[oldName];delete budgets[oldName];}
-  persistBudgetCustom();saveAll();renderBudget();
-}
-function renameBudgetSaving(oldName,newName){
-  if(!newName.trim()||newName===oldName)return;
-  const idx=(budgetCustom.savingCustom||[]).indexOf(oldName);
-  if(idx<0)return;
-  budgetCustom.savingCustom[idx]=newName;
-  if(budgets[oldName]!==undefined){budgets[newName]=budgets[oldName];delete budgets[oldName];}
-  persistBudgetCustom();saveAll();renderBudget();
-}
-function renameBudgetGroup(group,oldName,newName){
-  if(!newName.trim()||newName===oldName)return;
-  if(!budgetCustom.groupCustom||!budgetCustom.groupCustom[group])return;
-  const idx=budgetCustom.groupCustom[group].indexOf(oldName);
-  if(idx<0)return;
-  budgetCustom.groupCustom[group][idx]=newName;
-  if(budgets[oldName]!==undefined){budgets[newName]=budgets[oldName];delete budgets[oldName];}
-  persistBudgetCustom();saveAll();renderBudget();
+  persistBudgetCustom();renderBudget();
 }
 
 /* ==============================
@@ -1949,9 +1982,62 @@ function renderFixed(){
       }).join('')}
       </ul>
     </div>`;
-  /* fixed-edit-on 클래스 복원 */
-  const _fl=document.getElementById('fixed-list');
-  if(_fl&&fixedEditMode)_fl.classList.add('fixed-edit-on');
+  /* fixed-list 렌더 후 헤더 버튼 업데이트 */
+  const header = document.querySelector('#page-fixed > div:first-child');
+  if (header) {
+    if (fixedEditMode) {
+      header.innerHTML = `
+        <div class="page-title">고정 지출</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" style="background:var(--amber);color:#fff;border-color:var(--amber)" onclick="saveFixedEdit()">✓ 저장</button>
+          <button class="btn btn-sm" onclick="cancelFixedEdit()">✕ 취소</button>
+        </div>`;
+    } else {
+      header.innerHTML = `
+        <div class="page-title">고정 지출</div>
+        <button class="btn btn-sm" id="fixed-edit-toggle" onclick="toggleFixedEdit()">✏ 수정</button>`;
+    }
+  }
+  /* fixed-list에 클래스 토글 */
+  const fl=document.getElementById('fixed-list');
+  if(fl)fl.classList.toggle('fixed-edit-on',fixedEditMode);
+}
+let fixedBeforeEdit = null;
+function saveFixedEdit(){
+  fixedEditMode=false;
+  fixedBeforeEdit=null;
+  saveAll();
+  renderFixed();
+}
+function cancelFixedEdit(){
+  if(fixedBeforeEdit){
+    fixedCustom = JSON.parse(JSON.stringify(fixedBeforeEdit.custom));
+    /* localStorage 복구 (체크여부, 금액, 날짜) */
+    Object.entries(fixedBeforeEdit.storage).forEach(([k,v])=>{
+      if(v===null) localStorage.removeItem(k);
+      else localStorage.setItem(k,v);
+    });
+    fixedBeforeEdit=null;
+  }
+  fixedEditMode=false;
+  persistFixedCustom();
+  renderFixed();
+}
+function toggleFixedEdit(){
+  fixedBeforeEdit = {
+    custom: JSON.parse(JSON.stringify(fixedCustom)),
+    storage: {}
+  };
+  /* 현재 고정지출 관련 모든 localStorage 백업 */
+  rawFixedList().forEach(item=>{
+    const k=fixedKey(item);
+    ['_amt','_day',''].forEach(s=>{
+      const key=k+s;
+      fixedBeforeEdit.storage[key]=localStorage.getItem(key);
+    });
+  });
+  fixedEditMode=true;
+  renderFixed();
 }
 
 /* ==============================
@@ -2141,10 +2227,53 @@ function renderSavings(){
       }
     }
   });
+
+  /* 저축 렌더 후 헤더 버튼 업데이트 */
+  const header = document.querySelector('#page-savings > div:first-child');
+  if (header) {
+    if (savingsEditMode) {
+      header.innerHTML = `
+        <div class="page-title">저축 금액</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" style="background:var(--amber);color:#fff;border-color:var(--amber)" onclick="saveSavingsEdit()">✓ 저장</button>
+          <button class="btn btn-sm" onclick="cancelSavingsEdit()">✕ 취소</button>
+        </div>`;
+    } else {
+      header.innerHTML = `
+        <div class="page-title">저축 금액</div>
+        <button class="btn btn-sm" id="savings-edit-toggle" onclick="toggleSavingsEdit()">✏ 수정</button>`;
+    }
+  }
+  _restoreSavingsLock();
+}
+let savingsBeforeEdit = null;
+function saveSavingsEdit(){
+  savingsEditMode=false;
+  savingsBeforeEdit=null;
+  saveAll();
+  renderSavings();
+}
+function cancelSavingsEdit(){
+  if(savingsBeforeEdit){
+    longSave = JSON.parse(JSON.stringify(savingsBeforeEdit.long));
+    shortSave = JSON.parse(JSON.stringify(savingsBeforeEdit.short));
+    savingsBeforeEdit=null;
+  }
+  savingsEditMode=false;
+  renderSavings();
+}
+function toggleSavingsEdit(){
+  savingsBeforeEdit = {
+    long: JSON.parse(JSON.stringify(longSave)),
+    short: JSON.parse(JSON.stringify(shortSave))
+  };
+  savingsEditMode=true;
+  renderSavings();
 }
 function _restoreSavingsLock(){
   const pg=document.getElementById('page-savings');
   if(!pg)return;
+  pg.classList.toggle('savings-edit-on', savingsEditMode);
   pg.querySelectorAll('input').forEach(el=>{
     el.readOnly=!savingsEditMode;
     el.tabIndex=savingsEditMode?0:-1;
@@ -2168,55 +2297,6 @@ function addSave(group,name,dir){
   saveAll();renderSavings();_restoreSavingsLock();
 }
 
-
-function toggleBudgetEdit(){
-  budgetEditMode=!budgetEditMode;
-  const btn=document.getElementById('budget-edit-toggle');
-  const container=document.getElementById('budget-container');
-  if(btn)btn.textContent=budgetEditMode?'✓ 완료':'✏ 수정';
-  if(btn)btn.style.background=budgetEditMode?'var(--amber)':'';
-  if(btn)btn.style.color=budgetEditMode?'#fff':'';
-  if(btn)btn.style.borderColor=budgetEditMode?'var(--amber)':'';
-  if(container)container.classList.toggle('budget-edit-on',budgetEditMode);
-}
-function toggleSavingsEdit(){
-  if(savingsEditMode){
-    /* 완료 누를 때 — 모든 저축 input 값을 강제로 메모리에 반영 후 저장 */
-    document.querySelectorAll('#page-savings input[type=text]').forEach(el=>{
-      const onch=el.getAttribute('onchange');
-      if(onch)el.dispatchEvent(new Event('change'));
-    });
-    /* 약간 delay 후 저장 (change 이벤트 처리 후) */
-    setTimeout(()=>saveAll(),50);
-  }
-  savingsEditMode=!savingsEditMode;
-  const btn=document.getElementById('savings-edit-toggle');
-  const page=document.getElementById('page-savings');
-  if(btn){
-    btn.textContent=savingsEditMode?'✓ 완료':'✏ 수정';
-    btn.style.background=savingsEditMode?'var(--amber)':'';
-    btn.style.color=savingsEditMode?'#fff':'';
-    btn.style.borderColor=savingsEditMode?'var(--amber)':'';
-  }
-  if(page){
-    page.classList.toggle('savings-edit-on',savingsEditMode);
-    page.querySelectorAll('input').forEach(el=>{
-      el.readOnly=!savingsEditMode;
-      el.tabIndex=savingsEditMode?0:-1;
-    });
-  }
-}
-function toggleFixedEdit(){
-  fixedEditMode=!fixedEditMode;
-  const btn=document.getElementById('fixed-edit-toggle');
-  if(btn)btn.textContent=fixedEditMode?'✓ 완료':'✏ 수정';
-  if(btn)btn.style.background=fixedEditMode?'var(--amber)':'';
-  if(btn)btn.style.color=fixedEditMode?'#fff':'';
-  if(btn)btn.style.borderColor=fixedEditMode?'var(--amber)':'';
-  /* fixed-list에 클래스 토글 */
-  const fl=document.getElementById('fixed-list');
-  if(fl)fl.classList.toggle('fixed-edit-on',fixedEditMode);
-}
 
 /* ==============================
    PIN 로그인
