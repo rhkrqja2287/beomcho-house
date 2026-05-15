@@ -1549,7 +1549,7 @@ function renderBudget(){
     col1+=`<div class="budget-row-grid">
       <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetIncome('${escJs(cat)}',this.value)"
         style="font-size:12px;padding:4px 6px;border-radius:6px;width:100%;min-width:0;color:var(--text2)">
-      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);renderBudget()"
+      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);if(!budgetEditMode)renderBudget()"
         style="width:100%;text-align:right;padding:6px 2px 6px 8px;font-size:13px">
       <span class="budget-unit">원</span>
       <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetIncomeItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
@@ -1564,7 +1564,7 @@ function renderBudget(){
     col1+=`<div class="budget-row-grid">
       <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetSaving('${escJs(cat)}',this.value)"
         style="font-size:12px;padding:4px 6px;border-radius:6px;width:100%;min-width:0;color:var(--purple-dark)">
-      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);renderBudget()"
+      <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);if(!budgetEditMode)renderBudget()"
         style="width:100%;text-align:right;padding:6px 2px 6px 8px;font-size:13px">
       <span class="budget-unit">원</span>
       <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetSavingItem('${escJs(cat)}')" title="remove" aria-label="remove">X</button>
@@ -1589,7 +1589,7 @@ function renderBudget(){
         <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetGroup('${escJs(gn)}','${escJs(cat)}',this.value)"
           style="font-size:12px;color:var(--text2);padding:4px 6px;border-radius:6px;width:100%;min-width:0">
         <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric"
-          onchange="setBudget('${cat}',this.value);renderBudget()"
+          onchange="setBudget('${cat}',this.value);if(!budgetEditMode)renderBudget()"
           style="width:100%;text-align:right;padding:5px 2px 5px 7px;font-size:13px">
         <span class="budget-unit">원</span>
         <button class="fixed-del-btn budget-del-btn" onclick="removeBudgetItem('${escJs(gn)}','${escJs(cat)}')" title="remove" aria-label="remove">X</button>
@@ -1603,7 +1603,7 @@ function renderBudget(){
       <span style="font-size:12px;flex:1;color:var(--text2)">월 고정지출 합계</span>
       <div style="display:flex;align-items:center;gap:4px">
         <input type="text" class="num-input" value="${fmtN(fixedB)}" oninput="formatNumInput(this)" inputmode="numeric"
-          onchange="localStorage.setItem('bch_fixed_budget_manual',parseNum(this.value));renderBudget();renderHome()"
+          onchange="localStorage.setItem('bch_fixed_budget_manual',parseNum(this.value));if(!budgetEditMode){renderBudget();renderHome()}"
           style="width:100px;text-align:right;font-weight:700;color:var(--blue);padding:5px 8px;font-size:13px">
         <span class="budget-unit" style="color:var(--blue)">원</span>
       </div>
@@ -1715,7 +1715,8 @@ function renameBudgetIncome(oldName,newName){
     budgetCustom.renamedIncome[orig]=newName;
   }
   _budgetRename(oldName,newName);
-  persistBudgetCustom();renderBudget();
+  persistBudgetCustom();
+  if(!budgetEditMode) renderBudget();
 }
 function renameBudgetSaving(oldName,newName){
   if(!newName.trim()||newName===oldName)return;
@@ -1727,7 +1728,8 @@ function renameBudgetSaving(oldName,newName){
     budgetCustom.renamedSaving[orig]=newName;
   }
   _budgetRename(oldName,newName);
-  persistBudgetCustom();renderBudget();
+  persistBudgetCustom();
+  if(!budgetEditMode) renderBudget();
 }
 function renameBudgetGroup(group,oldName,newName){
   if(!newName.trim()||newName===oldName)return;
@@ -1741,7 +1743,8 @@ function renameBudgetGroup(group,oldName,newName){
     budgetCustom.renamedGroups[group][orig]=newName;
   }
   _budgetRename(oldName,newName);
-  persistBudgetCustom();renderBudget();
+  persistBudgetCustom();
+  if(!budgetEditMode) renderBudget();
 }
 
 /* ==============================
@@ -1759,16 +1762,18 @@ function toggleFixed(key){
 function updateFixedAmt(key,val){
   if(val==='')return;
   localStorage.setItem(key+'_amt',parseNum(val));
-  saveAll();renderFixed();renderHome();
+  saveAll();
+  if(!fixedEditMode){renderFixed();renderHome();}
 }
 function updateFixedDay(key,val){
   const day=parseInt(val,10);
   if(!Number.isInteger(day)||day<1||day>31){
-    renderFixed();
+    if(!fixedEditMode) renderFixed();
     return;
   }
   localStorage.setItem(key+'_day',String(day));
-  saveAll();renderFixed();renderHome();
+  saveAll();
+  if(!fixedEditMode){renderFixed();renderHome();}
 }
 function addFixedItemFromForm(){
   const nameEl=document.getElementById('fixed-new-name');
@@ -1809,7 +1814,7 @@ function updateFixedItemName(key,val,isCustom){
     /* 기본 항목 이름 localStorage에 저장 */
     localStorage.setItem(key+'_name',val);
     saveAll();
-    renderFixed();
+    if(!fixedEditMode) renderFixed();
   }
 }
 function updateFixedName(key,val){
@@ -1817,7 +1822,8 @@ function updateFixedName(key,val){
   if(idx<0)return;
   fixedCustom[idx].name=String(val||'').trim()||'내용';
   persistFixedCustom();
-  saveAll();renderFixed();renderHome();
+  saveAll();
+  if(!fixedEditMode){renderFixed();renderHome();}
 }
 function addFixedItemToCurrentTab(asVar){
   const tabs=Object.keys(FIXED);
@@ -2283,7 +2289,7 @@ function updateSave(group,name,field,val){
   const store=group==='long'?longSave:shortSave;
   if(!store[name])return;
   store[name][field]=parseNum(val);
-  saveAll();renderSavings();_restoreSavingsLock();
+  saveAll();
 }
 function addSave(group,name,dir){
   const store=group==='long'?longSave:shortSave;
