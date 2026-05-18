@@ -169,7 +169,7 @@ tr:hover td{background:var(--surface2)}
   .nav-item{justify-content:center;padding:10px}
   .page{padding:20px 18px;max-width:100%}
   /* 예산 관리 3단 → 1단 */
-  #budget-container [style*="grid-template-columns:260px"]{
+  #budget-container [style*="grid-template-columns:repeat(3"]{
     grid-template-columns:1fr !important;
   }
   #budget-container .budget-summary-grid{gap:8px}
@@ -229,7 +229,7 @@ tr:hover td{background:var(--surface2)}
   /* 탭 */
   .tab-btn{padding:7px 10px;font-size:12px}
   /* 예산 관리 3단 → 1단 */
-  #budget-container [style*="grid-template-columns:260px"]{
+  #budget-container [style*="grid-template-columns:repeat(3"]{
     grid-template-columns:1fr !important;
   }
   /* 저축 섹션 저축행 세로 정렬 */
@@ -1654,7 +1654,7 @@ function renderBudget(){
 
   /* budget-container 렌더 후 편집 상태 복원은 아래 */
   document.getElementById('budget-container').innerHTML=summaryHtml+
-    `<div style="display:grid;grid-template-columns:260px 1fr 260px;gap:14px;align-items:start">${col1}${col2}${col3}</div>`;
+    `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start">${col1}${col2}${col3}</div>`;
   /* 편집 상태 복원 */
   const c2=document.getElementById('budget-container');
   if(c2) c2.classList.toggle('budget-edit-on', budgetEditMode);
