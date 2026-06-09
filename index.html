@@ -986,48 +986,51 @@ async function checkPin(){
   pinBuffer = '';
   updatePinDots();
 
+  /* 모바일 햅틱 피드백 대용/시각적 즉각 반응을 위해 약간의 딜레이 후 처리 */
   try {
     if (!db) {
       errEl.textContent = '⚠️ 데이터베이스 연결에 실패했습니다.';
       return;
     }
-    /* 입력값을 SHA-256 해시로 변환 */
+    
+    /* 1. 해시 계산 시작 (비동기) */
     if (!window.crypto || !window.crypto.subtle) {
       errEl.textContent = '⚠️ 보안 환경(HTTPS)이 아니면 기능을 사용할 수 없습니다.';
       return;
     }
-    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+    const hashPromise = crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+    
+    /* 2. Firebase에서 저장된 해시값 가져오기 시작 (병렬 실행) */
+    const snapPromise = db.ref(ROOT + '/auth/pin_hash').get();
+    
+    /* 두 작업이 모두 끝날 때까지 대기 */
+    const [hashBuffer, snap] = await Promise.all([hashPromise, snapPromise]);
     const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
 
-    /* Firebase에서 저장된 해시값 읽어서 비교 */
-    const snap = await db.ref(ROOT + '/auth/pin_hash').get();
-
-    /* Fallback: Firebase에 PIN이 없는 경우 로컬 스토리지 또는 기본 PIN(1234) 확인 */
+    /* Fallback 처리 */
     if(!snap.exists()){
       const fallbackPin = localStorage.getItem('bch_pin') || '1234';
       if(input === fallbackPin){
-        /* 성공 (Fallback) */
-        failCount = 0;
-        sessionStorage.setItem('bch_auth', 'fallback_' + input);
-        document.getElementById('pin-screen').classList.add('hidden');
-        initDataListener();
+        successLogin('fallback_' + input);
         return;
       }
-      errEl.textContent = '⚠️ PIN이 설정되지 않았습니다. 기본 PIN(1234)을 시도해보세요.';
+      errEl.textContent = '⚠️ PIN이 설정되지 않았습니다.';
       return;
     }
 
     if(hashHex === snap.val()){
-      /* 성공 */
-      failCount = 0;
-      sessionStorage.setItem('bch_auth', hashHex.slice(0, 16));
-      document.getElementById('pin-screen').classList.add('hidden');
-      initDataListener();
+      successLogin(hashHex.slice(0, 16));
     } else {
-      /* 실패 */
+      /* 실패 시 피드백 */
       failCount++;
-      for(let i = 0; i < 4; i++) document.getElementById('d' + i).style.background = 'var(--red)';
-      setTimeout(() => { for(let i = 0; i < 4; i++) document.getElementById('d' + i).style.background = ''; }, 600);
+      for(let i = 0; i < 4; i++) {
+        const d = document.getElementById('d' + i);
+        if(d) d.style.background = 'var(--red)';
+      }
+      setTimeout(() => { for(let i = 0; i < 4; i++) {
+        const d = document.getElementById('d' + i);
+        if(d) d.style.background = ''; 
+      }}, 600);
 
       if(failCount >= 5){
         lockUntil = Date.now() + 60000;
@@ -1039,7 +1042,26 @@ async function checkPin(){
     }
   } catch(e) {
     console.error(e);
-    errEl.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
+    errEl.textContent = '오류가 발생했습니다.';
+  }
+}
+
+/* 로그인 성공 시 화면 전환 최적화 */
+function successLogin(authKey) {
+  sessionStorage.setItem('bch_auth', authKey);
+  
+  /* 화면 전환을 먼저 수행하여 체감 속도 향상 */
+  const pinScreen = document.getElementById('pin-screen');
+  if(pinScreen) {
+    pinScreen.style.opacity = '0';
+    pinScreen.style.transition = 'opacity 0.2s ease-out';
+    setTimeout(() => {
+      pinScreen.classList.add('hidden');
+      /* 화면이 가려진 뒤에 무거운 리스너/데이터 처리 시작 */
+      initDataListener();
+    }, 200);
+  } else {
+    initDataListener();
   }
 }
 
