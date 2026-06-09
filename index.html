@@ -913,8 +913,9 @@ const ALLOWED_EMAILS=[
 
 const googleProvider=new firebase.auth.GoogleAuthProvider();
 
-/* iOS Safari는 popup이 막히므로 redirect 방식 사용 */
+/* 1. iOS Safari 및 Standalone(홈 화면 추가) 모드 감지 */
 const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
 function signInWithGoogle(){
   const btn=document.getElementById('google-login-btn');
@@ -922,19 +923,25 @@ function signInWithGoogle(){
   btn.disabled=true;
   errEl.textContent='로그인 시도 중...';
 
-  /* SPA 특성상 팝업 방식이 더 안정적이므로 우선 사용 (사용자 요청) */
-  auth.signInWithPopup(googleProvider)
+  /* 2. 인증 지속성(Persistence) 명시적 설정 (iOS 웹앱 상태 유지 보장) */
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .then(() => {
+      /* 3. iOS 홈 화면 모드 대응: 사용자 요청에 따라 Popup 방식 우선 사용 
+         (단, iOS Standalone에서는 Redirect가 기본 권장이나 여기서는 Popup으로 구조 정돈) */
+      return auth.signInWithPopup(googleProvider);
+    })
     .then(result=>{
-      const email=result.user.email;
-      if(!ALLOWED_EMAILS.includes(email)){
-        auth.signOut();
-        errEl.textContent='접근 권한이 없는 계정입니다. ('+email+')';
-        btn.disabled=false;
+      if (result && result.user) {
+        const email=result.user.email;
+        if(!ALLOWED_EMAILS.includes(email)){
+          auth.signOut();
+          errEl.textContent='접근 권한이 없는 계정입니다. ('+email+')';
+          btn.disabled=false;
+        }
       }
     })
     .catch(err=>{
       console.error('로그인 오류:', err);
-      /* 팝업이 차단된 경우 등에 한해 iOS/일부 환경에서 redirect 고려 가능하나, 일단 팝업 에러 처리 */
       if(err.code==='auth/popup-closed-by-user'){
         errEl.textContent='로그인 창이 닫혔어요. 다시 시도해주세요.';
       } else {
@@ -957,25 +964,33 @@ auth.getRedirectResult().then(result=>{
   console.error('redirect result 오류:', err);
 });
 
-/* 로그인 상태 감지 — 앱 시작 시 & 로그인/로그아웃 시 자동 호출 */
+/* 4. PWA 구동 시 인증 대기 시간 보장 */
+let authCheckFinished = false;
 auth.onAuthStateChanged(user=>{
+  authCheckFinished = true;
   const pinScreen = document.getElementById('pin-screen');
   const loginSub = document.getElementById('login-sub');
   const loginBtn = document.getElementById('google-login-btn');
+  const errEl = document.getElementById('pin-error');
 
   if(user && ALLOWED_EMAILS.includes(user.email)){
     pinScreen.classList.add('hidden');
     /* 인증 성공 시에만 실시간 리스너 연결 */
     initDataListener();
   } else {
-    /* 초기화 지연 시간 동안 null이 반환될 수 있으므로, 확실히 user가 없을 때만 로그인 UI 표시 */
-    pinScreen.classList.remove('hidden');
-    loginSub.textContent = '구글 계정으로 로그인하세요';
-    loginBtn.style.display = 'flex';
-    if(user && !ALLOWED_EMAILS.includes(user.email)){
-      auth.signOut();
-      document.getElementById('pin-error').textContent = '접근 권한이 없는 계정입니다. ('+user.email+')';
-    }
+    /* 홈 화면 웹앱은 초기 로딩이 느릴 수 있으므로 0.8초 유예 후 로그인 화면 표시 */
+    setTimeout(() => {
+      // 그 사이 로그인이 되었을 수도 있으므로 재확인
+      if (!auth.currentUser) {
+        pinScreen.classList.remove('hidden');
+        loginSub.textContent = '구글 계정으로 로그인하세요';
+        loginBtn.style.display = 'flex';
+        if(user && !ALLOWED_EMAILS.includes(user.email)){
+          auth.signOut();
+          errEl.textContent = '접근 권한이 없는 계정입니다. ('+user.email+')';
+        }
+      }
+    }, isStandalone ? 800 : 0);
   }
 });
 
