@@ -903,22 +903,17 @@ const db=firebase.database();
 const auth=firebase.auth();
 const ROOT='beomcho'; /* DB 경로 루트 */
 
-/* 인증 지속성(Persistence) 명시적 설정 (iOS 웹앱 상태 유지 보장) */
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 /* ==============================
    Google 로그인 — 허용 이메일 화이트리스트
 ============================== */
 const ALLOWED_EMAILS=[
-  'rhkrqjawls95@gmail.com',   /* ← 범진 이메일로 교체하세요 */
-  'chonichoeuni@gmail.com'    /* ← 파트너 이메일로 교체하세요 */
+  'rhkrqjawls95@gmail.com',
+  'chonichoeuni@gmail.com'
 ];
 
 const googleProvider=new firebase.auth.GoogleAuthProvider();
-
-/* 1. iOS Safari 및 Standalone(홈 화면 추가) 모드 감지 */
 const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
-const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
 function signInWithGoogle(){
   const btn=document.getElementById('google-login-btn');
@@ -928,69 +923,82 @@ function signInWithGoogle(){
 
   auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(()=>{
     if(isIOS){
-      /* iOS(Safari 및 홈화면 웹앱): popup이 작동 안 하므로 redirect 방식 사용 */
+      /* iOS: redirect 방식 — 페이지 이동 후 돌아옴 */
       return auth.signInWithRedirect(googleProvider);
     } else {
-      /* PC / Android: popup 방식 */
+      /* PC/Android: popup 방식 */
       return auth.signInWithPopup(googleProvider).then(result=>{
-        if(result&&result.user){
-          const email=result.user.email;
-          if(!ALLOWED_EMAILS.includes(email)){
-            auth.signOut();
-            errEl.textContent='접근 권한이 없는 계정입니다. ('+email+')';
-            btn.disabled=false;
-          }
+        const email=result.user.email;
+        if(!ALLOWED_EMAILS.includes(email)){
+          auth.signOut();
+          errEl.textContent='접근 권한이 없는 계정입니다. ('+email+')';
+          btn.disabled=false;
         }
       });
     }
   }).catch(err=>{
-    console.error('로그인 오류:',err);
-    if(err.code==='auth/popup-closed-by-user'){
-      errEl.textContent='로그인 창이 닫혔어요. 다시 시도해주세요.';
-    } else {
-      errEl.textContent='로그인 오류: '+err.message;
-    }
+    errEl.textContent=err.code==='auth/popup-closed-by-user'
+      ?'로그인 창이 닫혔어요. 다시 시도해주세요.'
+      :'로그인 오류: '+err.message;
     btn.disabled=false;
   });
 }
 
-/* iOS redirect 로그인 후 돌아왔을 때 결과 처리 */
-auth.getRedirectResult().then(result=>{
-  if(!result||!result.user)return;
-  const email=result.user.email;
-  if(!ALLOWED_EMAILS.includes(email)){
-    auth.signOut();
-    const errEl=document.getElementById('pin-error');
-    if(errEl)errEl.textContent='접근 권한이 없는 계정입니다. ('+email+')';
-  }
-  /* 허용된 이메일이면 onAuthStateChanged가 자동으로 앱 열어줌 */
-}).catch(err=>{
-  console.error('redirect result 오류:', err);
-  const errEl=document.getElementById('pin-error');
-  if(errEl)errEl.textContent='로그인 오류: '+err.message;
-});
-
-auth.onAuthStateChanged(user=>{
+/* ── iOS redirect 결과 처리 ──
+   getRedirectResult가 완료된 후에 onAuthStateChanged UI 처리를 시작해야 함
+   그래서 getRedirectResult 안에서 showApp/showLogin을 직접 제어 */
+function showApp(){
+  document.getElementById('pin-screen').classList.add('hidden');
+  initDataListener();
+}
+function showLogin(msg){
   const pinScreen=document.getElementById('pin-screen');
   const loginSub=document.getElementById('login-sub');
   const loginBtn=document.getElementById('google-login-btn');
-  const errEl=document.getElementById('pin-error');
-
-  if(user && ALLOWED_EMAILS.includes(user.email)){
-    /* 로그인 성공 */
-    pinScreen.classList.add('hidden');
-    initDataListener();
-  } else {
-    /* 미로그인 상태 — 로그인 화면 표시 */
-    pinScreen.classList.remove('hidden');
-    if(loginSub)loginSub.textContent='구글 계정으로 로그인하세요';
-    if(loginBtn){loginBtn.disabled=false;loginBtn.style.display='flex';}
-    if(user && !ALLOWED_EMAILS.includes(user.email)){
-      auth.signOut();
-      if(errEl)errEl.textContent='접근 권한이 없는 계정입니다. ('+user.email+')';
-    }
+  pinScreen.classList.remove('hidden');
+  if(loginSub)loginSub.textContent='구글 계정으로 로그인하세요';
+  if(loginBtn){loginBtn.disabled=false;loginBtn.style.display='flex';}
+  if(msg){
+    const errEl=document.getElementById('pin-error');
+    if(errEl)errEl.textContent=msg;
   }
+}
+
+/* redirect 결과를 먼저 처리하고, 그 결과에 따라 UI 결정 */
+auth.getRedirectResult().then(result=>{
+  if(result&&result.user){
+    /* redirect 로그인 성공 */
+    const email=result.user.email;
+    if(ALLOWED_EMAILS.includes(email)){
+      showApp();
+    } else {
+      auth.signOut();
+      showLogin('접근 권한이 없는 계정입니다. ('+email+')');
+    }
+  } else {
+    /* redirect 결과 없음 — 일반 onAuthStateChanged에 맡김 */
+    auth.onAuthStateChanged(user=>{
+      if(user&&ALLOWED_EMAILS.includes(user.email)){
+        showApp();
+      } else {
+        if(user) auth.signOut();
+        showLogin();
+      }
+    });
+  }
+}).catch(err=>{
+  console.error('redirect 오류:',err);
+  /* 오류 시에도 onAuthStateChanged로 폴백 */
+  auth.onAuthStateChanged(user=>{
+    if(user&&ALLOWED_EMAILS.includes(user.email)){
+      showApp();
+    } else {
+      if(user) auth.signOut();
+      showLogin('로그인 오류: '+err.message);
+    }
+  });
 });
+
 
 /* ==============================
    상태
