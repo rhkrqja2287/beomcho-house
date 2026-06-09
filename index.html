@@ -1371,17 +1371,23 @@ function renderHome(){
   /* 도넛 */
   const cats=data.cats,catKeys=Object.keys(cats);
   const total=Object.values(cats).reduce((a,b)=>a+b,0)||1;
-  document.getElementById('home-legend').innerHTML=catKeys.map((k,i)=>`
+  document.getElementById('home-legend').innerHTML=catKeys.length ? catKeys.map((k,i)=>`
     <span style="display:flex;align-items:center;gap:4px">
       <span style="width:10px;height:10px;border-radius:2px;background:${CAT_COLORS[i%CAT_COLORS.length]}"></span>
       ${k} ${Math.round(cats[k]/total*100)}%
-    </span>`).join('');
+    </span>`).join('') : '<div style="color:var(--text3);padding:10px 0;">이번 달 지출 내역이 없습니다.</div>';
   dc('donut-home');
-  if(catKeys.length)requestAnimationFrame(()=>{charts['donut-home']=new Chart(document.getElementById('donut-home'),{
-    type:'doughnut',
-    data:{labels:catKeys,datasets:[{data:catKeys.map(k=>cats[k]),backgroundColor:CAT_COLORS,borderWidth:2,borderColor:'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'65%'}
-  });});
+  const chartCanvas = document.getElementById('donut-home');
+  if(catKeys.length) {
+    chartCanvas.style.display = 'block';
+    requestAnimationFrame(()=>{charts['donut-home']=new Chart(chartCanvas,{
+      type:'doughnut',
+      data:{labels:catKeys,datasets:[{data:catKeys.map(k=>cats[k]),backgroundColor:CAT_COLORS,borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'65%'}
+    });});
+  } else {
+    chartCanvas.style.display = 'none';
+  }
 
   /* 최근 거래 */
   document.getElementById('home-recent').innerHTML=txs.slice(0,6).map(t=>`
@@ -2450,19 +2456,23 @@ function initDataListener() {
   if (fbListenerStarted) return;
   fbListenerStarted = true;
 
+  if (!db) {
+    setSyncStatus('error');
+    return;
+  }
+
   /* Firebase 실시간 리스너 — 다른 기기에서 변경되면 자동으로 반영 */
   db.ref(ROOT).on('value', snapshot=>{
     const data=snapshot.val();
-    if(data && data._updated){
-      /* 내가 저장 중이거나 방금 저장한 데이터면 무시 (race condition 방지) */
-      if(isSavePending || data._updated===myLastSaveTime){
-        /* 무시 */
-      } else if(data._updated>myLastSaveTime || !fbReady){
-        /* 다른 기기에서 온 최신 데이터만 반영 */
+    if(data){
+      /* 내가 저장 중이 아니고, (최초 로드거나 외부에서 업데이트된 경우) 에만 반영 */
+      const incomingTime = data._updated || 0;
+      if(!isSavePending && (!fbReady || incomingTime > myLastSaveTime)){
         applyFirebaseData(data);
-        localStorage.setItem('bch_last_updated',data._updated);
+        if(incomingTime) localStorage.setItem('bch_last_updated', incomingTime);
       }
     }
+    
     if(!fbReady){
       fbReady=true;
       /* 첫 로드 완료 후 전체 리렌더 */
@@ -2478,7 +2488,11 @@ function initDataListener() {
 
   /* 오프라인 감지 */
   db.ref('.info/connected').on('value',snap=>{
-    if(snap.val()===false)setSyncStatus('offline');
+    if(snap.val()===true){
+      if(fbReady) setSyncStatus('ok');
+    } else {
+      setSyncStatus('offline');
+    }
   });
 }
 
