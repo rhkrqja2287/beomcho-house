@@ -9,6 +9,7 @@
 <title>범초하우스 가계부</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -655,6 +656,13 @@ tr:hover td{background:var(--surface2)}
 </div>
 <script>
 /* ==============================
+   상태 및 PIN 변수 초기화
+============================== */
+let pinBuffer = '';
+let failCount = 0;
+let lockUntil = 0;
+
+/* ==============================
    상수
 ============================== */
 const EXPENSE_CATS=['생활비','양육비','병원비','자동차'];
@@ -912,6 +920,7 @@ const firebaseConfig={
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 const auth=firebase.auth();
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err=>console.error('Auth persistence error:',err));
 const ROOT='beomcho'; /* DB 경로 루트 */
 
 /* 인증 지속성(Persistence) 명시적 설정 (iOS 웹앱 상태 유지 보장) */
@@ -920,10 +929,6 @@ const ROOT='beomcho'; /* DB 경로 루트 */
    PIN 로그인 — Firebase 검증 방식
    PIN 값은 소스코드에 없고 Firebase DB에만 저장
 ============================== */
-
-let pinBuffer = '';
-let failCount = 0;
-let lockUntil = 0;
 
 function pinInput(n){
   const now = Date.now();
