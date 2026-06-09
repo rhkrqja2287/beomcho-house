@@ -964,9 +964,18 @@ async function checkPin(){
     /* Firebase에서 저장된 해시값 읽어서 비교 */
     const snap = await db.ref(ROOT + '/auth/pin_hash').get();
 
+    /* Fallback: Firebase에 PIN이 없는 경우 로컬 스토리지 또는 기본 PIN(1234) 확인 */
     if(!snap.exists()){
-      errEl.textContent = '⚠️ PIN이 설정되지 않았습니다. 아래 안내를 확인하세요.';
-      console.warn('Firebase에 pin_hash 없음. 설정 필요.');
+      const fallbackPin = localStorage.getItem('bch_pin') || '1234';
+      if(input === fallbackPin){
+        /* 성공 (Fallback) */
+        failCount = 0;
+        sessionStorage.setItem('bch_auth', 'fallback_' + input);
+        document.getElementById('pin-screen').classList.add('hidden');
+        initDataListener();
+        return;
+      }
+      errEl.textContent = '⚠️ PIN이 설정되지 않았습니다. 기본 PIN(1234)을 시도해보세요.';
       return;
     }
 
@@ -1003,6 +1012,7 @@ if(_savedAuth){
   initDataListener();
 }
 
+/* ==============================
    상태
 ============================== */
 let txs=JSON.parse(localStorage.getItem('bch_txs')||'[]');
@@ -2050,7 +2060,7 @@ function renderFixed(){
         const k=fixedKey(item),isDone=localStorage.getItem(k)==='true',amt=getFixedAmt(item),isCustom=!!item.id;
         const day=getFixedDay(item);
         const isToday=day===todayDay;
-        return`<li class="fi fixed-item" style="opacity:${isDone?.6:1};${isToday?'background:var(--amber-light);border-radius:8px;padding:10px 8px;margin:0 -8px;':''}">
+        return`<li class="fi fixed-item" style="opacity:${isDone?0.6:1};${isToday?'background:var(--amber-light);border-radius:8px;padding:10px 8px;margin:0 -8px;':''}">
           <div class="fixed-item-main">
             <input type="checkbox" ${isDone?'checked':''} onchange="toggleFixed('${k}')" style="width:17px;height:17px;cursor:pointer">
             <div>
