@@ -656,11 +656,41 @@ tr:hover td{background:var(--surface2)}
 </div>
 <script>
 /* ==============================
-   상태 및 PIN 변수 초기화
+   핵심 상태 및 PIN 변수 (최상단 배치)
 ============================== */
-let pinBuffer = '';
-let failCount = 0;
-let lockUntil = 0;
+var pinBuffer = '';
+var failCount = 0;
+var lockUntil = 0;
+var fbReady = false;
+
+/* ==============================
+   PIN 로그인 함수 (UI 즉시 대응용)
+============================== */
+function pinInput(n){
+  const now = Date.now();
+  if(now < lockUntil){
+    const sec = Math.ceil((lockUntil - now) / 1000);
+    document.getElementById('pin-error').textContent = '잠금 중입니다. ' + sec + '초 후 시도해주세요.';
+    return;
+  }
+  if(pinBuffer.length >= 4) return;
+  pinBuffer += n;
+  updatePinDots();
+  if(pinBuffer.length === 4) setTimeout(checkPin, 120);
+}
+
+function pinDel(){
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updatePinDots(){
+  for(let i = 0; i < 4; i++){
+    const dot = document.getElementById('d' + i);
+    if(dot) dot.classList.toggle('filled', i < pinBuffer.length);
+  }
+}
 
 /* ==============================
    상수
@@ -917,43 +947,30 @@ const firebaseConfig={
   messagingSenderId:"224436261422",
   appId:"1:224436261422:web:22a1ab2616ea223981c5bf"
 };
-firebase.initializeApp(firebaseConfig);
-const db=firebase.database();
-const auth=firebase.auth();
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err=>console.error('Auth persistence error:',err));
+
+/* Firebase 라이브러리 로드 확인 */
+if (typeof firebase === 'undefined') {
+  alert('Firebase 라이브러리가 로드되지 않았습니다. 인터넷 연결을 확인해주세요.');
+} else {
+  firebase.initializeApp(firebaseConfig);
+}
+
+const db = (typeof firebase !== 'undefined') ? firebase.database() : null;
+const auth = (typeof firebase !== 'undefined' && typeof firebase.auth === 'function') ? firebase.auth() : null;
+
+if (auth) {
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.error('Auth persistence error:', err));
+} else {
+  console.warn('Firebase Auth가 준비되지 않았습니다.');
+}
+
 const ROOT='beomcho'; /* DB 경로 루트 */
 
 /* 인증 지속성(Persistence) 명시적 설정 (iOS 웹앱 상태 유지 보장) */
 
 /* ==============================
    PIN 로그인 — Firebase 검증 방식
-   PIN 값은 소스코드에 없고 Firebase DB에만 저장
 ============================== */
-
-function pinInput(n){
-  const now = Date.now();
-  if(now < lockUntil){
-    const sec = Math.ceil((lockUntil - now) / 1000);
-    document.getElementById('pin-error').textContent = '잠금 중입니다. ' + sec + '초 후 시도해주세요.';
-    return;
-  }
-  if(pinBuffer.length >= 4) return;
-  pinBuffer += n;
-  updatePinDots();
-  if(pinBuffer.length === 4) setTimeout(checkPin, 120);
-}
-
-function pinDel(){
-  pinBuffer = pinBuffer.slice(0, -1);
-  updatePinDots();
-  document.getElementById('pin-error').textContent = '';
-}
-
-function updatePinDots(){
-  for(let i = 0; i < 4; i++){
-    document.getElementById('d' + i).classList.toggle('filled', i < pinBuffer.length);
-  }
-}
 
 async function checkPin(){
   const errEl = document.getElementById('pin-error');
@@ -962,6 +979,10 @@ async function checkPin(){
   updatePinDots();
 
   try {
+    if (!db) {
+      errEl.textContent = '⚠️ 데이터베이스 연결에 실패했습니다.';
+      return;
+    }
     /* 입력값을 SHA-256 해시로 변환 */
     if (!window.crypto || !window.crypto.subtle) {
       errEl.textContent = '⚠️ 보안 환경(HTTPS)이 아니면 기능을 사용할 수 없습니다.';
