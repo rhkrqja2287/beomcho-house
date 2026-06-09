@@ -903,6 +903,9 @@ const db=firebase.database();
 const auth=firebase.auth();
 const ROOT='beomcho'; /* DB 경로 루트 */
 
+/* 인증 지속성(Persistence) 명시적 설정 (iOS 웹앱 상태 유지 보장) */
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
 /* ==============================
    Google 로그인 — 허용 이메일 화이트리스트
 ============================== */
@@ -922,6 +925,9 @@ function signInWithGoogle(){
   const errEl=document.getElementById('pin-error');
   btn.disabled=true;
   errEl.textContent='로그인 시도 중...';
+  
+  /* 로그인 진행 상태 기억 */
+  sessionStorage.setItem('google_logging_in', 'true');
 
   /* 2. 인증 지속성(Persistence) 명시적 설정 (iOS 웹앱 상태 유지 보장) */
   auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
@@ -934,6 +940,7 @@ function signInWithGoogle(){
       if (result && result.user) {
         const email=result.user.email;
         if(!ALLOWED_EMAILS.includes(email)){
+          sessionStorage.removeItem('google_logging_in');
           auth.signOut();
           errEl.textContent='접근 권한이 없는 계정입니다. ('+email+')';
           btn.disabled=false;
@@ -941,6 +948,7 @@ function signInWithGoogle(){
       }
     })
     .catch(err=>{
+      sessionStorage.removeItem('google_logging_in');
       console.error('로그인 오류:', err);
       if(err.code==='auth/popup-closed-by-user'){
         errEl.textContent='로그인 창이 닫혔어요. 다시 시도해주세요.';
@@ -973,10 +981,30 @@ auth.onAuthStateChanged(user=>{
   const loginBtn = document.getElementById('google-login-btn');
   const errEl = document.getElementById('pin-error');
 
+  const isLoggingIn = sessionStorage.getItem('google_logging_in') === 'true';
+
   if(user && ALLOWED_EMAILS.includes(user.email)){
+    sessionStorage.removeItem('google_logging_in');
     pinScreen.classList.add('hidden');
     /* 인증 성공 시에만 실시간 리스너 연결 */
     initDataListener();
+  } else if (isLoggingIn) {
+    /* iOS PWA 팝업 로그인 후 돌아왔을 때 Auth Sync 대기 */
+    pinScreen.classList.remove('hidden');
+    loginSub.textContent = '로그인 처리 중입니다...';
+    loginBtn.style.display = 'none';
+    
+    /* 최대 4초 대기 후에도 인증이 안 되면 로그인 화면으로 복구 */
+    setTimeout(() => {
+      if (!auth.currentUser) {
+        sessionStorage.removeItem('google_logging_in');
+        loginSub.textContent = '구글 계정으로 로그인하세요';
+        loginBtn.style.display = 'flex';
+        if(auth.currentUser && !ALLOWED_EMAILS.includes(auth.currentUser.email)){
+          errEl.textContent = '접근 권한이 없는 계정입니다. ('+auth.currentUser.email+')';
+        }
+      }
+    }, 4000);
   } else {
     /* 홈 화면 웹앱은 초기 로딩이 느릴 수 있으므로 0.8초 유예 후 로그인 화면 표시 */
     setTimeout(() => {
@@ -1303,7 +1331,7 @@ function renderHome(){
     if(localStorage.getItem(fixedKey(i))==='true')fixedDone+=amt;
   });
   const fixedRemain=fixedTotal-fixedDone;
-  const fixedPct=fixedTotal>0?Math.max(0,Math.min(100,Math.round(fixedRemain/fixedTotal*100))):0;
+  const fixedPct=fixedTotal>0?Math.max(0,Math.min(100,Math.round(fixedPct/fixedTotal*100))):0;
 
   document.getElementById('home-metrics').innerHTML=`
     <div class="metric">
