@@ -952,7 +952,15 @@ const firebaseConfig={
 if (typeof firebase === 'undefined') {
   alert('Firebase 라이브러리가 로드되지 않았습니다. 인터넷 연결을 확인해주세요.');
 } else {
-  firebase.initializeApp(firebaseConfig);
+  try {
+    firebase.initializeApp(firebaseConfig);
+    /* 익명 인증 추가 (보안 규칙 준수용) */
+    firebase.auth().signInAnonymously().catch(err => {
+      console.error('Anonymous Auth Error:', err);
+    });
+  } catch (e) {
+    console.error('Firebase Init Error:', e);
+  }
 }
 
 const db = (typeof firebase !== 'undefined') ? firebase.database() : null;
@@ -1063,14 +1071,15 @@ let savingsEditMode=false; /* 저축 편집 모드 */ /* Firebase 로드 완료 
 /* ==============================
    동기화 상태 UI
 ============================== */
-function setSyncStatus(status){
+function setSyncStatus(status, detail){
   const el=document.getElementById('sync-status');
   if(!el)return;
   const map={
-    syncing:{text:'동기화 중…',color:'var(--amber)'},
+    syncing:{text:'연결 중…',color:'var(--amber)'},
     ok:{text:'✓ 동기화 완료',color:'var(--green)'},
     offline:{text:'오프라인 (로컬 저장)',color:'var(--text3)'},
-    error:{text:'⚠ 동기화 실패',color:'var(--red)'}
+    error:{text: detail || '⚠ 연결 오류',color:'var(--red)'},
+    denied:{text:'⚠ 권한 없음 (콘솔 확인)',color:'var(--red)'}
   };
   const s=map[status]||map.offline;
   el.textContent=s.text;
@@ -2457,15 +2466,16 @@ function initDataListener() {
   fbListenerStarted = true;
 
   if (!db) {
-    setSyncStatus('error');
+    setSyncStatus('error', 'DB 초기화 실패');
     return;
   }
+
+  setSyncStatus('syncing');
 
   /* Firebase 실시간 리스너 — 다른 기기에서 변경되면 자동으로 반영 */
   db.ref(ROOT).on('value', snapshot=>{
     const data=snapshot.val();
     if(data){
-      /* 내가 저장 중이 아니고, (최초 로드거나 외부에서 업데이트된 경우) 에만 반영 */
       const incomingTime = data._updated || 0;
       if(!isSavePending && (!fbReady || incomingTime > myLastSaveTime)){
         applyFirebaseData(data);
@@ -2475,23 +2485,23 @@ function initDataListener() {
     
     if(!fbReady){
       fbReady=true;
-      /* 첫 로드 완료 후 전체 리렌더 */
       const activePage=document.querySelector('.page.active')?.id?.replace('page-','');
       if(activePage)({home:renderHome,input:renderInput,calendar:renderCalendar,budget:renderBudget,fixed:renderFixed,savings:renderSavings})[activePage]?.();
     }
     setSyncStatus('ok');
   },err=>{
-    console.warn('Firebase 연결 실패, 로컬 모드로 동작:', err);
-    setSyncStatus('offline');
+    console.error('Firebase Read Error:', err);
+    if(err.code === 'PERMISSION_DENIED') setSyncStatus('denied');
+    else setSyncStatus('error', err.message);
     fbReady=true;
   });
 
   /* 오프라인 감지 */
   db.ref('.info/connected').on('value',snap=>{
     if(snap.val()===true){
-      if(fbReady) setSyncStatus('ok');
+      /* 데이터 리스너가 성공적으로 실행된 후에만 OK 표시 */
     } else {
-      setSyncStatus('offline');
+      if(fbReady) setSyncStatus('offline');
     }
   });
 }
