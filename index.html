@@ -911,6 +911,7 @@ const firebaseConfig={
 };
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
+const auth=firebase.auth();
 const ROOT='beomcho'; /* DB 경로 루트 */
 
 /* 인증 지속성(Persistence) 명시적 설정 (iOS 웹앱 상태 유지 보장) */
@@ -1004,11 +1005,10 @@ async function checkPin(){
   }
 }
 
-/* 새로고침 시 세션 유지 */
+/* 새로고침 시 세션 유지 — initDataListener 호출은 함수 선언 후 아래에서 실행 */
 const _savedAuth = sessionStorage.getItem('bch_auth');
 if(_savedAuth){
   document.getElementById('pin-screen').classList.add('hidden');
-  initDataListener();
 }
 
 /* ==============================
@@ -2452,6 +2452,9 @@ function initDataListener() {
     if(snap.val()===false)setSyncStatus('offline');
   });
 }
+
+/* 새로고침 시 세션 복원 — 모든 함수/변수 선언 후 실행 */
+if(_savedAuth){ initDataListener(); }
 </script>
 </body>
 </html>
