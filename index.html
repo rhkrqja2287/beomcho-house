@@ -254,8 +254,9 @@ tr:hover td{background:var(--surface2)}
 }
 
 /* PIN 로그인 */
-#pin-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center}
+#pin-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
 #pin-screen.hidden{display:none}
+body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 .pin-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px 36px 32px;width:320px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.1)}
 .pin-logo{font-size:22px;font-weight:700;margin-bottom:4px}
 .pin-sub{font-size:13px;color:var(--text3);margin-bottom:28px}
