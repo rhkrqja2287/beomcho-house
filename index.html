@@ -9,7 +9,6 @@
 <title>범초하우스</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -259,6 +258,8 @@ tr:hover td{background:var(--surface2)}
 }
 
 /* PIN 로그인 */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);color:var(--text);padding:10px 20px;border-radius:20px;font-size:14px;opacity:0;transition:all .25s;z-index:99999;pointer-events:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #pin-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
 #pin-screen.hidden{display:none}
 body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
@@ -461,6 +462,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 </style>
 </head>
 <body>
+<div id="toast"></div>
 <div id="pin-screen">
   <div class="pin-box">
     <div class="pin-logo">범초하우스</div>
@@ -954,31 +956,19 @@ const firebaseConfig={
   appId:"1:224436261422:web:22a1ab2616ea223981c5bf"
 };
 
-/* Firebase 라이브러리 로드 확인 */
-if (typeof firebase === 'undefined') {
-  alert('Firebase 라이브러리가 로드되지 않았습니다. 인터넷 연결을 확인해주세요.');
-} else {
-  try {
-    firebase.initializeApp(firebaseConfig);
-    /* 익명 인증 추가 (보안 규칙 준수용) */
-    firebase.auth().signInAnonymously().catch(err => {
-      console.error('Anonymous Auth Error:', err);
-    });
-  } catch (e) {
-    console.error('Firebase Init Error:', e);
-  }
+/* 토스트 메시지 */
+let _toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-const db = (typeof firebase !== 'undefined') ? firebase.database() : null;
-const auth = (typeof firebase !== 'undefined' && typeof firebase.auth === 'function') ? firebase.auth() : null;
-
-if (auth) {
-  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.error('Auth persistence error:', err));
-} else {
-  console.warn('Firebase Auth가 준비되지 않았습니다.');
-}
-
-const ROOT='beomcho'; /* DB 경로 루트 */
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const ROOT = 'beomcho';
 
 /* 인증 지속성(Persistence) 명시적 설정 (iOS 웹앱 상태 유지 보장) */
 
@@ -1001,10 +991,13 @@ async function checkPin(){
     const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
     const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
 
-    /* 2. 마스터 해시값과 즉시 비교 (보안 및 속도 강화) */
-    const MASTER_HASH = "F4FC1AC61A9E62B9B0A8B24DA10DEB3E1DFC3FD85E82D12A5029B54CB4EA29F8";
-
-    if(hashHex.toUpperCase() === MASTER_HASH){
+    /* 2. Firebase DB에서 저장된 해시값 조회 후 비교 */
+    const snap = await db.ref(ROOT + '/auth/pin_hash').get();
+    if(!snap.exists()){
+      errEl.textContent = '⚠️ PIN이 설정되지 않았습니다.';
+      return;
+    }
+    if(hashHex === snap.val()){
       /* 성공 */
       successLogin(hashHex.slice(0, 16));
     } else {
@@ -1125,7 +1118,7 @@ function saveAll(){
     const _now=Date.now();
     myLastSaveTime=_now;
     localStorage.setItem('bch_last_updated',_now);
-    db.ref(ROOT).set({
+    db.ref(ROOT).update({
       txs,budgets,annualEvents,longSave,shortSave,
       fixedChecks:getFixedChecks(),
       fixedAmts:getFixedAmts(),
@@ -1436,7 +1429,7 @@ function addTx(){
   const cat=type==='expense'?document.getElementById('tx-cat').value:'—';
   const desc=document.getElementById('tx-desc').value.trim();
   const amt=parseNum(document.getElementById('tx-amt').value);
-  if(!date||!amt){alert('날짜와 금액을 입력해주세요');return;}
+  if(!date||!amt){showToast('날짜와 금액을 입력해주세요');return;}
   txs.unshift({id:Date.now(),date,type,cat,desc,amt});
   saveAll();
   document.getElementById('tx-amt').value='';
@@ -1939,8 +1932,8 @@ function addFixedItemFromForm(){
   const day=parseInt(dayEl.value,10);
   const amt=parseNum(amtEl.value);
 
-  if(!name){alert('항목명을 입력해주세요.');nameEl.focus();return;}
-  if(!Number.isInteger(day)||day<1||day>31){alert('날짜는 1~31일로 입력해주세요.');dayEl.focus();return;}
+  if(!name){showToast('항목명을 입력해주세요');nameEl.focus();return;}
+  if(!Number.isInteger(day)||day<1||day>31){showToast('날짜는 1~31일로 입력해주세요'); dayEl.focus();return;}
 
   const item=normalizeFixedCustomItem({
     id:`custom_${Date.now().toString(36)}${Math.random().toString(36).slice(2,6)}`,
@@ -1980,7 +1973,7 @@ function updateFixedName(key,val){
 function addFixedItemToCurrentTab(asVar){
   const tabs=Object.keys(FIXED);
   if(!tabs.includes(currentFixedTab)){
-    alert('탭에서 추가해주세요.');
+    showToast('탭에서 추가해주세요');
     return;
   }
   const item=normalizeFixedCustomItem({
