@@ -1390,7 +1390,7 @@ document.addEventListener('visibilitychange',()=>{
 function renderHome(){
   const m=curMonth();
   const data=monthlyData()[m]||{income:0,expense:0,cats:{}};
-  document.getElementById('home-sub').textContent=m.replace('-','년 ')+'월 현황 (v1.4)';
+  document.getElementById('home-sub').textContent=m.replace('-','년 ')+'월 현황 (v1.7)';
 
   /* 유동 지출 잔액 계산 — 순지출(지출-수입) 기준 */
   const varBudget=totalVarBudget();
@@ -1420,7 +1420,7 @@ function renderHome(){
   document.getElementById('home-metrics').innerHTML=`
     <div class="metric">
       <div class="metric-label">유동 지출 잔액</div>
-      <div class="metric-value" style="color:#409cff">${fmt(varRemain)}</div>
+      <div class="metric-value" style="color:#007aff">${fmt(varRemain)}</div>
       <div class="metric-sub">${varPct}% 남음${monthInc?` · 수입 ${fmtShort(monthInc)} 반영`:''}</div>
     </div>
     <div class="metric">
@@ -1435,11 +1435,21 @@ function renderHome(){
     </div>`;
 
   /* 도넛 */
-  const cats=data.cats,catKeys=Object.keys(cats);
+  const cats=data.cats;
+  const catKeys=Object.keys(cats).sort((a,b)=>cats[b]-cats[a]);
   const total=Object.values(cats).reduce((a,b)=>a+b,0)||1;
+  const FIXED_CAT_COLORS = {
+    '생활비': '#34c759', // 에메랄드 그린
+    '양육비': '#ffcc00', // 딥 오렌지
+    '병원비': '#ff2d55', // 모던 루비/핑크
+    '자동차': '#007aff'  // 로열 블루
+  };
+  const getCatColor = (name, idx) => FIXED_CAT_COLORS[name] || CAT_COLORS[idx % CAT_COLORS.length];
+  const sortedColors = catKeys.map((k, i) => getCatColor(k, i));
+
   document.getElementById('home-legend').innerHTML=catKeys.length ? catKeys.map((k,i)=>`
     <span style="display:flex;align-items:center;gap:4px">
-      <span style="width:10px;height:10px;border-radius:2px;background:${CAT_COLORS[i%CAT_COLORS.length]}"></span>
+      <span style="width:10px;height:10px;border-radius:2px;background:${sortedColors[i]}"></span>
       ${k} ${Math.round(cats[k]/total*100)}%
     </span>`).join('') : '<div style="color:var(--text3);padding:10px 0;">이번 달 지출 내역이 없습니다.</div>';
   dc('donut-home');
@@ -1448,7 +1458,7 @@ function renderHome(){
     chartCanvas.style.display = 'block';
     requestAnimationFrame(()=>{charts['donut-home']=new Chart(chartCanvas,{
       type:'doughnut',
-      data:{labels:catKeys,datasets:[{data:catKeys.map(k=>cats[k]),backgroundColor:CAT_COLORS,borderWidth:2,borderColor:'transparent'}]},
+      data:{labels:catKeys,datasets:[{data:catKeys.map(k=>cats[k]),backgroundColor:sortedColors,borderWidth:2,borderColor:'transparent'}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'65%'}
     });});
   } else {
@@ -1608,7 +1618,7 @@ function renderCalendar(){
         <div class="metric-sub">지출 ${fmt(grossExp)}${monthInc?` − 수입 ${fmt(monthInc)}`:''}</div>
       </div>
       <div class="metric"><div class="metric-label">예산 잔여 금액</div>
-        <div class="metric-value" style="color:#409cff">${fmt(varRemain)}</div>
+        <div class="metric-value" style="color:#007aff">${fmt(varRemain)}</div>
         <div class="metric-sub">${varPct}% 남음</div></div>
     </div>
     <div class="pw" style="height:9px;margin-bottom:18px"><div class="pb ${barCls}" style="width:${varPct}%"></div></div>`;
@@ -2251,9 +2261,10 @@ function toggleFixedEdit(){
    ⑤ 저축 금액
 ============================== */
 function renderSavings(){
-  /* [v1.4] 강제 색상 및 이름 교정 */
+  /* [v1.7] 강제 이름 및 색상 교정 */
   if(typeof migrateShortSaveColors === 'function') migrateShortSaveColors();
   let html='';
+
 
   /* 장기 저축 — 표시 순서 고정 */
   const LONG_ORDER=['전세보증금','범진 청약','초은 청약'];
