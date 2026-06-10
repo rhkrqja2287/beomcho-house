@@ -951,10 +951,10 @@ const LONG_SAVE_DEFAULT={
   '초은 청약':{bal:8600000,monthly:0}
 };
 const SHORT_SAVE_DEFAULT={
-  '적금(2년)':{bal:4200000,monthly:0,color:'#007aff'},
-  '적금(6개월)':{bal:1800000,monthly:0,color:'#5ac8fa'},
+  '적금(2년 만기)':{bal:4200000,monthly:0,color:'#0040a1'},
+  '적금(6개월 만기)':{bal:1800000,monthly:0,color:'#82d7ff'},
   '비상금':{bal:5500000,monthly:0,color:'#34c759'},
-  '주식':{bal:8770000,monthly:0,color:'#ff9500'}
+  '주식':{bal:8770000,monthly:0,color:'#ff453a'}
 };
 
 /* ==============================
@@ -1082,6 +1082,18 @@ let budgets=JSON.parse(localStorage.getItem('bch_budgets')||JSON.stringify(BUDGE
 let annualEvents=JSON.parse(localStorage.getItem('bch_events')||JSON.stringify(ANNUAL_EVENTS_DEFAULT));
 let longSave=JSON.parse(localStorage.getItem('bch_long_save')||JSON.stringify(LONG_SAVE_DEFAULT));
 let shortSave=JSON.parse(localStorage.getItem('bch_short_save')||JSON.stringify(SHORT_SAVE_DEFAULT));
+
+/* 색상 업데이트 마이그레이션 함수 */
+function migrateShortSaveColors(){
+  let _m=false;
+  Object.keys(shortSave).forEach(k=>{
+    if(k.includes('적금(2년)') && (shortSave[k].color==='#007aff'||!shortSave[k].color)){shortSave[k].color='#0040a1';_m=true;}
+    if(k.includes('적금(6개월)') && (shortSave[k].color==='#5ac8fa'||!shortSave[k].color)){shortSave[k].color='#82d7ff';_m=true;}
+    if(k.includes('주식') && (shortSave[k].color==='#ff9500'||!shortSave[k].color)){shortSave[k].color='#ff453a';_m=true;}
+  });
+  return _m;
+}
+if(migrateShortSaveColors()) localStorage.setItem('bch_short_save', JSON.stringify(shortSave));
 let fixedCustom=loadFixedCustom();
 let budgetCustom=loadBudgetCustom();
 let calDate=new Date();
@@ -1197,7 +1209,10 @@ function applyFirebaseData(data){
   if(data.budgets)budgets=data.budgets;
   if(data.annualEvents)annualEvents=data.annualEvents;
   if(data.longSave)longSave=data.longSave;
-  if(data.shortSave)shortSave=data.shortSave;
+  if(data.shortSave){
+    shortSave=data.shortSave;
+    if(migrateShortSaveColors()) setTimeout(saveAll, 100);
+  }
   if(data.fixedCustom!==undefined){
     const incoming=Array.isArray(data.fixedCustom)?data.fixedCustom:[];
     fixedCustom=incoming.map(normalizeFixedCustomItem).filter(Boolean);
@@ -2275,8 +2290,8 @@ function renderSavings(){
 
   /* 투자 비율 도넛 */
   const shortNames=Object.keys(shortSave);
-  const APPLE_COLORS=['#007aff','#5ac8fa','#34c759','#ff9500','#ff3b30','#af52de','#ff2d55','#ffcc00'];
-  const shortColors=shortNames.map((n,i)=>APPLE_COLORS[i%APPLE_COLORS.length]);
+  const APPLE_COLORS=['#0040a1','#82d7ff','#34c759','#ff453a','#af52de','#ff2d55','#ffcc00','#5ac8fa'];
+  const shortColors=shortNames.map((n,i)=>shortSave[n].color || APPLE_COLORS[i%APPLE_COLORS.length]);
 
   html+=`<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${shortThisMonth!==0?'8px':'14px'}">
@@ -2293,7 +2308,7 @@ function renderSavings(){
     <div style="display:grid;grid-template-columns:1fr 200px;gap:20px;align-items:start" class="save-grid">
       <ul class="fl">`;
   Object.entries(shortSave).forEach(([name,v],si)=>{
-    const itemColor=APPLE_COLORS[si%APPLE_COLORS.length];
+    const itemColor=v.color || APPLE_COLORS[si%APPLE_COLORS.length];
     const pct=shortTotal>0?Math.round(v.bal/shortTotal*100):0;
     html+=`<li class="fi save-li">
       <div class="save-li-inner">
@@ -2326,8 +2341,9 @@ function renderSavings(){
         <div style="margin-top:10px">
           ${shortNames.map((n,li)=>{
             const pct=shortTotal>0?Math.round(shortSave[n].bal/shortTotal*100):0;
+            const itemColor=shortSave[n].color || APPLE_COLORS[li%APPLE_COLORS.length];
             return`<div style="display:flex;align-items:center;gap:5px;font-size:11px;margin-bottom:3px">
-              <span class="pct-dot" style="background:${APPLE_COLORS[li%APPLE_COLORS.length]}"></span>
+              <span class="pct-dot" style="background:${itemColor}"></span>
               <span style="color:var(--text2)">${n}</span>
               <span style="margin-left:auto;font-weight:600">${pct}%</span>
             </div>`;
