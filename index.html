@@ -2275,7 +2275,7 @@ function renderSavings(){
 
   /* 투자 비율 도넛 */
   const shortNames=Object.keys(shortSave);
-  const APPLE_COLORS=['#007aff','#34c759','#ff9500','#ff3b30','#af52de','#ff2d55','#5ac8fa','#ffcc00'];
+  const APPLE_COLORS=['#007aff','#5ac8fa','#34c759','#ff9500','#ff3b30','#af52de','#ff2d55','#ffcc00'];
   const shortColors=shortNames.map((n,i)=>APPLE_COLORS[i%APPLE_COLORS.length]);
 
   html+=`<div class="card">
@@ -2292,19 +2292,20 @@ function renderSavings(){
     </div>`:''}
     <div style="display:grid;grid-template-columns:1fr 200px;gap:20px;align-items:start" class="save-grid">
       <ul class="fl">`;
-  for(const[name,v] of Object.entries(shortSave)){
+  Object.entries(shortSave).forEach(([name,v],si)=>{
+    const itemColor=APPLE_COLORS[si%APPLE_COLORS.length];
     const pct=shortTotal>0?Math.round(v.bal/shortTotal*100):0;
     html+=`<li class="fi save-li">
       <div class="save-li-inner">
         <div class="save-li-main" style="flex:1">
-          <span class="pct-dot" style="background:${v.color}"></span>
+          <span class="pct-dot" style="background:${itemColor}"></span>
           <div class="save-li-main"><span class="save-li-name">${name}</span></div>
           <span style="font-size:9px;color:var(--text3);white-space:nowrap">${pct}%</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;white-space:nowrap;margin-left:auto">
           <div style="display:flex;align-items:center;gap:2px">
             <span style="font-size:9px;color:var(--text3)">보유액</span>
-            <input type="text" value="${fmtN(v.bal)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('short','${name}','bal',this.value)" style="width:65px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;font-weight:700;color:${v.color};padding:2px 3px">
+            <input type="text" value="${fmtN(v.bal)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('short','${name}','bal',this.value)" style="width:65px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;font-weight:700;color:${itemColor};padding:2px 3px">
           </div>
           <div style="display:flex;align-items:center;gap:2px">
             <span style="font-size:9px;color:var(--text3)">월저축</span>
@@ -2317,16 +2318,16 @@ function renderSavings(){
         </div>
       </div>
     </li>`;
-  }
+  });
   html+=`</ul>
       <div>
         <div style="font-size:12px;color:var(--text3);margin-bottom:8px;text-align:center">투자 비율</div>
         <div style="position:relative;height:160px"><canvas id="save-donut" role="img" aria-label="단기 저축 투자 비율">투자비율</canvas></div>
         <div style="margin-top:10px">
-          ${shortNames.map(n=>{
+          ${shortNames.map((n,li)=>{
             const pct=shortTotal>0?Math.round(shortSave[n].bal/shortTotal*100):0;
             return`<div style="display:flex;align-items:center;gap:5px;font-size:11px;margin-bottom:3px">
-              <span class="pct-dot" style="background:${shortSave[n].color}"></span>
+              <span class="pct-dot" style="background:${APPLE_COLORS[li%APPLE_COLORS.length]}"></span>
               <span style="color:var(--text2)">${n}</span>
               <span style="margin-left:auto;font-weight:600">${pct}%</span>
             </div>`;
