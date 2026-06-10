@@ -192,12 +192,16 @@ tr:hover td{background:var(--surface2)}
     flex-direction:row;
     border-right:none;border-top:1px solid var(--border);
     flex-shrink:0;
-    order:2; /* flex 순서: main 아래 */
+    order:2;
     height:calc(60px + env(safe-area-inset-bottom));
     padding-bottom:env(safe-area-inset-bottom);
-    position:static; /* fixed 제거 */
+    position:static;
     transform:none;
     -webkit-transform:none;
+    touch-action:none; /* 탭바 터치가 스크롤로 전파되는 것 차단 */
+    overscroll-behavior:none;
+    user-select:none;
+    -webkit-user-select:none;
   }
   .logo{display:none}
   .nav{
@@ -2271,7 +2275,8 @@ function renderSavings(){
 
   /* 투자 비율 도넛 */
   const shortNames=Object.keys(shortSave);
-  const shortColors=shortNames.map(n=>shortSave[n].color||'#888');
+  const APPLE_COLORS=['#007aff','#34c759','#ff9500','#ff3b30','#af52de','#ff2d55','#5ac8fa','#ffcc00'];
+  const shortColors=shortNames.map((n,i)=>APPLE_COLORS[i%APPLE_COLORS.length]);
 
   html+=`<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${shortThisMonth!==0?'8px':'14px'}">
@@ -2366,9 +2371,11 @@ function renderSavings(){
   dc('save-trend');
   const trendCanvas=document.getElementById('save-trend');
   const trendCtx=trendCanvas.getContext('2d');
+  const isDark=document.documentElement.classList.contains('dark')||window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const accentColor=isDark?'#0a84ff':'#007aff';
   const trendFill=trendCtx.createLinearGradient(0,0,0,200);
-  trendFill.addColorStop(0,'rgba(0,122,255,0.25)');
-  trendFill.addColorStop(1,'rgba(0,122,255,0.03)');
+  trendFill.addColorStop(0,isDark?'rgba(10,132,255,0.3)':'rgba(0,122,255,0.2)');
+  trendFill.addColorStop(1,'rgba(0,122,255,0.0)');
   charts['save-trend']=new Chart(document.getElementById('save-trend'),{
     type:'line',
     data:{
@@ -2376,16 +2383,16 @@ function renderSavings(){
       datasets:[{
         label:'월 저축액',
         data:saveTrend,
-        borderColor:'#007aff',
+        borderColor:accentColor,
         backgroundColor:trendFill,
-        borderWidth:3,
-        tension:0.35,
+        borderWidth:2.5,
+        tension:0.4,
         fill:true,
         pointRadius:4,
-        pointHoverRadius:5,
-        pointBackgroundColor:'#0E6E8A',
-        pointBorderColor:'#0E6E8A',
-        pointBorderWidth:1
+        pointHoverRadius:6,
+        pointBackgroundColor:'#ffffff',
+        pointBorderColor:accentColor,
+        pointBorderWidth:2
       }]
     },
     options:{
