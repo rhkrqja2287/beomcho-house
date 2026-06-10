@@ -6,10 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="범초하우스">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>범초하우스 가계부</title>
+<title>범초하우스</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -949,33 +948,9 @@ const firebaseConfig={
   appId:"1:224436261422:web:22a1ab2616ea223981c5bf"
 };
 
-/* Firebase 라이브러리 로드 확인 */
-if (typeof firebase === 'undefined') {
-  alert('Firebase 라이브러리가 로드되지 않았습니다. 인터넷 연결을 확인해주세요.');
-} else {
-  try {
-    firebase.initializeApp(firebaseConfig);
-    /* 익명 인증 추가 (보안 규칙 준수용) */
-    firebase.auth().signInAnonymously().catch(err => {
-      console.error('Anonymous Auth Error:', err);
-    });
-  } catch (e) {
-    console.error('Firebase Init Error:', e);
-  }
-}
-
-const db = (typeof firebase !== 'undefined') ? firebase.database() : null;
-const auth = (typeof firebase !== 'undefined' && typeof firebase.auth === 'function') ? firebase.auth() : null;
-
-if (auth) {
-  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.error('Auth persistence error:', err));
-} else {
-  console.warn('Firebase Auth가 준비되지 않았습니다.');
-}
-
-const ROOT='beomcho'; /* DB 경로 루트 */
-
-/* 인증 지속성(Persistence) 명시적 설정 (iOS 웹앱 상태 유지 보장) */
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const ROOT = 'beomcho';
 
 /* ==============================
    PIN 로그인 — Firebase 검증 방식
@@ -996,10 +971,13 @@ async function checkPin(){
     const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
     const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
 
-    /* 2. 마스터 해시값과 즉시 비교 (보안 및 속도 강화) */
-    const MASTER_HASH = "F4FC1AC61A9E62B9B0A8B24DA10DEB3E1DFC3FD85E82D12A5029B54CB4EA29F8";
-
-    if(hashHex.toUpperCase() === MASTER_HASH){
+    /* 2. Firebase DB에서 저장된 해시값 조회 후 비교 */
+    const snap = await db.ref(ROOT + '/auth/pin_hash').get();
+    if(!snap.exists()){
+      errEl.textContent = '⚠️ PIN이 설정되지 않았습니다.';
+      return;
+    }
+    if(hashHex === snap.val()){
       /* 성공 */
       successLogin(hashHex.slice(0, 16));
     } else {
