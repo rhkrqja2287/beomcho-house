@@ -18,29 +18,29 @@ html{-webkit-text-size-adjust:100%}
 input[type=number]{-moz-appearance:textfield}
 /* ⑦ 테마 변수 */
 :root{
-  --bg:#f9f8f6;--surface:#fff;--surface2:#f3f2ef;
-  --text:#1a1a1a;--text2:#555;--text3:#999;
-  --border:#e8e6e0;--border2:#d0cec8;
-  --purple:#7F77DD;--purple-light:#EEEDFE;--purple-dark:#534AB7;
-  --green:#3B6D11;--green-light:#EAF3DE;
-  --red:#A32D2D;--red-light:#FCEBEB;
-  --amber:#854F0B;--amber-light:#FAEEDA;
-  --blue:#185FA5;--blue-light:#E6F1FB;
+  --bg:#f2f2f7;--surface:#ffffff;--surface2:#f2f2f7;
+  --text:#1c1c1e;--text2:#3a3a3c;--text3:#8e8e93;
+  --border:#e5e5ea;--border2:#c7c7cc;
+  --purple:#007aff;--purple-light:#e8f4ff;--purple-dark:#0056cc;
+  --green:#34c759;--green-light:#e8fbee;
+  --red:#ff3b30;--red-light:#fff1f0;
+  --amber:#ff9500;--amber-light:#fff5e6;
+  --blue:#007aff;--blue-light:#e8f4ff;
   --teal:#0F6E56;--teal-light:#E1F5EE;
   --radius:10px;--radius-lg:14px;
 }
 body.dark{
-  --bg:#1a1917;--surface:#242320;--surface2:#2e2d29;
-  --text:#f0ede8;--text2:#a09d96;--text3:#6b6860;
-  --border:#38352f;--border2:#4a4740;
-  --purple:#AFA9EC;--purple-light:#26215C;--purple-dark:#CECBF6;
-  --green:#97C459;--green-light:#173404;
-  --red:#F09595;--red-light:#501313;
-  --amber:#EF9F27;--amber-light:#412402;
-  --blue:#85B7EB;--blue-light:#042C53;
+  --bg:#000000;--surface:#1c1c1e;--surface2:#2c2c2e;
+  --text:#ffffff;--text2:#ebebf5;--text3:#8e8e93;
+  --border:#38383a;--border2:#48484a;
+  --purple:#0a84ff;--purple-light:#001f3f;--purple-dark:#409cff;
+  --green:#30d158;--green-light:#0a2e14;
+  --red:#ff453a;--red-light:#2e0f0e;
+  --amber:#ff9f0a;--amber-light:#2e1f00;
+  --blue:#0a84ff;--blue-light:#001f3f;
   --teal:#5DCAA5;--teal-light:#04342C;
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;min-height:100vh;transition:background .2s,color .2s}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;min-height:100vh;transition:background .2s,color .2s}
 .app{display:flex;min-height:100vh;width:100vw;overflow:hidden}
 .sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:background .2s}
 .logo{padding:20px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
@@ -64,7 +64,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
 .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
 .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}
-.metric{background:var(--surface2);border-radius:var(--radius);padding:16px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
 .metric-label{font-size:12px;color:var(--text3);margin-bottom:5px}
 .metric-value{font-size:22px;font-weight:700;letter-spacing:-.5px}
 .metric-sub{font-size:11px;color:var(--text3);margin-top:3px}
@@ -94,9 +94,9 @@ tr:hover td{background:var(--surface2)}
 .pb{height:100%;border-radius:20px;transition:width .4s}
 .ok{background:var(--green)}.warn{background:var(--amber)}.over{background:var(--red)}.blue-bar{background:var(--blue)}
 .alert{padding:11px 15px;border-radius:var(--radius);font-size:13px;margin-bottom:12px}
-.aw{background:var(--amber-light);color:var(--amber);border:1px solid #EF9F2744}
-.ad{background:var(--red-light);color:var(--red);border:1px solid #E24B4A44}
-.ag{background:var(--green-light);color:var(--green);border:1px solid #3B6D1133}
+.aw{background:var(--amber-light);color:var(--amber);border:1px solid rgba(255,149,0,0.25)}
+.ad{background:var(--red-light);color:var(--red);border:1px solid rgba(255,59,48,0.25)}
+.ag{background:var(--green-light);color:var(--green);border:1px solid rgba(52,199,89,0.2)}
 .divider{height:1px;background:var(--border);margin:14px 0}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
 .cal-hd{text-align:center;font-size:11px;font-weight:500;color:var(--text3);padding:5px 0}
@@ -274,7 +274,7 @@ tr:hover td{background:var(--surface2)}
 #pin-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
 #pin-screen.hidden{display:none}
 body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
-.pin-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px 36px 32px;width:320px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.1)}
+.pin-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px 36px 32px;width:320px;text-align:center;box-shadow:none}
 .pin-logo{font-size:22px;font-weight:700;margin-bottom:4px}
 .pin-sub{font-size:13px;color:var(--text3);margin-bottom:28px}
 .pin-dots{display:flex;gap:14px;justify-content:center;margin-bottom:28px}
@@ -715,7 +715,7 @@ function updatePinDots(){
 ============================== */
 const EXPENSE_CATS=['생활비','양육비','병원비','자동차'];
 const INCOME_CATS=['범진 급여','초은 급여','아동수당','기타수입'];
-const CAT_COLORS=['#7F77DD','#1D9E75','#378ADD','#D4537E','#E24B4A','#BA7517','#D85A30','#0F6E56','#888780'];
+const CAT_COLORS=['#007aff','#34c759','#ff9500','#ff3b30','#af52de','#ff2d55','#5ac8fa','#ffcc00','#8e8e93'];
 
 /* 매달 금액이 변동되는 고정지출 항목 (수기 수정 필요) */
 const VARIABLE_FIXED=['전세 이자','전기세','인터넷+TV','초은 통신비','범진 통신비','가스비','수도세'];
@@ -947,10 +947,10 @@ const LONG_SAVE_DEFAULT={
   '초은 청약':{bal:8600000,monthly:0}
 };
 const SHORT_SAVE_DEFAULT={
-  '적금(2년)':{bal:4200000,monthly:0,color:'#7F77DD'},
-  '적금(6개월)':{bal:1800000,monthly:0,color:'#AFA9EC'},
-  '비상금':{bal:5500000,monthly:0,color:'#1D9E75'},
-  '주식':{bal:8770000,monthly:0,color:'#D85A30'}
+  '적금(2년)':{bal:4200000,monthly:0,color:'#007aff'},
+  '적금(6개월)':{bal:1800000,monthly:0,color:'#5ac8fa'},
+  '비상금':{bal:5500000,monthly:0,color:'#34c759'},
+  '주식':{bal:8770000,monthly:0,color:'#ff9500'}
 };
 
 /* ==============================
@@ -1412,7 +1412,7 @@ function renderHome(){
     chartCanvas.style.display = 'block';
     requestAnimationFrame(()=>{charts['donut-home']=new Chart(chartCanvas,{
       type:'doughnut',
-      data:{labels:catKeys,datasets:[{data:catKeys.map(k=>cats[k]),backgroundColor:CAT_COLORS,borderWidth:2,borderColor:'#fff'}]},
+      data:{labels:catKeys,datasets:[{data:catKeys.map(k=>cats[k]),backgroundColor:CAT_COLORS,borderWidth:2,borderColor:'transparent'}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'65%'}
     });});
   } else {
@@ -2341,7 +2341,7 @@ function renderSavings(){
   dc('save-donut');
   if(shortTotal>0)charts['save-donut']=new Chart(document.getElementById('save-donut'),{
     type:'doughnut',
-    data:{labels:shortNames,datasets:[{data:shortNames.map(n=>shortSave[n].bal),backgroundColor:shortColors,borderWidth:2,borderColor:'#fff'}]},
+    data:{labels:shortNames,datasets:[{data:shortNames.map(n=>shortSave[n].bal),backgroundColor:shortColors,borderWidth:2,borderColor:'transparent'}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'60%'}
   });
 
@@ -2367,8 +2367,8 @@ function renderSavings(){
   const trendCanvas=document.getElementById('save-trend');
   const trendCtx=trendCanvas.getContext('2d');
   const trendFill=trendCtx.createLinearGradient(0,0,0,200);
-  trendFill.addColorStop(0,'rgba(24,95,165,0.35)');
-  trendFill.addColorStop(1,'rgba(24,95,165,0.06)');
+  trendFill.addColorStop(0,'rgba(0,122,255,0.25)');
+  trendFill.addColorStop(1,'rgba(0,122,255,0.03)');
   charts['save-trend']=new Chart(document.getElementById('save-trend'),{
     type:'line',
     data:{
@@ -2376,7 +2376,7 @@ function renderSavings(){
       datasets:[{
         label:'월 저축액',
         data:saveTrend,
-        borderColor:'#0E6E8A',
+        borderColor:'#007aff',
         backgroundColor:trendFill,
         borderWidth:3,
         tension:0.35,
@@ -2393,8 +2393,8 @@ function renderSavings(){
       maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>` ${fmt(ctx.parsed.y)}`}}},
       scales:{
-        x:{ticks:{autoSkip:false,maxRotation:35,minRotation:35,color:'#8a8a8a'},grid:{display:false}},
-        y:{ticks:{callback:v=>Math.round(v/10000)+'만',color:'#8a8a8a'},beginAtZero:true,grid:{color:'rgba(120,120,120,0.18)'}}
+        x:{ticks:{autoSkip:false,maxRotation:35,minRotation:35,color:'#8e8e93'},grid:{display:false}},
+        y:{ticks:{callback:v=>Math.round(v/10000)+'만',color:'#8e8e93'},beginAtZero:true,grid:{color:'rgba(142,142,147,0.15)'}}
       }
     }
   });
