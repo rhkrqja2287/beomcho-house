@@ -922,21 +922,21 @@ function addBudgetItem(group){
   persistBudgetCustom();saveAll();renderBudget();renderHome();
 }
 function removeBudgetIncomeItem(cat){
-  if(!confirm(`"${cat}" 항목을 삭제할까요?`))return;
+  if(!window.confirm(`"${cat}" 항목을 삭제할까요?`))return;
   if(isBudgetCustomIncome(cat))budgetCustom.incomeCustom=budgetCustom.incomeCustom.filter(v=>v!==cat);
   else budgetCustom.hiddenIncome=Array.from(new Set([...(budgetCustom.hiddenIncome||[]),cat]));
   delete budgets[cat];
   persistBudgetCustom();saveAll();renderBudget();renderHome();
 }
 function removeBudgetSavingItem(cat){
-  if(!confirm(`"${cat}" 항목을 삭제할까요?`))return;
+  if(!window.confirm(`"${cat}" 항목을 삭제할까요?`))return;
   if(isBudgetCustomSaving(cat))budgetCustom.savingCustom=budgetCustom.savingCustom.filter(v=>v!==cat);
   else budgetCustom.hiddenSaving=Array.from(new Set([...(budgetCustom.hiddenSaving||[]),cat]));
   delete budgets[cat];
   persistBudgetCustom();saveAll();renderBudget();renderHome();
 }
 function removeBudgetItem(group,cat){
-  if(!confirm(`"${cat}" 항목을 삭제할까요?`))return;
+  if(!window.confirm(`"${cat}" 항목을 삭제할까요?`))return;
   if(isBudgetCustomCat(group,cat)){
     budgetCustom.groupCustom[group]=budgetCustom.groupCustom[group].filter(v=>v!==cat);
   }else{
@@ -980,6 +980,19 @@ function showToast(msg){
   t.classList.add('show');
   clearTimeout(_toastTimer);
   _toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+/* 삭제 확인 토스트 */
+function confirmDelete(msg, onConfirm){
+  const t = document.getElementById('toast');
+  t.innerHTML = `<span>${msg}</span>
+    <button onclick="document.getElementById('toast').classList.remove('show');(${onConfirm.toString()})()" 
+      style="margin-left:12px;background:#ff3b30;color:#fff;border:none;border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer">삭제</button>
+    <button onclick="document.getElementById('toast').classList.remove('show')" 
+      style="margin-left:6px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer">취소</button>`;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>t.classList.remove('show'), 4000);
 }
 
 firebase.initializeApp(firebaseConfig);
@@ -1497,7 +1510,7 @@ function clearForm(){
   document.getElementById('tx-date').value=todayStr();
 }
 function delTx(id){
-  if(!confirm('이 거래를 삭제할까요?'))return;
+  if(!window.confirm('이 거래를 삭제할까요?'))return;
   txs=txs.filter(t=>t.id!==id);
   saveAll();renderTxList();renderHome();
 }
@@ -2046,7 +2059,7 @@ function addFixedItemToCurrentTab(asVar){
   saveAll();renderFixed();renderHome();
 }
 function removeFixedItem(key){
-  if(!confirm('이 항목을 삭제할까요?'))return;
+  if(!window.confirm('이 항목을 삭제할까요?'))return;
   const idx=fixedCustom.findIndex(i=>fixedKey(i)===key);
   if(idx>=0){
     const removed=fixedCustom[idx];
