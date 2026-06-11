@@ -1026,7 +1026,7 @@ async function checkPin(){
       errEl.textContent = '⚠️ PIN이 설정되지 않았습니다.';
       return;
     }
-    if(hashHex.toLowerCase() === snap.val().toLowerCase()){
+    if(hashHex.toLowerCase() === snap.val().trim().toLowerCase()){
       /* 성공 */
       successLogin(hashHex.slice(0, 16));
     } else {
