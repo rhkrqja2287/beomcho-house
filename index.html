@@ -560,8 +560,11 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
       <div style="position:relative;height:200px"><canvas id="donut-home" role="img" aria-label="카테고리별 지출">지출 비율</canvas></div>
       
       <div class="divider"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <div class="card-title" style="margin-bottom:0">주간 지출 현황 <span id="weekly-adjustment-header" style="font-size:12px;font-weight:700;margin-left:8px"></span></div>
+      <div id="weekly-focus-container"></div>
+      
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:20px">
+        <div class="card-title" style="margin-bottom:0;font-size:13px;color:var(--text3)">주간 지출 리스트</div>
+        <span id="weekly-adjustment-header" style="font-size:12px;font-weight:700"></span>
       </div>
       <div id="weekly-budget-edit-wrap" style="display:none;flex-direction:column;gap:10px;margin-bottom:16px;background:var(--surface2);padding:14px;border-radius:12px;border:1px solid var(--border)">
         <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:10px;font-size:11px;color:var(--text3);padding-bottom:6px;border-bottom:1px solid var(--border)">
@@ -1630,6 +1633,8 @@ function renderHome(){
   const dailyRec = remainingDaysInMonth > 0 ? historyBalance / remainingDaysInMonth : 0;
 
   let weeklyHtml='';
+  let focusHtml='';
+
   for (let i = 0; i < weekRanges.length; i++) {
     const spent = weeklySpending[i];
     const target = targetBudgets[i] || 0;
@@ -1674,25 +1679,52 @@ function renderHome(){
       }
     }
 
+    if (isCurrentWeek) {
+      focusHtml = `
+        <div style="background:var(--purple-light); padding:16px; border-radius:14px; border:1px solid var(--purple); margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:14px;font-weight:700;color:var(--purple-dark)">이번주 (${i+1}주차)</span>
+              <span style="font-size:11px;color:var(--text3)">${range}</span>
+            </div>
+            <span style="font-size:14px;font-weight:700;color:${barCls==='over'?'var(--red)':barCls==='warn'?'var(--amber)':'var(--green)'}">${statusText}</span>
+          </div>
+          <div class="pw" style="height:8px;margin-bottom:12px;background:rgba(0,0,0,0.05)"><div class="pb ${barCls}" style="width:${Math.min(100, Math.max(0, pct))}%"></div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <div style="font-size:10px;color:var(--text3);margin-bottom:2px">현재 지출</div>
+              <div style="font-size:16px;font-weight:700;color:var(--text)">${fmt(spent)}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:2px">남은 가용 예산</div>
+              <div style="font-size:16px;font-weight:700;color:var(--purple-dark)">${fmt(Math.max(0, remain))}</div>
+            </div>
+          </div>
+          <div class="divider" style="margin:12px 0;opacity:0.3"></div>
+          <div style="font-size:11px;color:var(--text2);display:flex;justify-content:space-between">
+            <span>목표 ${fmtShort(target)} / 조정 ${adj !== 0 ? (adj > 0 ? '+' : '-') + fmtShort(Math.abs(adj)) : '없음'}</span>
+            ${recText}
+          </div>
+        </div>`;
+    }
+
     weeklyHtml += `
-      <div style="margin-bottom:14px; ${isCurrentWeek ? 'background:var(--surface2); padding:10px; border-radius:12px; border:1px solid var(--purple-light);' : ''}">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+      <div style="margin-bottom:12px; ${isCurrentWeek ? 'opacity:0.5;' : ''}">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
           <div>
-            <span style="font-weight:600;color:var(--text2)">${i+1}주차 ${isCurrentWeek ? '<span style="color:var(--purple);font-size:10px;margin-left:4px">● 이번주</span>' : ''}</span>
-            <span style="font-size:10px;color:var(--text3);margin-left:4px">${range}</span>
+            <span style="font-weight:600;color:var(--text2)">${i+1}주차</span>
+            <span style="font-size:9px;color:var(--text3);margin-left:4px">${range}</span>
           </div>
-          <span style="font-weight:700;color:${barCls==='over'?'var(--red)':barCls==='warn'?'var(--amber)':'var(--green)'}">${statusText}</span>
+          <span style="font-weight:700;color:${barCls==='over'?'var(--red)':barCls==='warn'?'var(--amber)':'var(--green)'};font-size:10px">${statusText}</span>
         </div>
-        <div class="pw" style="height:6px;margin-bottom:4px"><div class="pb ${barCls}" style="width:${Math.min(100, Math.max(0, pct))}%"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
-          <span>지출 ${fmt(spent)}</span>
-          <div style="text-align:right">
-            <div style="font-weight:600;color:var(--text)">가용 ${fmt(available)}</div>
-            <div style="font-size:9px;color:var(--text3);margin-top:1px">(목표 ${fmtShort(target)} / ${adj !== 0 ? `<span style="color:${adj>0?'var(--blue)':'var(--red)'}">${adj>0?'▲':'▼'} ${fmtShort(Math.abs(adj))} ${adj>0?'증액':'삭감'}</span>` : '조정 없음'})${recText}</div>
-          </div>
+        <div class="pw" style="height:4px;margin-bottom:3px"><div class="pb ${barCls}" style="width:${Math.min(100, Math.max(0, pct))}%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3)">
+          <span>지출 ${fmtShort(spent)}</span>
+          <span>가용 ${fmtShort(available)}</span>
         </div>
       </div>`;
   }
+  document.getElementById('weekly-focus-container').innerHTML = focusHtml || '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">이번 주차 정보를 찾을 수 없습니다.</div>';
   document.getElementById('weekly-bars-container').innerHTML=weeklyHtml;
 
   /* 최근 거래 */
