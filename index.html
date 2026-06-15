@@ -1117,7 +1117,7 @@ if(_savedAuth){
 ============================== */
 let txs=JSON.parse(localStorage.getItem('bch_txs')||'[]');
 let budgets=JSON.parse(localStorage.getItem('bch_budgets')||JSON.stringify(BUDGET_DEFAULT));
-let targetBudgets=JSON.parse(localStorage.getItem('bch_target_budgets')||'[0,0,0,0,0]');
+let targetBudgets=JSON.parse(localStorage.getItem('bch_target_budgets')||localStorage.getItem('bch_weekly_budgets')||'[0,0,0,0,0]');
 let reducedBudgets=JSON.parse(localStorage.getItem('bch_reduced_budgets')||'[0,0,0,0,0]');
 let annualEvents=JSON.parse(localStorage.getItem('bch_events')||JSON.stringify(ANNUAL_EVENTS_DEFAULT));
 let longSave=JSON.parse(localStorage.getItem('bch_long_save')||JSON.stringify(LONG_SAVE_DEFAULT));
@@ -1199,7 +1199,7 @@ function saveLocal(){
 }
 /* Firebase 저장 — 디바운스 적용 (연속 입력 시 500ms 후 1회만 전송) */
 let fbSaveTimer=null;
-let myLastSaveTime=0;
+let myLastSaveTime=parseInt(localStorage.getItem('bch_last_updated'))||0;
 let isSavePending=false; /* 저장 대기 중 — Firebase 응답 무시 */
 function saveAll(){
   saveLocal();
@@ -1264,8 +1264,17 @@ function applyFirebaseData(data){
   if(isSavePending)return;
   if(data.txs)txs=data.txs;
   if(data.budgets)budgets=data.budgets;
-  if(data.targetBudgets!==undefined){targetBudgets=data.targetBudgets;localStorage.setItem('bch_target_budgets',JSON.stringify(targetBudgets));}
-  if(data.reducedBudgets!==undefined){reducedBudgets=data.reducedBudgets;localStorage.setItem('bch_reduced_budgets',JSON.stringify(reducedBudgets));}
+  if(data.targetBudgets!==undefined){
+    targetBudgets=data.targetBudgets;
+    localStorage.setItem('bch_target_budgets',JSON.stringify(targetBudgets));
+  } else if(data.weeklyBudgets!==undefined){
+    targetBudgets=data.weeklyBudgets;
+    localStorage.setItem('bch_target_budgets',JSON.stringify(targetBudgets));
+  }
+  if(data.reducedBudgets!==undefined){
+    reducedBudgets=data.reducedBudgets;
+    localStorage.setItem('bch_reduced_budgets',JSON.stringify(reducedBudgets));
+  }
   if(data.annualEvents)annualEvents=data.annualEvents;
   if(data.longSave)longSave=data.longSave;
   if(data.shortSave){
@@ -1433,6 +1442,7 @@ document.addEventListener('visibilitychange',()=>{
    ⑨ 대시보드
 ============================== */
 function toggleDashboardEdit(){
+  commitPendingFields();
   dashboardEditMode=!dashboardEditMode;
   const btn=document.getElementById('dashboard-edit-toggle');
   if(btn) btn.textContent=dashboardEditMode?'✓ 완료':'✏ 수정';
