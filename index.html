@@ -546,7 +546,10 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 
 <!-- 대시보드 -->
 <div id="page-home" class="page active">
-  <div class="page-title">대시보드</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div class="page-title">대시보드</div>
+    <button class="btn btn-sm" id="dashboard-edit-toggle" onclick="toggleDashboardEdit()">✏ 수정</button>
+  </div>
   <div class="page-sub" id="home-sub"></div>
   <!-- ⑨ 유동/고정 잔액 + 권장 일일 금액 -->
   <div class="g3" id="home-metrics" style="min-height:90px"></div>
@@ -555,6 +558,16 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
       <div class="card-title">이번 달 지출 내역</div>
       <div id="home-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;font-size:12px;color:var(--text3)"></div>
       <div style="position:relative;height:200px"><canvas id="donut-home" role="img" aria-label="카테고리별 지출">지출 비율</canvas></div>
+      
+      <div class="divider"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="card-title" style="margin-bottom:0">주간 지출 현황</div>
+        <div id="weekly-budget-input-wrap" style="display:none;align-items:center;gap:6px">
+          <span style="font-size:12px;color:var(--text3)">주간 예산:</span>
+          <input type="text" id="weekly-budget-input" class="num-input" style="width:90px;padding:4px 8px;font-size:12px" oninput="formatNumInput(this)" onchange="weeklyBudget=parseNum(this.value)">
+        </div>
+      </div>
+      <div style="position:relative;height:160px"><canvas id="weekly-bar-home"></canvas></div>
     </div>
     <div class="card" style="flex:1">
       <div class="card-title">최근 거래</div>
@@ -1086,6 +1099,7 @@ if(_savedAuth){
 ============================== */
 let txs=JSON.parse(localStorage.getItem('bch_txs')||'[]');
 let budgets=JSON.parse(localStorage.getItem('bch_budgets')||JSON.stringify(BUDGET_DEFAULT));
+let weeklyBudget=parseInt(localStorage.getItem('bch_weekly_budget'))||0;
 let annualEvents=JSON.parse(localStorage.getItem('bch_events')||JSON.stringify(ANNUAL_EVENTS_DEFAULT));
 let longSave=JSON.parse(localStorage.getItem('bch_long_save')||JSON.stringify(LONG_SAVE_DEFAULT));
 let shortSave=JSON.parse(localStorage.getItem('bch_short_save')||JSON.stringify(SHORT_SAVE_DEFAULT));
@@ -1122,6 +1136,7 @@ let txListDate=new Date();
 let currentFixedTab='전체';
 let calEditMode=false;
 let charts={};
+let dashboardEditMode=false;
 let budgetEditMode=false; /* 예산 편집 모드 */
 let fixedEditMode=false;  /* 고정지출 편집 모드 */
 let savingsEditMode=false; /* 저축 편집 모드 */ /* Firebase 로드 완료 여부 */
@@ -1155,6 +1170,7 @@ function saveLocal(){
   clearMemo();
   localStorage.setItem('bch_txs',JSON.stringify(txs));
   localStorage.setItem('bch_budgets',JSON.stringify(budgets));
+  localStorage.setItem('bch_weekly_budget',weeklyBudget);
   localStorage.setItem('bch_events',JSON.stringify(annualEvents));
   localStorage.setItem('bch_long_save',JSON.stringify(longSave));
   localStorage.setItem('bch_short_save',JSON.stringify(shortSave));
@@ -1175,7 +1191,7 @@ function saveAll(){
     myLastSaveTime=_now;
     localStorage.setItem('bch_last_updated',_now);
     db.ref(ROOT).update({
-      txs,budgets,annualEvents,longSave,shortSave,
+      txs,budgets,weeklyBudget,annualEvents,longSave,shortSave,
       fixedChecks:getFixedChecks(),
       fixedAmts:getFixedAmts(),
       fixedDays:getFixedDays(),
@@ -1228,6 +1244,7 @@ function applyFirebaseData(data){
   if(isSavePending)return;
   if(data.txs)txs=data.txs;
   if(data.budgets)budgets=data.budgets;
+  if(data.weeklyBudget!==undefined){weeklyBudget=data.weeklyBudget;localStorage.setItem('bch_weekly_budget',weeklyBudget);}
   if(data.annualEvents)annualEvents=data.annualEvents;
   if(data.longSave)longSave=data.longSave;
   if(data.shortSave){
@@ -1391,6 +1408,16 @@ document.addEventListener('visibilitychange',()=>{
 /* ==============================
    ⑨ 대시보드
 ============================== */
+function toggleDashboardEdit(){
+  dashboardEditMode=!dashboardEditMode;
+  const btn=document.getElementById('dashboard-edit-toggle');
+  if(btn) btn.textContent=dashboardEditMode?'✓ 완료':'✏ 수정';
+  const wrap=document.getElementById('weekly-budget-input-wrap');
+  if(wrap) wrap.style.display=dashboardEditMode?'flex':'none';
+  if(!dashboardEditMode) saveAll();
+  renderHome();
+}
+
 function renderHome(){
   const m=curMonth();
   const data=monthlyData()[m]||{income:0,expense:0,cats:{}};
@@ -1467,6 +1494,46 @@ function renderHome(){
     });});
   } else {
     chartCanvas.style.display = 'none';
+  }
+
+  /* 주간 지출 계산 */
+  const weeklySpending=[0,0,0,0,0];
+  const m2=curMonth();
+  txs.forEach(t=>{
+    if(t.date.startsWith(m2)&&t.type==='expense'){
+      const d=parseInt(t.date.split('-')[2]);
+      if(d<=7)weeklySpending[0]+=t.amt;
+      else if(d<=14)weeklySpending[1]+=t.amt;
+      else if(d<=21)weeklySpending[2]+=t.amt;
+      else if(d<=28)weeklySpending[3]+=t.amt;
+      else weeklySpending[4]+=t.amt;
+    }
+  });
+  const weeklyInput=document.getElementById('weekly-budget-input');
+  if(weeklyInput)weeklyInput.value=fmtN(weeklyBudget);
+
+  dc('weekly-bar');
+  const weeklyCanvas=document.getElementById('weekly-bar-home');
+  if(weeklyCanvas){
+    const isDark=document.body.classList.contains('dark');
+    requestAnimationFrame(()=>{charts['weekly-bar']=new Chart(weeklyCanvas,{
+      type:'bar',
+      data:{
+        labels:['1주','2주','3주','4주','5주'],
+        datasets:[
+          {label:'지출',data:weeklySpending,backgroundColor:isDark?'#0a84ff':'#007aff',borderRadius:4,barThickness:18},
+          {label:'예산',data:Array(5).fill(weeklyBudget),type:'line',borderColor:'#ff9500',borderWidth:1.5,borderDash:[4,4],pointRadius:0,fill:false,hidden:weeklyBudget<=0}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmt(ctx.raw)}}},
+        scales:{
+          y:{beginAtZero:true,ticks:{display:false},grid:{display:false,drawBorder:false}},
+          x:{grid:{display:false,drawBorder:false},ticks:{color:'#8e8e93',font:{size:10}}}
+        }
+      }
+    });});
   }
 
   /* 최근 거래 */
