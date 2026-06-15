@@ -1197,7 +1197,7 @@ function saveAll(){
     myLastSaveTime=_now;
     localStorage.setItem('bch_last_updated',_now);
     db.ref(ROOT).update({
-      txs,budgets,weeklyBudgets,annualEvents,longSave,shortSave,
+      txs,budgets,targetBudgets,reducedBudgets,annualEvents,longSave,shortSave,
       fixedChecks:getFixedChecks(),
       fixedAmts:getFixedAmts(),
       fixedDays:getFixedDays(),
@@ -1536,59 +1536,73 @@ function renderHome(){
   });
 
   /* 주간 예산 입력값 복원 */
-  const weeklyInputs=document.querySelectorAll('.weekly-budget-input');
-  weeklyInputs.forEach((inp,i)=>{ if(inp) inp.value=fmtN(weeklyBudgets[i]); });
+  const targetInputs=document.querySelectorAll('.target-budget-input');
+  targetInputs.forEach((inp,i)=>{ if(inp) inp.value=fmtN(targetBudgets[i]); });
+  const reducedInputs=document.querySelectorAll('.reduced-budget-input');
+  reducedInputs.forEach((inp,i)=>{ if(inp) inp.value=fmtN(reducedBudgets[i]); });
 
   // [Manual Adjustment Guide] 로직 시작
   const todayD = new Date().getDate();
-  let totalOverspent = 0;
+  let grossOverspent = 0; // 순수 초과액 합계
+  let totalManualReduction = 0; // 전체 삭감액 합계
   
-  // 1. 지금까지(오늘 포함) 초과된 총 금액 계산
+  // 1. 지금까지(오늘 포함) 초과된 총 금액 및 전체 삭감액 계산
   for (let i = 0; i < weekRanges.length; i++) {
+    const spent = weeklySpending[i];
+    const target = targetBudgets[i] || 0;
+    const reduced = reducedBudgets[i] || 0;
+    totalManualReduction += reduced;
+
     if (weekRanges[i].start <= todayD) {
-      const spent = weeklySpending[i];
-      const budget = weeklyBudgets[i] || 0;
-      const diff = spent - budget;
-      if (diff > 0) totalOverspent += diff;
+      const diff = spent - target;
+      if (diff > 0) grossOverspent += diff;
     }
   }
+
+  // 조절해야 할 최종 예산 = (초과액 합계) - (삭감액 합계)
+  const netAdjustmentNeeded = Math.max(0, grossOverspent - totalManualReduction);
 
   // 상단 헤더에 '조절해야 할 예산' 표시
   const headerEl = document.getElementById('weekly-adjustment-header');
   if (headerEl) {
-    if (totalOverspent > 0) {
+    if (netAdjustmentNeeded > 0) {
       headerEl.style.color = 'var(--red)';
-      headerEl.textContent = `[조절해야 할 예산: ${fmt(totalOverspent)}]`;
+      headerEl.textContent = `[조절해야 할 예산: ${fmt(netAdjustmentNeeded)}]`;
+    } else if (grossOverspent > 0) {
+      headerEl.style.color = 'var(--green)';
+      headerEl.textContent = `[조절 완료 ✓]`;
     } else {
       headerEl.textContent = '';
     }
   }
 
-  // 2. 남은 기간 일할 조절 추천 금액 계산
-  const remainingDaysInMonth = lastDate2 - todayD + 1; // 오늘 포함 남은 일수
-  const dailyRec = remainingDaysInMonth > 0 ? totalOverspent / remainingDaysInMonth : 0;
+  // 2. 남은 기간 일할 추가 조절 추천 금액 계산 (이미 입력된 삭감액 제외한 나머지 필요분 대상)
+  const remainingDaysInMonth = lastDate2 - todayD + 1;
+  const dailyRec = remainingDaysInMonth > 0 ? netAdjustmentNeeded / remainingDaysInMonth : 0;
 
   let weeklyHtml='';
   for (let i = 0; i < weekRanges.length; i++) {
     const spent = weeklySpending[i];
-    const budget = weeklyBudgets[i] || 0;
-    const remain = budget - spent;
+    const target = targetBudgets[i] || 0;
+    const reduced = reducedBudgets[i] || 0;
+    const available = target - reduced; // 가용 예산 = 목표 - 삭감
+    const remain = available - spent;
     
     let pct = 0;
     let statusText = '';
     let barCls = 'ok';
     
-    if (budget <= 0) {
+    if (available <= 0) {
       pct = 0;
       barCls = 'over';
-      statusText = spent > 0 ? `${fmt(Math.abs(remain))} 초과` : '예산 미설정';
+      statusText = spent > 0 ? `${fmt(Math.abs(remain))} 초과` : '예산 소진';
     } else {
       if (remain < 0) {
         pct = 0;
         barCls = 'over';
         statusText = `${fmt(Math.abs(remain))} 초과`;
       } else {
-        pct = Math.round(remain / budget * 100);
+        pct = Math.round(remain / available * 100);
         barCls = pct < 20 ? 'over' : pct < 50 ? 'warn' : 'ok';
         statusText = `${pct}% 남음`;
       }
@@ -1596,14 +1610,14 @@ function renderHome(){
     
     const range = weekRanges[i] ? `${rangeToFullDate(curM_str, weekRanges[i])}` : '';
     
-    // 조절 추천 금액 계산 (오늘 이후 일수가 남은 주차만)
+    // 조절 추천 금액 계산 (삭감액이 입력되지 않았거나 추가 조절이 필요한 경우)
     let recText = '';
-    if (totalOverspent > 0 && weekRanges[i].end >= todayD) {
+    if (netAdjustmentNeeded > 0 && weekRanges[i].end >= todayD && reduced === 0) {
       const daysInWeekFromToday = Math.max(0, weekRanges[i].end - Math.max(weekRanges[i].start, todayD) + 1);
       if (daysInWeekFromToday > 0) {
         const recAmt = Math.round(dailyRec * daysInWeekFromToday);
         if (recAmt > 0) {
-          recText = `<span style="color:var(--amber);font-size:10px;margin-left:6px">💡 조절 추천: -${fmtShort(recAmt)}</span>`;
+          recText = `<span style="color:var(--amber);font-size:10px;margin-left:6px">💡 추가 조절 추천: -${fmtShort(recAmt)}</span>`;
         }
       }
     }
@@ -1620,7 +1634,10 @@ function renderHome(){
         <div class="pw" style="height:6px;margin-bottom:4px"><div class="pb ${barCls}" style="width:${Math.min(100, Math.max(0, pct))}%"></div></div>
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
           <span>순지출 ${fmt(spent)}</span>
-          <span>가용 예산 ${fmt(budget)}${recText}</span>
+          <div style="text-align:right">
+            <div style="font-weight:600;color:var(--text)">가용 ${fmt(available)}</div>
+            <div style="font-size:9px;color:var(--text3);margin-top:1px">(목표 ${fmtShort(target)} / ${reduced > 0 ? `<span style="color:var(--red)">✂️ ${fmtShort(reduced)} 삭감</span>` : '삭감 없음'})${recText}</div>
+          </div>
         </div>
       </div>`;
   }
