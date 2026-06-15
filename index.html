@@ -1539,38 +1539,81 @@ function renderHome(){
   const weeklyInputs=document.querySelectorAll('.weekly-budget-input');
   weeklyInputs.forEach((inp,i)=>{ if(inp) inp.value=fmtN(weeklyBudgets[i]); });
 
+  // [Dynamic Daily Rationing] 주차별 가용 예산 동적 계산 로직
+  let adjustedBudgets = [...weeklyBudgets];
+  
+  for (let i = 0; i < weekRanges.length; i++) {
+    const spent = weeklySpending[i];
+    const available = adjustedBudgets[i];
+    const diff = available - spent; // 남은 금액 (음수면 초과)
+
+    if (diff < 0) {
+      // 초과 지출 발생 시: 남은 총 일수 계산
+      const remainingDaysInMonth = lastDate2 - weekRanges[i].end;
+      if (remainingDaysInMonth > 0) {
+        const dailyDeduction = Math.abs(diff) / remainingDaysInMonth;
+        // 남은 주차들에 대해 각각의 일수만큼 예산 삭감
+        for (let j = i + 1; j < weekRanges.length; j++) {
+          const daysInNextWeek = weekRanges[j].end - weekRanges[j].start + 1;
+          adjustedBudgets[j] -= (dailyDeduction * daysInNextWeek);
+        }
+      }
+    } else if (diff > 0 && i < weekRanges.length - 1) {
+      // 잔여 금액 발생 시: 단순 이월 (이월 방식은 유지하되 삭감은 일할 계산)
+      // 사용자의 이전 요구사항인 '이월 반영'을 유지하기 위해 
+      // 초과는 일할 분할 삭감하고, 잔여는 다음 주로 넘기는 하이브리드 방식 적용 가능하나
+      // 'Rationing' 컨셉에 충실하게 잔여분도 다음 주로 단순 합산합니다.
+      adjustedBudgets[i+1] += diff;
+    }
+  }
+
   let weeklyHtml='';
-  let carriedOver=0;
-  weeklySpending.forEach((exp,i)=>{
-    const inc=weeklyIncome[i]||0;
-    const netSpent=exp - inc; // 순지출 = 지출 - 수입
-    const initialBudget=weeklyBudgets[i]||0;
-    const availableBudget=initialBudget + carriedOver;
-    const remain=availableBudget - netSpent;
+  for (let i = 0; i < weekRanges.length; i++) {
+    const spent = weeklySpending[i];
+    const available = adjustedBudgets[i];
+    const initial = weeklyBudgets[i];
+    const remain = available - spent;
     
-    // 퍼센트 계산: 가용 예산이 0 이하인 경우 0%, 그 외에는 남은 비율 (최소 0, 100% 이상 허용)
-    const pct=availableBudget>0 ? Math.max(0, Math.round(remain/availableBudget*100)) : 0;
-    const barCls=availableBudget<=0 || pct<20 ? 'over' : pct<50 ? 'warn' : 'ok';
+    let pct = 0;
+    let statusText = '';
+    let barCls = 'ok';
+    
+    if (available <= 0) {
+      pct = 0;
+      barCls = 'over';
+      statusText = spent > 0 ? `${fmt(Math.abs(remain))} 초과` : '예산 소진';
+    } else {
+      if (remain < 0) {
+        pct = 0;
+        barCls = 'over';
+        statusText = `${fmt(Math.abs(remain))} 초과`;
+      } else {
+        pct = Math.round(remain / available * 100);
+        barCls = pct < 20 ? 'over' : pct < 50 ? 'warn' : 'ok';
+        statusText = `${pct}% 남음`;
+      }
+    }
+    
     const range = weekRanges[i] ? `${rangeToFullDate(curM_str, weekRanges[i])}` : '';
-    
-    weeklyHtml+=`
+    const isAdjusted = Math.round(available) < Math.round(initial);
+    const explanation = isAdjusted ? ' (초과 분할 삭감 적용)' : '';
+
+    weeklyHtml += `
       <div style="margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
           <div>
             <span style="font-weight:600;color:var(--text2)">${i+1}주차</span>
             <span style="font-size:10px;color:var(--text3);margin-left:4px">${range}</span>
           </div>
-          ${initialBudget>0 || availableBudget!==0 ? `<span style="font-weight:700;color:${barCls==='over'?'var(--red)':barCls==='warn'?'var(--amber)':'var(--green)'}">${availableBudget<=0 && netSpent>0 ? '초과' : pct+'% 남음'}</span>` : ''}
+          <span style="font-weight:700;color:${barCls==='over'?'var(--red)':barCls==='warn'?'var(--amber)':'var(--green)'}">${statusText}</span>
         </div>
-        <div class="pw" style="height:6px;margin-bottom:4px"><div class="pb ${barCls}" style="width:${availableBudget>0?Math.min(100, pct): (availableBudget<=0 && netSpent>0 ? 100 : 0)}%"></div></div>
+        <div class="pw" style="height:6px;margin-bottom:4px"><div class="pb ${barCls}" style="width:${Math.min(100, Math.max(0, pct))}%"></div></div>
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
-          <span>순지출 ${fmt(netSpent)}</span>
-          ${initialBudget>0 || availableBudget!==0 ? `<span>가용 예산 ${fmt(availableBudget)}</span>` : '<span style="font-size:9px">예산 미설정</span>'}
+          <span>순지출 ${fmt(spent)}</span>
+          <span>가용 예산 ${fmt(available)}${explanation}</span>
         </div>
       </div>`;
-      
-    carriedOver=remain; // 다음 주차로 잔액 이월
-  });
+  }
   document.getElementById('weekly-bars-container').innerHTML=weeklyHtml;
 
   /* 최근 거래 */
