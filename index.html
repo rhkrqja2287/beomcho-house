@@ -573,32 +573,32 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
         <!-- 1주 -->
         <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:10px;align-items:center">
           <span style="font-size:12px;font-weight:600;color:var(--text2)">1주</span>
-          <input type="text" class="num-input target-budget-input" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[0]=parseNum(this.value)">
-          <input type="text" class="num-input weekly-adj-input" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[0]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+          <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[0]=parseNum(this.value)">
+          <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[0]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
         </div>
         <!-- 2주 -->
         <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:10px;align-items:center">
           <span style="font-size:12px;font-weight:600;color:var(--text2)">2주</span>
-          <input type="text" class="num-input target-budget-input" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[1]=parseNum(this.value)">
-          <input type="text" class="num-input weekly-adj-input" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[1]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+          <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[1]=parseNum(this.value)">
+          <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[1]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
         </div>
         <!-- 3주 -->
         <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:10px;align-items:center">
           <span style="font-size:12px;font-weight:600;color:var(--text2)">3주</span>
-          <input type="text" class="num-input target-budget-input" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[2]=parseNum(this.value)">
-          <input type="text" class="num-input weekly-adj-input" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[2]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+          <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[2]=parseNum(this.value)">
+          <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[2]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
         </div>
         <!-- 4주 -->
         <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:10px;align-items:center">
           <span style="font-size:12px;font-weight:600;color:var(--text2)">4주</span>
-          <input type="text" class="num-input target-budget-input" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[3]=parseNum(this.value)">
-          <input type="text" class="num-input weekly-adj-input" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[3]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+          <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[3]=parseNum(this.value)">
+          <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[3]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
         </div>
         <!-- 5주 -->
         <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:10px;align-items:center">
           <span style="font-size:12px;font-weight:600;color:var(--text2)">5주</span>
-          <input type="text" class="num-input target-budget-input" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[4]=parseNum(this.value)">
-          <input type="text" class="num-input weekly-adj-input" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[4]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+          <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[4]=parseNum(this.value)">
+          <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[4]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
         </div>
       </div>
       <div id="weekly-bars-container"></div>
