@@ -567,13 +567,36 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
         <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:10px;font-size:11px;color:var(--text3);padding-bottom:6px;border-bottom:1px solid var(--border)">
           <span>주차</span><span style="text-align:center">목표 예산</span><span style="text-align:center">조정액 (+/−)</span>
         </div>
-        ${[1,2,3,4,5].map(i=>`
-          <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:10px;align-items:center">
-            <span style="font-size:12px;font-weight:600;color:var(--text2)">${i}주</span>
-            <input type="text" class="num-input target-budget-input" value="${fmtN(targetBudgets[i-1])}" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[${i-1}]=parseNum(this.value)">
-            <input type="text" class="num-input weekly-adj-input" value="${fmtN(weeklyAdjustments[i-1])}" style="padding:6px;font-size:13px;text-align:right;color:${weeklyAdjustments[i-1]>=0?'var(--blue)':'var(--red)'}" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[${i-1}]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
-          </div>
-        `).join('')}
+        <!-- 1주 -->
+        <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:10px;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:var(--text2)">1주</span>
+          <input type="text" class="num-input target-budget-input" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[0]=parseNum(this.value)">
+          <input type="text" class="num-input weekly-adj-input" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[0]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+        </div>
+        <!-- 2주 -->
+        <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:10px;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:var(--text2)">2주</span>
+          <input type="text" class="num-input target-budget-input" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[1]=parseNum(this.value)">
+          <input type="text" class="num-input weekly-adj-input" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[1]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+        </div>
+        <!-- 3주 -->
+        <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:10px;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:var(--text2)">3주</span>
+          <input type="text" class="num-input target-budget-input" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[2]=parseNum(this.value)">
+          <input type="text" class="num-input weekly-adj-input" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[2]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+        </div>
+        <!-- 4주 -->
+        <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:10px;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:var(--text2)">4주</span>
+          <input type="text" class="num-input target-budget-input" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[3]=parseNum(this.value)">
+          <input type="text" class="num-input weekly-adj-input" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[3]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+        </div>
+        <!-- 5주 -->
+        <div style="display:grid;grid-template-columns:36px 1fr 1fr;gap:10px;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:var(--text2)">5주</span>
+          <input type="text" class="num-input target-budget-input" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[4]=parseNum(this.value)">
+          <input type="text" class="num-input weekly-adj-input" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[4]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+        </div>
       </div>
       <div id="weekly-bars-container"></div>
     </div>
@@ -1635,6 +1658,7 @@ function renderHome(){
     }
     
     const range = weekRanges[i] ? `${rangeToFullDate(curM_str, weekRanges[i])}` : '';
+    const isCurrentWeek = todayD >= weekRanges[i].start && todayD <= weekRanges[i].end;
     
     // 조절 추천 금액 계산
     let recText = '';
@@ -1651,10 +1675,10 @@ function renderHome(){
     }
 
     weeklyHtml += `
-      <div style="margin-bottom:14px">
+      <div style="margin-bottom:14px; ${isCurrentWeek ? 'background:var(--surface2); padding:10px; border-radius:12px; border:1px solid var(--purple-light);' : ''}">
         <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
           <div>
-            <span style="font-weight:600;color:var(--text2)">${i+1}주차</span>
+            <span style="font-weight:600;color:var(--text2)">${i+1}주차 ${isCurrentWeek ? '<span style="color:var(--purple);font-size:10px;margin-left:4px">● 이번주</span>' : ''}</span>
             <span style="font-size:10px;color:var(--text3);margin-left:4px">${range}</span>
           </div>
           <span style="font-weight:700;color:${barCls==='over'?'var(--red)':barCls==='warn'?'var(--amber)':'var(--green)'}">${statusText}</span>
