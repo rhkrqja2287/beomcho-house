@@ -233,14 +233,9 @@ tr:hover td{background:var(--surface2)}
     justify-content:space-around;padding:0;width:100%;
     height:60px;flex-shrink:0;
   }
-  /* safe-area 전용 빈 공간 — sidebar 하단에 붙음 */
-  .sidebar::after{
-    content:'';
-    display:block;
-    height:env(safe-area-inset-bottom);
-    background:var(--surface);
-    flex-shrink:0;
-  }
+  /* safe-area: sidebar에 padding-bottom으로 처리 (::after 방식보다 iOS에서 안정적) */
+  .sidebar::after{display:none}
+  .sidebar{padding-bottom:env(safe-area-inset-bottom);padding-top:0}
   .nav-item{
     flex-direction:column;gap:3px;padding:0;
     border-radius:0;font-size:10px;min-width:0;flex:1;
@@ -1594,10 +1589,14 @@ function updateThemeColorMeta(isModalOpen = false) {
   /* 모달 딤 효과는 CSS overlay로만 처리 — theme-color는 건드리지 않음 */
 }
 
-/* 앱 재진입 / 포커스 복귀 시 상태바 색상 강제 복원 */
+/* 앱 재진입 / 포커스 복귀 시 상태바 색상 강제 복원
+   거래 입력 후 돌아왔을 때 회색으로 굳는 문제 해결:
+   모달 open 여부와 무관하게 항상 현재 테마 색으로 복원,
+   iOS Safari가 meta 변경을 인식하도록 두 타이밍에 중복 적용 */
 function _restoreThemeOnResume() {
-  const isModalOpen = document.getElementById('tx-modal-overlay')?.classList.contains('open');
-  updateThemeColorMeta(!!isModalOpen);
+  updateThemeColorMeta(false);
+  requestAnimationFrame(() => updateThemeColorMeta(false));
+  setTimeout(() => updateThemeColorMeta(false), 300);
 }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') _restoreThemeOnResume();
@@ -1636,6 +1635,8 @@ function closeTxModal(e){
   if(e&&e.target!==document.getElementById('tx-modal-overlay')&&e.target!==undefined)return;
   document.getElementById('tx-modal-overlay').classList.remove('open');
   updateThemeColorMeta(false);
+  /* iOS Safari: 앱 복귀 시 theme-color가 회색으로 굳는 현상 방지 — 한 프레임 뒤에도 강제 복원 */
+  requestAnimationFrame(()=>updateThemeColorMeta(false));
 }
 /* ESC 키로 모달 닫기 */
 document.addEventListener('keydown',e=>{
