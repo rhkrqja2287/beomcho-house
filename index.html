@@ -15,8 +15,8 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1c1c1e">
 <!-- OG (네이버 웨일 북마크 썸네일) -->
-<meta property="og:title" content="범초하우스 가계부">
-<meta property="og:description" content="범초하우스 가족 가계부">
+<meta property="og:title" content="범초하우스">
+<meta property="og:description" content="범초하우스">
 <meta property="og:image" content="https://rhkrqja2287.github.io/beomcho-house/icon.png">
 <meta property="og:url" content="https://rhkrqja2287.github.io/beomcho-house/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -522,10 +522,118 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   .tx-form-row1 .tx-date-cell{grid-column:1/-1}
   .tx-form-row2{grid-template-columns:1fr 1fr;gap:6px}
 }
+
+/* ===== 플로팅 "+" 버튼 ===== */
+#fab-add-tx{
+  position:fixed;
+  bottom:calc(24px + env(safe-area-inset-bottom));
+  right:24px;
+  z-index:1000;
+  width:56px;height:56px;
+  border-radius:50%;
+  background:var(--purple);
+  color:#fff;
+  border:none;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,122,255,.45);
+  transition:transform .15s,background .15s,box-shadow .15s;
+}
+/* 데스크톱 넓은 화면에서 버튼 위치 조정 (콘텐츠 영역 우측에 맞춤) */
+@media(min-width:1120px){
+  #fab-add-tx{
+    right:calc(100% - 1120px + 50px);
+  }
+}
+#fab-add-tx:hover{background:var(--purple-dark);box-shadow:0 6px 20px rgba(0,122,255,.55);transform:scale(1.06)}
+#fab-add-tx:active{transform:scale(.95)}
+@media(max-width:768px){
+  #fab-add-tx{
+    bottom:calc(72px + env(safe-area-inset-bottom));
+    right:16px;
+    width:52px;height:52px;
+  }
+}
+
+/* ===== 새 거래 모달 ===== */
+#tx-modal-overlay{
+  position:fixed;inset:0;
+  z-index:2000;
+  background:rgba(0,0,0,.45);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;
+  transition:opacity .2s;
+  padding:16px;
+}
+#tx-modal-overlay.open{opacity:1;pointer-events:auto}
+#tx-modal{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:22px 22px 20px;
+  width:100%;max-width:480px;
+  box-shadow:0 8px 32px rgba(0,0,0,.2);
+  transform:translateY(20px) scale(.97);
+  transition:transform .22s cubic-bezier(.34,1.26,.64,1);
+  max-height:90dvh;overflow-y:auto;
+}
+#tx-modal-overlay.open #tx-modal{transform:translateY(0) scale(1)}
+@media(max-width:768px){
+  #tx-modal-overlay{align-items:flex-end;padding:0}
+  #tx-modal{
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+    max-width:100%;
+    padding:20px 16px calc(16px + env(safe-area-inset-bottom));
+  }
+}
 </style>
 </head>
 <body>
 <div id="toast"></div>
+
+<!-- ====== 플로팅 "+" 버튼 ====== -->
+<button id="fab-add-tx" onclick="openTxModal()" aria-label="새 거래 추가" title="새 거래 추가">
+  <svg viewBox="0 0 20 20" fill="currentColor" width="26" height="26"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+</button>
+
+<!-- ====== 새 거래 모달 ====== -->
+<div id="tx-modal-overlay" onclick="closeTxModal(event)">
+  <div id="tx-modal" role="dialog" aria-modal="true" aria-labelledby="tx-modal-title">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="card-title" id="tx-modal-title" style="margin-bottom:0;font-size:16px">새 거래</div>
+      <button onclick="document.getElementById('tx-modal-overlay').classList.remove('open')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:4px 8px" aria-label="닫기">✕</button>
+    </div>
+    <!-- 행1: 날짜 / 유형 / 카테고리 -->
+    <div class="tx-form-row1" style="margin-bottom:12px">
+      <div class="tx-date-cell">
+        <label>날짜</label>
+        <input type="date" id="tx-date" style="font-size:13px;padding:7px 8px;max-width:100%">
+      </div>
+      <div>
+        <label>유형</label>
+        <select id="tx-type" onchange="updateCats()" style="padding:7px 10px">
+          <option value="expense">지출</option>
+          <option value="income">수입</option>
+        </select>
+      </div>
+      <div id="cat-wrap">
+        <label>카테고리</label>
+        <select id="tx-cat" style="padding:7px 10px"></select>
+      </div>
+    </div>
+    <!-- 행2: 내용 / 금액 -->
+    <div class="tx-form-row2" style="margin-bottom:14px">
+      <div><label>내용</label><input type="text" id="tx-desc" placeholder="예: 마트 장보기" style="padding:7px 10px"></div>
+      <div><label>금액</label><input type="text" id="tx-amt" placeholder="0" class="num-input" inputmode="numeric" oninput="formatNumInput(this)" style="padding:7px 10px;text-align:right"></div>
+    </div>
+    <!-- 버튼 -->
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-p" onclick="addTx()" style="flex:1;padding:11px">추가하기</button>
+      <button class="btn" onclick="clearForm()" style="padding:11px 16px">초기화</button>
+    </div>
+  </div>
+</div>
+
 <div id="pin-screen">
   <div class="pin-box">
     <div class="pin-logo">범초하우스</div>
@@ -676,45 +784,6 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 <div id="page-input" class="page">
   <div class="page-title">거래 입력</div>
   <div class="page-sub">수입과 지출을 기록하세요</div>
-  <div class="card new-tx-card">
-    <!-- 헤더: 클릭으로 접기/펼치기 -->
-    <div class="new-tx-toggle" onclick="toggleNewTxForm()" role="button" aria-expanded="true" aria-controls="new-tx-body">
-      <div class="card-title" style="margin-bottom:0">새 거래</div>
-      <svg class="new-tx-chevron open" id="new-tx-chevron" viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
-    </div>
-    <!-- 폼 본문 -->
-    <div class="new-tx-body open" id="new-tx-body">
-      <div style="height:14px"></div>
-      <!-- 행1: 날짜 / 유형 / 카테고리 -->
-      <div class="tx-form-row1">
-        <div class="tx-date-cell">
-          <label>날짜</label>
-          <input type="date" id="tx-date" style="font-size:13px;padding:7px 8px;max-width:100%">
-        </div>
-        <div>
-          <label>유형</label>
-          <select id="tx-type" onchange="updateCats()" style="padding:7px 10px">
-            <option value="expense">지출</option>
-            <option value="income">수입</option>
-          </select>
-        </div>
-        <div id="cat-wrap">
-          <label>카테고리</label>
-          <select id="tx-cat" style="padding:7px 10px"></select>
-        </div>
-      </div>
-      <!-- 행2: 내용 / 금액 -->
-      <div class="tx-form-row2">
-        <div><label>내용</label><input type="text" id="tx-desc" placeholder="예: 마트 장보기" style="padding:7px 10px"></div>
-        <div><label>금액</label><input type="text" id="tx-amt" placeholder="0" class="num-input" inputmode="numeric" oninput="formatNumInput(this)" style="padding:7px 10px;text-align:right"></div>
-      </div>
-      <!-- 버튼 -->
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-p" onclick="addTx()" style="flex:1">추가하기</button>
-        <button class="btn" onclick="clearForm()" style="padding:8px 14px">초기화</button>
-      </div>
-    </div>
-  </div>
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px">
       <div class="card-title" style="margin-bottom:0">거래 내역</div>
@@ -1507,16 +1576,30 @@ function toggleTheme(){
 /* ==============================
    네비
 ============================== */
-/* ===== 새 거래 폼 접기/펼치기 ===== */
-function toggleNewTxForm(){
-  const body=document.getElementById('new-tx-body');
-  const chevron=document.getElementById('new-tx-chevron');
-  const toggle=document.querySelector('.new-tx-toggle');
-  if(!body||!chevron)return;
-  const isOpen=body.classList.contains('open');
-  body.classList.toggle('open',!isOpen);
-  chevron.classList.toggle('open',!isOpen);
-  if(toggle)toggle.setAttribute('aria-expanded',String(!isOpen));
+/* ===== 새 거래 모달 열기/닫기 ===== */
+function openTxModal(){
+  document.getElementById('tx-date').value=todayStr();
+  updateCats();
+  document.getElementById('tx-amt').value='';
+  document.getElementById('tx-desc').value='';
+  document.getElementById('tx-modal-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('tx-amt').focus(),250);
+}
+function closeTxModal(e){
+  /* 인수 없이 호출(✕ 버튼) 또는 오버레이 배경 클릭 시 닫기 */
+  if(e&&e.target!==document.getElementById('tx-modal-overlay'))return;
+  document.getElementById('tx-modal-overlay').classList.remove('open');
+}
+/* ESC 키로 모달 닫기 */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')document.getElementById('tx-modal-overlay').classList.remove('open');
+});
+/* 기존 toggleNewTxForm — 하위 호환용 빈 함수 */
+function toggleNewTxForm(){}
+const FAB_PAGES=new Set(['home','input','calendar']);
+function updateFabVisibility(p){
+  const fab=document.getElementById('fab-add-tx');
+  if(fab)fab.style.display=FAB_PAGES.has(p)?'flex':'none';
 }
 function goPage(p){
   commitPendingFields();
@@ -1526,6 +1609,7 @@ function goPage(p){
   const idx={home:0,input:1,calendar:2,budget:3,fixed:4,savings:5};
   document.querySelectorAll('.nav-item')[idx[p]].classList.add('active');
   ({home:renderHome,input:renderInput,calendar:renderCalendar,budget:renderBudget,fixed:renderFixed,savings:renderSavings})[p]();
+  updateFabVisibility(p);
 }
 function commitActiveField(){
   const el=document.activeElement;
@@ -1854,12 +1938,17 @@ function addTx(){
   saveAll();
   document.getElementById('tx-amt').value='';
   document.getElementById('tx-desc').value='';
+  document.getElementById('tx-modal-overlay').classList.remove('open');
+  showToast('거래가 추가됐어요 ✓');
   renderTxList();
+  renderHome();
 }
 function clearForm(){
   document.getElementById('tx-amt').value='';
   document.getElementById('tx-desc').value='';
   document.getElementById('tx-date').value=todayStr();
+  document.getElementById('tx-type').value='expense';
+  updateCats();
 }
 function delTx(id){
   if(!window.confirm('이 거래를 삭제할까요?'))return;
@@ -2888,6 +2977,7 @@ document.getElementById('tx-date').value=todayStr();
 updateCats();
 /* 로컬 캐시로 즉시 렌더 (오프라인에서도 빠르게 표시) */
 renderHome();
+updateFabVisibility('home');
 setSyncStatus('syncing');
 
 let fbListenerStarted = false;
