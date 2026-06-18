@@ -214,7 +214,6 @@ tr:hover td{background:var(--surface2)}
     flex-direction:column; /* column으로 바꿔 safe-area를 하단에 독립 확보 */
     border-right:none;border-top:1px solid var(--border);
     flex-shrink:0;
-    order:2;
     position:fixed;
     bottom:0;
     left:0;
@@ -225,6 +224,7 @@ tr:hover td{background:var(--surface2)}
     overscroll-behavior:none;
     user-select:none;
     -webkit-user-select:none;
+    padding-top:0 !important; /* 메인 CSS의 safe-area-inset-top 제거 */
   }
   .logo{display:none}
   /* 탭 버튼이 들어가는 실제 60px 행 */
@@ -258,7 +258,6 @@ tr:hover td{background:var(--surface2)}
     flex:1;
     overflow-y:auto;
     overflow-x:hidden;
-    order:1;
     -webkit-overflow-scrolling:touch;
   }
   .page{padding:14px 12px;max-width:100%;overflow-x:hidden}
@@ -1582,16 +1581,16 @@ function escJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 function updateThemeColorMeta(isModalOpen = false) {
   const isDark = document.body.classList.contains('dark');
   /* theme-color는 항상 앱 배경색 — 밝으면 iOS가 검정 아이콘, 어두우면 흰 아이콘 자동 선택 */
-  const bgColor = isDark ? '#000000' : '#f2f2f7';
+  const bgColor = isDark ? '#000000' : '#ffffff';
+  
   const meta = document.getElementById('meta-theme-color');
   if (meta) meta.setAttribute('content', bgColor);
-  document.documentElement.style.backgroundColor = bgColor;
-
-  /* 상태바 스타일: 라이트=default(검정 텍스트/아이콘), 다크=black(흰 텍스트/아이콘) */
+  
   const statusMeta = document.getElementById('meta-status-bar');
-  if (statusMeta) statusMeta.setAttribute('content', isDark ? 'black' : 'default');
+  if (statusMeta) statusMeta.setAttribute('content', isDark ? 'black-translucent' : 'default');
 
-  /* 모달 딤 효과는 CSS overlay로만 처리 — theme-color는 건드리지 않음 */
+  document.documentElement.style.backgroundColor = bgColor;
+  document.body.style.backgroundColor = bgColor;
 }
 
 /* 앱 재진입 / 포커스 복귀 시 상태바 색상 강제 복원 */
