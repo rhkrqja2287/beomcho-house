@@ -9,7 +9,7 @@
 <!-- Apple -->
 <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="범초하우스">
 <!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
@@ -55,8 +55,9 @@ body.dark{
   --blue:#0a84ff;--blue-light:#001f3f;
   --teal:#5DCAA5;--teal-light:#04342C;
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;min-height:100vh;transition:background .2s,color .2s}
-.app{display:flex;min-height:100vh;width:100vw;overflow:hidden}
+html,body{height:100%;overflow:hidden;width:100%;position:fixed}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;transition:background .2s,color .2s}
+.app{display:flex;height:100%;width:100vw;overflow:hidden}
 .sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:background .2s}
 .logo{padding:20px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .logo-text{font-size:16px;font-weight:700}
@@ -205,25 +206,22 @@ tr:hover td{background:var(--surface2)}
   body{font-size:14px}
   .app{
     flex-direction:column;
-    height:100dvh; /* dynamic viewport height — 키보드/주소창 변화 대응 */
-    overflow:hidden;
   }
-  /* 사이드바를 하단 탭바로 변환 */
+  /* 사이드바를 하단 탭바로 변환 - 고정 위치로 변경하여 안정성 확보 */
   .sidebar{
-    width:100%;
-    flex-direction:row;
-    border-right:none;border-top:1px solid var(--border);
-    flex-shrink:0;
-    order:2;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    background: var(--surface);
+    border-right:none;
+    border-top:1px solid var(--border);
     height:calc(60px + env(safe-area-inset-bottom));
     padding-bottom:env(safe-area-inset-bottom);
-    position:static;
-    transform:none;
-    -webkit-transform:none;
-    touch-action:none; /* 탭바 터치가 스크롤로 전파되는 것 차단 */
-    overscroll-behavior:none;
-    user-select:none;
-    -webkit-user-select:none;
+    display: flex;
+    flex-direction:row;
+    transition: none;
   }
   .logo{display:none}
   .nav{
@@ -238,12 +236,11 @@ tr:hover td{background:var(--surface2)}
   .nav-label{display:block;font-size:9px;color:inherit}
   .nav-icon{width:20px;height:20px}
   .main{
-    padding-bottom:0; /* 하단바가 flex로 고정되므로 padding 불필요 */
-    flex:1;
+    height: 100%;
     overflow-y:auto;
     overflow-x:hidden;
-    order:1;
     -webkit-overflow-scrolling:touch;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom));
   }
   .page{padding:14px 12px;max-width:100%;overflow-x:hidden}
   .page-title{font-size:18px}
@@ -1565,14 +1562,11 @@ function escJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 ============================== */
 function updateThemeColorMeta(isModalOpen = false) {
   const isDark = document.body.classList.contains('dark');
-  let color;
-  if (isModalOpen) {
-    color = isDark ? '#000000' : '#8e8e93';
-  } else {
-    color = isDark ? '#000000' : '#f2f2f7';
-  }
+  let color = isDark ? '#000000' : '#f2f2f7';
   
-  // iOS에서 meta tag 업데이트가 가끔 무시되는 현상을 방지하기 위해 태그 자체를 교체
+  // 모달이 열렸을 때도 상태바 색상을 배경색과 동일하게 유지하여 
+  // '회색으로 변했다가 안 돌아오는' 문제를 근본적으로 방지
+  
   let meta = document.getElementById('meta-theme-color');
   if (!meta) {
     meta = document.createElement('meta');
@@ -1582,8 +1576,9 @@ function updateThemeColorMeta(isModalOpen = false) {
   }
   meta.setAttribute('content', color);
   
-  // html 배경색도 즉시 동기화
+  // html/body 배경색 동기화
   document.documentElement.style.backgroundColor = color;
+  document.body.style.backgroundColor = color;
 }
 
 function toggleTheme(){
