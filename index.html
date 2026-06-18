@@ -215,6 +215,7 @@ tr:hover td{background:var(--surface2)}
     border-right:none;border-top:1px solid var(--border);
     flex-shrink:0;
     order:2;
+    /* 탭 버튼 영역 60px + 하단 safe-area */
     height:calc(60px + env(safe-area-inset-bottom));
     padding-bottom:env(safe-area-inset-bottom);
     padding-top:0;
@@ -223,6 +224,7 @@ tr:hover td{background:var(--surface2)}
     left:0;
     right:0;
     z-index:500;
+    background:var(--surface); /* 배경 불투명 보장 */
     touch-action:none; /* 탭바 터치가 스크롤로 전파되는 것 차단 */
     overscroll-behavior:none;
     user-select:none;
@@ -234,15 +236,18 @@ tr:hover td{background:var(--surface2)}
     justify-content:space-around;padding:0;width:100%;height:100%;
   }
   .nav-item{
-    flex-direction:column;gap:2px;padding:5px 2px;
+    flex-direction:column;gap:3px;padding:0;
     border-radius:0;font-size:10px;min-width:0;flex:1;
     justify-content:center;align-items:center;margin-bottom:0;
-    border-bottom:2px solid transparent;transition:all .15s;
+    /* 60px 탭 영역 안에서 수직 중앙 정렬 */
+    height:60px;
+    border-top:2px solid transparent;transition:all .15s;
+    border-bottom:none;
   }
-  .nav-item.active{background:none;border-bottom-color:var(--purple);color:var(--purple)}
+  .nav-item.active{background:none;border-top-color:var(--purple);color:var(--purple)}
   .nav-item.active .nav-icon{opacity:1}
   .nav-label{display:block;font-size:9px;color:inherit;line-height:1.2;text-align:center}
-  .nav-icon{width:20px;height:20px}
+  .nav-icon{width:22px;height:22px}
   .main{
     padding-bottom:calc(60px + env(safe-area-inset-bottom)); /* 고정 하단바 높이만큼 확보 */
     flex:1;
@@ -1574,18 +1579,27 @@ function updateThemeColorMeta(isModalOpen = false) {
   const isDark = document.body.classList.contains('dark');
   let color;
   if (isModalOpen) {
-    color = isDark ? '#1c1c1e' : '#ffffff';
+    /* 모달 오버레이가 열리면 어두운 딤 배경색으로 상단바를 어둡게 */
+    color = isDark ? '#1c1c1e' : '#555555';
   } else {
     color = isDark ? '#000000' : '#f2f2f7';
   }
   const meta = document.getElementById('meta-theme-color');
   if (meta) meta.setAttribute('content', color);
   // html 배경색도 즉시 동기화 (iOS 여백 색상 일치)
-  document.documentElement.style.backgroundColor = color;
+  document.documentElement.style.backgroundColor = isDark ? '#000000' : '#f2f2f7';
   // iOS PWA 상태바 스타일: 라이트=default(검정 아이콘), 다크=black(흰 아이콘)
   const statusMeta = document.getElementById('meta-status-bar');
   if (statusMeta) statusMeta.setAttribute('content', isDark ? 'black' : 'default');
 }
+
+/* 앱 재진입 시 (백그라운드→포어그라운드) 상단바 색상 복원 */
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    const isModalOpen = document.getElementById('tx-modal-overlay')?.classList.contains('open');
+    updateThemeColorMeta(!!isModalOpen);
+  }
+});
 
 function toggleTheme(){
   const isDark=document.body.classList.toggle('dark');
