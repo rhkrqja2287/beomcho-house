@@ -9,11 +9,15 @@
 <!-- Apple -->
 <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" id="meta-status-bar">
+<!-- black-translucent: 앱 배경이 상태바 영역까지 확장 → 테마색이 상단바에 반영됨 -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="범초하우스">
 <!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
 <meta name="color-scheme" content="light dark">
+<!-- theme-color: 미디어쿼리로 라이트/다크 각각 선언 → iOS Safari 탭 + 상단바 색상 -->
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" id="meta-theme-color" content="#f2f2f7">
 <!-- OG (네이버 웨일 북마크 썸네일) -->
 <meta property="og:title" content="범초하우스">
@@ -28,10 +32,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-html{-webkit-text-size-adjust:100%;background:var(--bg);
-  /* iOS standalone PWA: 상단 노치/상태바 영역 배경색 채우기 */
-  padding-top:env(safe-area-inset-top);
-}
+html{-webkit-text-size-adjust:100%;background:var(--bg);padding-top:env(safe-area-inset-top)}
 input[type=number]{-moz-appearance:textfield}
 /* iOS date input 오버플로우 방지 — 글로벌 */
 input[type="date"]{-webkit-appearance:none;appearance:none;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -59,12 +60,9 @@ body.dark{
   --blue:#0a84ff;--blue-light:#001f3f;
   --teal:#5DCAA5;--teal-light:#04342C;
 }
-html,body{height:100%;overflow:hidden;width:100%;position:fixed;
-  /* iOS Safari 주소바 나타남/사라짐으로 인한 리플로우 방지 */
-  height: 100dvh;
-}
+html,body{height:100%;overflow:hidden;width:100%;position:fixed}
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;transition:background .2s,color .2s}
-.app{display:flex;height:100%;height:100dvh;width:100vw;overflow:hidden}
+.app{display:flex;height:100%;width:100vw;overflow:hidden}
 .sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:background .2s}
 .logo{padding:20px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .logo-text{font-size:16px;font-weight:700}
@@ -214,7 +212,8 @@ tr:hover td{background:var(--surface2)}
   .app{
     flex-direction:column;
   }
-  /* 사이드바를 하단 탭바로 변환 - 고정 위치로 변경하여 안정성 확보 */
+  /* 사이드바 → 하단 탭바
+     position:fixed + translate3d(GPU레이어): 키보드/스크롤 시 움직임 완전 차단 */
   .sidebar{
     position: fixed;
     bottom: 0;
@@ -222,19 +221,18 @@ tr:hover td{background:var(--surface2)}
     width: 100%;
     z-index: 1000;
     background: var(--surface);
-    border-right:none;
-    border-top:1px solid var(--border);
-    height:calc(50px + env(safe-area-inset-bottom));
-    padding-bottom:env(safe-area-inset-bottom);
+    border-right: none;
+    border-top: 1px solid var(--border);
+    height: calc(50px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
     display: flex;
-    flex-direction:row;
+    flex-direction: row;
     transition: none;
-    /* iOS Safari 하단바 흔들림 방지: GPU 레이어 고정 */
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
+    /* GPU 합성 레이어 고정 — iOS 키보드 후 반동 현상 방지 */
+    -webkit-transform: translate3d(0,0,0);
+    transform: translate3d(0,0,0);
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-    will-change: transform;
   }
   .logo{display:none}
   .nav{
@@ -250,12 +248,14 @@ tr:hover td{background:var(--surface2)}
   }
   .nav-label{display:block;font-size:9px;color:inherit}
   .nav-icon{width:20px;height:20px}
+  /* .main은 화면 전체를 채우되, 하단 탭바 높이만큼 padding */
   .main{
-    height: 100%;
+    width: 100%;
+    /* dvh: iOS 주소바 표시/숨김 시 높이 변화 무시 */
     height: 100dvh;
-    overflow-y:auto;
-    overflow-x:hidden;
-    -webkit-overflow-scrolling:touch;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     padding-bottom: calc(60px + env(safe-area-inset-bottom));
   }
   .page{padding:14px 12px;max-width:100%;overflow-x:hidden}
@@ -1580,7 +1580,7 @@ function updateThemeColorMeta(isModalOpen = false) {
   const isDark = document.body.classList.contains('dark');
   const color = isDark ? '#000000' : '#f2f2f7';
 
-  // theme-color 업데이트 (Chrome/Android + Safari 브라우저 탭)
+  // theme-color 동적 업데이트 (브라우저 탭 + Android Chrome 상단바)
   let meta = document.getElementById('meta-theme-color');
   if (!meta) {
     meta = document.createElement('meta');
@@ -1588,15 +1588,15 @@ function updateThemeColorMeta(isModalOpen = false) {
     meta.id = 'meta-theme-color';
     document.head.appendChild(meta);
   }
+  // media 없는 단일 태그로 덮어쓰기 (동적 테마 전환 시 즉시 반영)
+  meta.removeAttribute('media');
   meta.setAttribute('content', color);
 
-  // color-scheme 업데이트로 iOS 상태바 글자색 동기화
+  // color-scheme: iOS 상태바 아이콘 색상 (라이트=검정, 다크=흰색)
   let scheme = document.querySelector('meta[name="color-scheme"]');
-  if (scheme) {
-    scheme.setAttribute('content', isDark ? 'dark' : 'light');
-  }
+  if (scheme) scheme.setAttribute('content', isDark ? 'dark' : 'light');
 
-  // html/body 배경색 동기화 (iOS 상단 safe-area 배경 채우기)
+  // html 배경색 동기화 — black-translucent 상태바의 safe-area 영역 색상
   document.documentElement.style.backgroundColor = color;
   document.body.style.backgroundColor = color;
 }
@@ -1615,33 +1615,56 @@ function toggleTheme(){
 })();
 
 /* ==============================
-   iOS 키보드 대응 — 하단 탭바 고정
-   visualViewport API: 키보드가 올라와도 sidebar가 화면 하단에 고정
+   iOS 키보드 대응 — 하단 탭바 흔들림 방지
+   키보드가 올라오면 sidebar를 키보드 바로 위로 올리고,
+   키보드가 닫히면 즉시 bottom:0으로 복귀.
+   requestAnimationFrame으로 렌더 프레임에 동기화.
 ============================== */
-(function fixIOSBottomBar(){
+(function fixBottomBar(){
+  if(typeof window === 'undefined') return;
   const sidebar = document.querySelector('.sidebar');
-  if(!sidebar || !window.visualViewport) return;
-  let rafId = null;
-  function onViewportChange(){
-    if(rafId) cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(function(){
+  if(!sidebar) return;
+
+  function isMobile(){ return window.innerWidth <= 768; }
+
+  // visualViewport 미지원 브라우저 대비
+  if(!window.visualViewport){
+    // 폴백: focusin/focusout으로 input focus 감지
+    document.addEventListener('focusin', function(e){
+      if(!isMobile()) return;
+      if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT'){
+        sidebar.style.display = 'none';
+      }
+    });
+    document.addEventListener('focusout', function(){
+      if(!isMobile()) return;
+      setTimeout(function(){ sidebar.style.display = ''; }, 100);
+    });
+    return;
+  }
+
+  let raf = null;
+  function update(){
+    if(raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(function(){
+      if(!isMobile()){ sidebar.style.bottom = ''; return; }
       const vv = window.visualViewport;
-      // 키보드가 올라오면 visualViewport.height < window.innerHeight
-      // sidebar를 window 기준 bottom에 고정시키기 위해 offset 보정
-      const offsetY = window.innerHeight - vv.height - vv.offsetTop;
-      if(offsetY > 10){
-        // 키보드가 올라온 경우: 탭바를 키보드 위로 올림
-        sidebar.style.bottom = offsetY + 'px';
-        sidebar.style.transform = 'translateZ(0)';
+      // window.innerHeight - vv.height = 키보드 높이 (없으면 0)
+      const kbHeight = window.innerHeight - vv.height;
+      if(kbHeight > 50){
+        // 키보드가 올라온 상태: 탭바를 키보드 바로 위에 붙임
+        sidebar.style.bottom = kbHeight + 'px';
       } else {
-        // 키보드 닫힌 경우: 원래 위치로
-        sidebar.style.bottom = '';
-        sidebar.style.transform = 'translateZ(0)';
+        // 키보드 닫힘: 즉시 bottom:0 (env safe-area는 CSS에서 처리)
+        sidebar.style.bottom = '0';
       }
     });
   }
-  window.visualViewport.addEventListener('resize', onViewportChange);
-  window.visualViewport.addEventListener('scroll', onViewportChange);
+
+  window.visualViewport.addEventListener('resize', update);
+  window.visualViewport.addEventListener('scroll', update);
+  // 초기 실행
+  update();
 })();
 
 /* ==============================
