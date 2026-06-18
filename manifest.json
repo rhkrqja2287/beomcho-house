@@ -4,8 +4,8 @@
   "description": "범초하우스 가족 가계부",
   "start_url": "/beomcho-house/",
   "display": "standalone",
-  "background_color": "#1c1c1e",
-  "theme_color": "#1c1c1e",
+  "background_color": "#f2f2f7",
+  "theme_color": "#f2f2f7",
   "lang": "ko",
   "icons": [
     {

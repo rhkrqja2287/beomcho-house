@@ -11,9 +11,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="범초하우스">
+<meta name="color-scheme" content="light">
 <!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#f2f2f7">
 <!-- OG (네이버 웨일 북마크 썸네일) -->
 <meta property="og:title" content="범초하우스">
 <meta property="og:description" content="범초하우스">
@@ -27,7 +28,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-html{-webkit-text-size-adjust:100%;background:#f2f2f7}
+html{-webkit-text-size-adjust:100%;background:#f2f2f7;color-scheme:light}
 html.dark{background:#000}
 input[type=number]{-moz-appearance:textfield}
 /* iOS date input 오버플로우 방지 — 글로벌 */
@@ -57,7 +58,7 @@ body.dark{
   --teal:#5DCAA5;--teal-light:#04342C;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;min-height:100vh;transition:background .2s,color .2s}
-body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:3000;pointer-events:none;transition:background .2s}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:5000;pointer-events:none;transition:background .2s}
 body.tx-modal-open{overflow:hidden}
 .app{display:flex;min-height:100vh;width:100vw;overflow:hidden}
 .sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:background .2s}
@@ -208,7 +209,8 @@ tr:hover td{background:var(--surface2)}
   body{font-size:14px}
   .app{
     flex-direction:column;
-    height:100dvh; /* dynamic viewport height — 키보드/주소창 변화 대응 */
+    height:100svh;
+    min-height:100svh;
     overflow:hidden;
   }
   /* 사이드바를 하단 탭바로 변환 */
@@ -218,8 +220,8 @@ tr:hover td{background:var(--surface2)}
     border-right:none;border-top:1px solid var(--border);
     flex-shrink:0;
     order:2;
-    height:calc(60px + env(safe-area-inset-bottom));
-    padding-bottom:env(safe-area-inset-bottom);
+    height:calc(72px + env(safe-area-inset-bottom));
+    padding:0 0 calc(env(safe-area-inset-bottom) + 10px);
     position:static;
     transform:none;
     -webkit-transform:none;
@@ -231,18 +233,19 @@ tr:hover td{background:var(--surface2)}
   .logo{display:none}
   .nav{
     display:flex;flex-direction:row;align-items:center;
-    justify-content:space-around;padding:0 4px;width:100%;
+    justify-content:space-around;padding:4px 8px 8px;width:100%;height:62px;align-self:flex-start;
   }
   .nav-item{
-    flex-direction:column;gap:3px;padding:6px 4px;
+    flex-direction:column;gap:3px;padding:5px 4px;
     border-radius:8px;font-size:10px;min-width:0;flex:1;
-    justify-content:center;align-items:center;margin-bottom:0;
+    justify-content:center;align-items:center;margin-bottom:0;height:50px;
   }
   .nav-label{display:block;font-size:9px;color:inherit}
   .nav-icon{width:20px;height:20px}
   .main{
     padding-bottom:0; /* 하단바가 flex로 고정되므로 padding 불필요 */
     flex:1;
+    min-height:0;
     overflow-y:auto;
     overflow-x:hidden;
     order:1;
@@ -563,7 +566,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   position:fixed;top:env(safe-area-inset-top,0px);right:0;bottom:0;left:0;
   z-index:2000;
   background:rgba(0,0,0,.45);
-  display:flex;align-items:center;justify-content:center;
+  display:none;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;
   transition:opacity .2s;
   padding:16px;
@@ -1585,7 +1588,7 @@ function toggleTheme(){
 /* ===== 새 거래 모달 열기/닫기 ===== */
 function syncStatusBarTheme(){
   const isDark=document.body.classList.contains('dark');
-  const themeColor=isDark?'#000000':'#ffffff';
+  const themeColor=isDark?'#000000':'#f2f2f7';
   document.documentElement.classList.toggle('dark',isDark);
   document.documentElement.style.backgroundColor=themeColor;
   document.documentElement.style.colorScheme=isDark?'dark':'light';
@@ -1607,8 +1610,15 @@ function setTxModalOpen(open){
   overlay.classList.toggle('open',open);
   document.body.classList.toggle('tx-modal-open',open);
   syncStatusBarTheme();
-  if(!open)setTimeout(syncStatusBarTheme,260);
+  if(!open){
+    setTimeout(syncStatusBarTheme,60);
+    setTimeout(syncStatusBarTheme,260);
+    setTimeout(syncStatusBarTheme,700);
+  }
 }
+window.addEventListener('pageshow',syncStatusBarTheme);
+window.addEventListener('focus',syncStatusBarTheme);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncStatusBarTheme();});
 function shouldAutoFocusTxAmount(){
   return window.matchMedia('(hover:hover) and (pointer:fine)').matches;
 }
