@@ -9,28 +9,18 @@
 <!-- Apple -->
 <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default" id="meta-status-bar">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="범초하우스">
+<meta name="color-scheme" content="light">
 <!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" id="meta-theme-color" content="#f2f2f7">
+<meta name="theme-color" content="#f2f2f7">
 <!-- OG (네이버 웨일 북마크 썸네일) -->
 <meta property="og:title" content="범초하우스">
 <meta property="og:description" content="범초하우스">
 <meta property="og:image" content="https://rhkrqja2287.github.io/beomcho-house/icon.png">
 <meta property="og:url" content="https://rhkrqja2287.github.io/beomcho-house/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<script>
-  (function(){
-    const t = localStorage.getItem('bch_theme') || 'light';
-    if(t==='dark') document.documentElement.classList.add('dark');
-    const color = t==='dark' ? '#000000' : '#ffffff';
-    document.documentElement.style.backgroundColor = color;
-    document.body.style.backgroundColor = color;
-    const meta = document.getElementById('meta-theme-color');
-    if(meta) meta.setAttribute('content', color);
-  })();
-</script>
 <title>범초하우스</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -38,7 +28,8 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;background:#f2f2f7;color-scheme:light}
+html.dark{background:#000}
 input[type=number]{-moz-appearance:textfield}
 /* iOS date input 오버플로우 방지 — 글로벌 */
 input[type="date"]{-webkit-appearance:none;appearance:none;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -67,8 +58,10 @@ body.dark{
   --teal:#5DCAA5;--teal-light:#04342C;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;min-height:100vh;transition:background .2s,color .2s}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:5000;pointer-events:none;transition:background .2s}
+body.tx-modal-open{overflow:hidden}
 .app{display:flex;min-height:100vh;width:100vw;overflow:hidden}
-.sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:background .2s;padding-top:env(safe-area-inset-top)}
+.sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:background .2s}
 .logo{padding:20px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .logo-text{font-size:16px;font-weight:700}
 .logo-sub{font-size:11px;color:var(--text3);margin-top:1px}
@@ -81,7 +74,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display'
 .nav-item.active{background:var(--purple-light);color:var(--purple-dark);font-weight:500}
 .nav-icon{width:18px;height:18px;opacity:.7;flex-shrink:0}
 .nav-item.active .nav-icon{opacity:1}
-.main{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);padding-top:env(safe-area-inset-top)}
+.main{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;background:var(--bg)}
 .inner{max-width:1200px;margin:0 auto}
 .page{display:none;padding:28px 32px;box-sizing:border-box;max-width:900px}
 .page.active{display:block}
@@ -216,52 +209,46 @@ tr:hover td{background:var(--surface2)}
   body{font-size:14px}
   .app{
     flex-direction:column;
-    height:100dvh; /* dynamic viewport height — 키보드/주소창 변화 대응 */
+    min-height:100svh;
     overflow:hidden;
   }
-  /* 사이드바를 하단 탭바로 변환 — position:fixed이므로 flex에서 공간 미차지 */
+  /* 사이드바를 하단 탭바로 변환 */
   .sidebar{
     width:100%;
-    flex-direction:column;
+    flex-direction:row;
     border-right:none;border-top:1px solid var(--border);
     flex-shrink:0;
+    height:calc(64px + env(safe-area-inset-bottom));
+    padding:0;
     position:fixed;
-    bottom:0;
-    left:0;
-    right:0;
-    z-index:500;
-    background:var(--surface);
-    touch-action:none;
+    left:0;right:0;bottom:0;
+    z-index:2500;
+    transform:none;
+    -webkit-transform:none;
+    touch-action:none; /* 탭바 터치가 스크롤로 전파되는 것 차단 */
     overscroll-behavior:none;
     user-select:none;
     -webkit-user-select:none;
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-top:0 !important;
   }
   .logo{display:none}
-  /* 탭 버튼이 들어가는 실제 60px 행 */
   .nav{
     display:flex;flex-direction:row;align-items:center;
-    justify-content:space-around;padding:0;width:100%;
-    height:60px;flex-shrink:0;
+    justify-content:space-around;padding:4px 8px 6px;width:100%;height:64px;
   }
   .nav-item{
-    flex-direction:column;gap:3px;padding:0;
-    border-radius:0;font-size:10px;min-width:0;flex:1;
-    justify-content:center;align-items:center;margin-bottom:0;
-    height:60px;
-    border-top:2px solid transparent;transition:color .15s,border-color .15s;
-    border-bottom:none;
+    flex-direction:column;gap:3px;padding:5px 4px;
+    border-radius:8px;font-size:10px;min-width:0;flex:1;
+    justify-content:center;align-items:center;margin-bottom:0;height:50px;
   }
-  .nav-item.active{background:none;border-top-color:var(--purple);color:var(--purple)}
-  .nav-item.active .nav-icon{opacity:1}
-  .nav-label{display:block;font-size:9px;color:inherit;line-height:1.2;text-align:center}
-  .nav-icon{width:22px;height:22px}
+  .nav-label{display:block;font-size:9px;color:inherit}
+  .nav-icon{width:20px;height:20px}
   .main{
-    padding-bottom:calc(60px + env(safe-area-inset-bottom));
+    padding-bottom:0; /* 하단바가 flex로 고정되므로 padding 불필요 */
     flex:1;
+    min-height:0;
     overflow-y:auto;
     overflow-x:hidden;
+    order:1;
     -webkit-overflow-scrolling:touch;
   }
   .page{padding:14px 12px;max-width:100%;overflow-x:hidden}
@@ -554,7 +541,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   color:#fff;
   border:none;
   cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
+  display:none;align-items:center;justify-content:center;
   box-shadow:0 4px 16px rgba(0,122,255,.45);
   transition:transform .15s,background .15s,box-shadow .15s;
 }
@@ -576,15 +563,15 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 
 /* ===== 새 거래 모달 ===== */
 #tx-modal-overlay{
-  position:fixed;inset:0;
+  position:fixed;top:env(safe-area-inset-top,0px);right:0;bottom:0;left:0;
   z-index:2000;
   background:rgba(0,0,0,.45);
-  display:flex;align-items:center;justify-content:center;
+  display:none;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;
   transition:opacity .2s;
   padding:16px;
 }
-#tx-modal-overlay.open{opacity:1;pointer-events:auto}
+#tx-modal-overlay.open{display:flex;opacity:1;pointer-events:auto}
 #tx-modal{
   background:var(--surface);
   border:1px solid var(--border);
@@ -620,7 +607,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   <div id="tx-modal" role="dialog" aria-modal="true" aria-labelledby="tx-modal-title">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div class="card-title" id="tx-modal-title" style="margin-bottom:0;font-size:16px">새 거래</div>
-      <button onclick="closeTxModal()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:4px 8px" aria-label="닫기">✕</button>
+      <button onclick="setTxModalOpen(false)" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:4px 8px" aria-label="닫기">✕</button>
     </div>
     <!-- 행1: 날짜 / 유형 / 카테고리 -->
     <div class="tx-form-row1" style="margin-bottom:12px">
@@ -1487,7 +1474,7 @@ function applyFirebaseData(data){
     localStorage.setItem('bch_theme',data.theme);
     if(data.theme==='dark')document.body.classList.add('dark');
     else document.body.classList.remove('dark');
-    updateThemeColorMeta();
+    syncStatusBarTheme();
   }
   saveLocal();
 }
@@ -1582,67 +1569,75 @@ function escJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 /* ==============================
    ⑦ 테마 토글
 ============================== */
-function updateThemeColorMeta(isModalOpen = false) {
-  const isDark = document.body.classList.contains('dark');
-  /* theme-color는 항상 앱 배경색 — 밝으면 iOS가 검정 아이콘, 어두우면 흰 아이콘 자동 선택 */
-  const bgColor = isDark ? '#000000' : '#ffffff';
-  
-  const meta = document.getElementById('meta-theme-color');
-  if (meta) meta.setAttribute('content', bgColor);
-  
-  const statusMeta = document.getElementById('meta-status-bar');
-  if (statusMeta) statusMeta.setAttribute('content', isDark ? 'black-translucent' : 'default');
-
-  document.documentElement.style.backgroundColor = bgColor;
-  document.body.style.backgroundColor = bgColor;
-}
-
-/* 앱 재진입 / 포커스 복귀 시 상태바 색상 강제 복원 */
-function _restoreThemeOnResume() {
-  const isModalOpen = document.getElementById('tx-modal-overlay')?.classList.contains('open');
-  updateThemeColorMeta(!!isModalOpen);
-}
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') _restoreThemeOnResume();
-});
-window.addEventListener('pageshow', _restoreThemeOnResume);
-window.addEventListener('focus', _restoreThemeOnResume);
-
 function toggleTheme(){
   const isDark=document.body.classList.toggle('dark');
   localStorage.setItem('bch_theme',isDark?'dark':'light');
   document.getElementById('theme-btn').textContent=isDark?'☀ 라이트':'🌙 다크';
-  updateThemeColorMeta();
+  syncStatusBarTheme();
   saveAll(); /* 테마도 Firebase에 동기화 */
 }
 (function initTheme(){
   const t=localStorage.getItem('bch_theme');
   if(t==='dark'){document.body.classList.add('dark');document.getElementById('theme-btn').textContent='☀ 라이트';}
-  updateThemeColorMeta();
+  syncStatusBarTheme();
 })();
 
 /* ==============================
    네비
 ============================== */
 /* ===== 새 거래 모달 열기/닫기 ===== */
+function syncStatusBarTheme(){
+  const isDark=document.body.classList.contains('dark');
+  const themeColor=isDark?'#000000':'#f2f2f7';
+  document.documentElement.classList.toggle('dark',isDark);
+  document.documentElement.style.backgroundColor=themeColor;
+  document.documentElement.style.colorScheme=isDark?'dark':'light';
+  document.body.style.colorScheme=isDark?'dark':'light';
+  let themeMeta=document.querySelector('meta[name="theme-color"]');
+  if(!themeMeta){
+    themeMeta=document.createElement('meta');
+    themeMeta.setAttribute('name','theme-color');
+    document.head.appendChild(themeMeta);
+  }
+  themeMeta.setAttribute('content',themeColor);
+  const appleMeta=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if(appleMeta)appleMeta.setAttribute('content',isDark?'black':'default');
+}
+function setTxModalOpen(open){
+  const overlay=document.getElementById('tx-modal-overlay');
+  if(!overlay)return;
+  if(!open&&document.activeElement&&typeof document.activeElement.blur==='function')document.activeElement.blur();
+  overlay.classList.toggle('open',open);
+  document.body.classList.toggle('tx-modal-open',open);
+  syncStatusBarTheme();
+  if(!open){
+    setTimeout(syncStatusBarTheme,60);
+    setTimeout(syncStatusBarTheme,260);
+    setTimeout(syncStatusBarTheme,700);
+  }
+}
+window.addEventListener('pageshow',syncStatusBarTheme);
+window.addEventListener('focus',syncStatusBarTheme);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncStatusBarTheme();});
+function shouldAutoFocusTxAmount(){
+  return window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+}
 function openTxModal(){
   document.getElementById('tx-date').value=todayStr();
   updateCats();
   document.getElementById('tx-amt').value='';
   document.getElementById('tx-desc').value='';
-  document.getElementById('tx-modal-overlay').classList.add('open');
-  updateThemeColorMeta(true);
-  setTimeout(()=>document.getElementById('tx-amt').focus(),250);
+  setTxModalOpen(true);
+  if(shouldAutoFocusTxAmount())setTimeout(()=>document.getElementById('tx-amt').focus(),250);
 }
 function closeTxModal(e){
   /* 인수 없이 호출(✕ 버튼) 또는 오버레이 배경 클릭 시 닫기 */
-  if(e&&e.target!==document.getElementById('tx-modal-overlay')&&e.target!==undefined)return;
-  document.getElementById('tx-modal-overlay').classList.remove('open');
-  updateThemeColorMeta(false);
+  if(e&&e.target!==document.getElementById('tx-modal-overlay'))return;
+  setTxModalOpen(false);
 }
 /* ESC 키로 모달 닫기 */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape') closeTxModal();
+  if(e.key==='Escape')setTxModalOpen(false);
 });
 /* 기존 toggleNewTxForm — 하위 호환용 빈 함수 */
 function toggleNewTxForm(){}
@@ -1988,7 +1983,7 @@ function addTx(){
   saveAll();
   document.getElementById('tx-amt').value='';
   document.getElementById('tx-desc').value='';
-  closeTxModal();
+  setTxModalOpen(false);
   showToast('거래가 추가됐어요 ✓');
   renderTxList();
   renderHome();
