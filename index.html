@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="범초하우스">
 <!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" id="theme-color-meta" content="#1c1c1e">
+<meta name="theme-color" content="#ffffff">
 <!-- OG (네이버 웨일 북마크 썸네일) -->
 <meta property="og:title" content="범초하우스">
 <meta property="og:description" content="범초하우스">
@@ -56,6 +56,7 @@ body.dark{
   --teal:#5DCAA5;--teal-light:#04342C;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;min-height:100vh;transition:background .2s,color .2s}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:3000;pointer-events:none;transition:background .2s}
 .app{display:flex;min-height:100vh;width:100vw;overflow:hidden}
 .sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:background .2s}
 .logo{padding:20px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
@@ -557,7 +558,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 
 /* ===== 새 거래 모달 ===== */
 #tx-modal-overlay{
-  position:fixed;inset:0;
+  position:fixed;top:env(safe-area-inset-top,0px);right:0;bottom:0;left:0;
   z-index:2000;
   background:rgba(0,0,0,.45);
   display:flex;align-items:center;justify-content:center;
@@ -601,7 +602,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   <div id="tx-modal" role="dialog" aria-modal="true" aria-labelledby="tx-modal-title">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div class="card-title" id="tx-modal-title" style="margin-bottom:0;font-size:16px">새 거래</div>
-      <button onclick="document.getElementById('tx-modal-overlay').classList.remove('open')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:4px 8px" aria-label="닫기">✕</button>
+      <button onclick="setTxModalOpen(false)" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:4px 8px" aria-label="닫기">✕</button>
     </div>
     <!-- 행1: 날짜 / 유형 / 카테고리 -->
     <div class="tx-form-row1" style="margin-bottom:12px">
@@ -1468,6 +1469,7 @@ function applyFirebaseData(data){
     localStorage.setItem('bch_theme',data.theme);
     if(data.theme==='dark')document.body.classList.add('dark');
     else document.body.classList.remove('dark');
+    syncStatusBarTheme();
   }
   saveLocal();
 }
@@ -1566,36 +1568,56 @@ function toggleTheme(){
   const isDark=document.body.classList.toggle('dark');
   localStorage.setItem('bch_theme',isDark?'dark':'light');
   document.getElementById('theme-btn').textContent=isDark?'☀ 라이트':'🌙 다크';
-  document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#000000' : '#f2f2f7');
+  syncStatusBarTheme();
   saveAll(); /* 테마도 Firebase에 동기화 */
 }
 (function initTheme(){
   const t=localStorage.getItem('bch_theme');
-  const isDark = (t==='dark');
-  if(isDark){document.body.classList.add('dark');document.getElementById('theme-btn').textContent='☀ 라이트';}
-  document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#000000' : '#f2f2f7');
+  if(t==='dark'){document.body.classList.add('dark');document.getElementById('theme-btn').textContent='☀ 라이트';}
+  syncStatusBarTheme();
 })();
 
 /* ==============================
    네비
 ============================== */
 /* ===== 새 거래 모달 열기/닫기 ===== */
+function syncStatusBarTheme(){
+  const isDark=document.body.classList.contains('dark');
+  const themeColor=isDark?'#000000':'#ffffff';
+  let themeMeta=document.querySelector('meta[name="theme-color"]');
+  if(!themeMeta){
+    themeMeta=document.createElement('meta');
+    themeMeta.setAttribute('name','theme-color');
+    document.head.appendChild(themeMeta);
+  }
+  themeMeta.setAttribute('content',themeColor);
+  const appleMeta=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if(appleMeta)appleMeta.setAttribute('content',isDark?'black-translucent':'default');
+}
+function setTxModalOpen(open){
+  const overlay=document.getElementById('tx-modal-overlay');
+  if(!overlay)return;
+  overlay.classList.toggle('open',open);
+  document.body.classList.toggle('tx-modal-open',open);
+  syncStatusBarTheme();
+  if(!open)setTimeout(syncStatusBarTheme,260);
+}
 function openTxModal(){
   document.getElementById('tx-date').value=todayStr();
   updateCats();
   document.getElementById('tx-amt').value='';
   document.getElementById('tx-desc').value='';
-  document.getElementById('tx-modal-overlay').classList.add('open');
+  setTxModalOpen(true);
   setTimeout(()=>document.getElementById('tx-amt').focus(),250);
 }
 function closeTxModal(e){
   /* 인수 없이 호출(✕ 버튼) 또는 오버레이 배경 클릭 시 닫기 */
   if(e&&e.target!==document.getElementById('tx-modal-overlay'))return;
-  document.getElementById('tx-modal-overlay').classList.remove('open');
+  setTxModalOpen(false);
 }
 /* ESC 키로 모달 닫기 */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape')document.getElementById('tx-modal-overlay').classList.remove('open');
+  if(e.key==='Escape')setTxModalOpen(false);
 });
 /* 기존 toggleNewTxForm — 하위 호환용 빈 함수 */
 function toggleNewTxForm(){}
@@ -1941,7 +1963,7 @@ function addTx(){
   saveAll();
   document.getElementById('tx-amt').value='';
   document.getElementById('tx-desc').value='';
-  document.getElementById('tx-modal-overlay').classList.remove('open');
+  setTxModalOpen(false);
   showToast('거래가 추가됐어요 ✓');
   renderTxList();
   renderHome();
