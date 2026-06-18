@@ -9,15 +9,11 @@
 <!-- Apple -->
 <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<!-- black-translucent: 앱 배경이 상태바 영역까지 확장 → 테마색이 상단바에 반영됨 -->
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="범초하우스">
 <!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
 <meta name="color-scheme" content="light dark">
-<!-- theme-color: 미디어쿼리로 라이트/다크 각각 선언 → iOS Safari 탭 + 상단바 색상 -->
-<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" id="meta-theme-color" content="#f2f2f7">
 <!-- OG (네이버 웨일 북마크 썸네일) -->
 <meta property="og:title" content="범초하우스">
@@ -212,8 +208,7 @@ tr:hover td{background:var(--surface2)}
   .app{
     flex-direction:column;
   }
-  /* 사이드바 → 하단 탭바
-     position:fixed + translate3d(GPU레이어): 키보드/스크롤 시 움직임 완전 차단 */
+  /* 사이드바를 하단 탭바로 변환 - 고정 위치로 변경하여 안정성 확보 */
   .sidebar{
     position: fixed;
     bottom: 0;
@@ -221,14 +216,14 @@ tr:hover td{background:var(--surface2)}
     width: 100%;
     z-index: 1000;
     background: var(--surface);
-    border-right: none;
-    border-top: 1px solid var(--border);
-    height: calc(50px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
+    border-right:none;
+    border-top:1px solid var(--border);
+    height:calc(50px + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);
     display: flex;
-    flex-direction: row;
+    flex-direction:row;
     transition: none;
-    /* GPU 합성 레이어 고정 — iOS 키보드 후 반동 현상 방지 */
+    /* iOS 하단바 고정: GPU 레이어 올려서 스크롤/키보드 후 반동 차단 */
     -webkit-transform: translate3d(0,0,0);
     transform: translate3d(0,0,0);
     -webkit-backface-visibility: hidden;
@@ -248,14 +243,11 @@ tr:hover td{background:var(--surface2)}
   }
   .nav-label{display:block;font-size:9px;color:inherit}
   .nav-icon{width:20px;height:20px}
-  /* .main은 화면 전체를 채우되, 하단 탭바 높이만큼 padding */
   .main{
-    width: 100%;
-    /* dvh: iOS 주소바 표시/숨김 시 높이 변화 무시 */
     height: 100dvh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
+    overflow-y:auto;
+    overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
     padding-bottom: calc(60px + env(safe-area-inset-bottom));
   }
   .page{padding:14px 12px;max-width:100%;overflow-x:hidden}
@@ -1579,8 +1571,6 @@ function escJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 function updateThemeColorMeta(isModalOpen = false) {
   const isDark = document.body.classList.contains('dark');
   const color = isDark ? '#000000' : '#f2f2f7';
-
-  // theme-color 동적 업데이트 (브라우저 탭 + Android Chrome 상단바)
   let meta = document.getElementById('meta-theme-color');
   if (!meta) {
     meta = document.createElement('meta');
@@ -1588,15 +1578,9 @@ function updateThemeColorMeta(isModalOpen = false) {
     meta.id = 'meta-theme-color';
     document.head.appendChild(meta);
   }
-  // media 없는 단일 태그로 덮어쓰기 (동적 테마 전환 시 즉시 반영)
-  meta.removeAttribute('media');
   meta.setAttribute('content', color);
-
-  // color-scheme: iOS 상태바 아이콘 색상 (라이트=검정, 다크=흰색)
-  let scheme = document.querySelector('meta[name="color-scheme"]');
+  const scheme = document.querySelector('meta[name="color-scheme"]');
   if (scheme) scheme.setAttribute('content', isDark ? 'dark' : 'light');
-
-  // html 배경색 동기화 — black-translucent 상태바의 safe-area 영역 색상
   document.documentElement.style.backgroundColor = color;
   document.body.style.backgroundColor = color;
 }
@@ -1614,57 +1598,21 @@ function toggleTheme(){
   updateThemeColorMeta();
 })();
 
-/* ==============================
-   iOS 키보드 대응 — 하단 탭바 흔들림 방지
-   키보드가 올라오면 sidebar를 키보드 바로 위로 올리고,
-   키보드가 닫히면 즉시 bottom:0으로 복귀.
-   requestAnimationFrame으로 렌더 프레임에 동기화.
-============================== */
-(function fixBottomBar(){
-  if(typeof window === 'undefined') return;
-  const sidebar = document.querySelector('.sidebar');
-  if(!sidebar) return;
-
-  function isMobile(){ return window.innerWidth <= 768; }
-
-  // visualViewport 미지원 브라우저 대비
-  if(!window.visualViewport){
-    // 폴백: focusin/focusout으로 input focus 감지
-    document.addEventListener('focusin', function(e){
-      if(!isMobile()) return;
-      if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT'){
-        sidebar.style.display = 'none';
-      }
-    });
-    document.addEventListener('focusout', function(){
-      if(!isMobile()) return;
-      setTimeout(function(){ sidebar.style.display = ''; }, 100);
-    });
-    return;
-  }
-
-  let raf = null;
-  function update(){
-    if(raf) cancelAnimationFrame(raf);
+/* 하단 탭바 키보드 반동 방지 — visualViewport */
+(function(){
+  if(window.innerWidth > 768) return;
+  const bar = document.querySelector('.sidebar');
+  if(!bar || !window.visualViewport) return;
+  let raf;
+  function fix(){
+    cancelAnimationFrame(raf);
     raf = requestAnimationFrame(function(){
-      if(!isMobile()){ sidebar.style.bottom = ''; return; }
-      const vv = window.visualViewport;
-      // window.innerHeight - vv.height = 키보드 높이 (없으면 0)
-      const kbHeight = window.innerHeight - vv.height;
-      if(kbHeight > 50){
-        // 키보드가 올라온 상태: 탭바를 키보드 바로 위에 붙임
-        sidebar.style.bottom = kbHeight + 'px';
-      } else {
-        // 키보드 닫힘: 즉시 bottom:0 (env safe-area는 CSS에서 처리)
-        sidebar.style.bottom = '0';
-      }
+      const kb = window.innerHeight - window.visualViewport.height;
+      bar.style.bottom = (kb > 50 ? kb : 0) + 'px';
     });
   }
-
-  window.visualViewport.addEventListener('resize', update);
-  window.visualViewport.addEventListener('scroll', update);
-  // 초기 실행
-  update();
+  window.visualViewport.addEventListener('resize', fix);
+  window.visualViewport.addEventListener('scroll', fix);
 })();
 
 /* ==============================
