@@ -29,6 +29,8 @@
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 html{-webkit-text-size-adjust:100%}
 input[type=number]{-moz-appearance:textfield}
+/* iOS date input 오버플로우 방지 — 글로벌 */
+input[type="date"]{-webkit-appearance:none;appearance:none;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis}
 /* ⑦ 테마 변수 */
 :root{
   --bg:#f2f2f7;--surface:#ffffff;--surface2:#f2f2f7;
@@ -86,7 +88,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display'
 .row2{display:flex;gap:16px;margin-bottom:16px}
 .row2 .card{flex:1;margin-bottom:0}
 label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px}
-input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:14px;outline:none;transition:border .15s;font-family:inherit}
+input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:14px;outline:none;transition:border .15s;font-family:inherit;max-width:100%;min-width:0}
 input:focus,select:focus{border-color:var(--purple)}
 .fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
 .tx-typecat-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
@@ -173,6 +175,13 @@ tr:hover td{background:var(--surface2)}
   td,th{padding:6px 6px;white-space:nowrap}
   /* 저축 그리드 */
   .save-grid{grid-template-columns:1fr !important}
+  /* iOS 날짜 입력 오버플로우 방지 */
+  input[type="date"]{-webkit-appearance:none;appearance:none;font-size:12px !important;padding:6px 4px !important;max-width:100% !important;min-width:0 !important;width:100% !important;overflow:hidden;text-overflow:ellipsis}
+  /* 거래 입력 페이지 날짜 그리드 */
+  #page-input .tx-date-grid{grid-template-columns:1fr !important}
+  #page-input .tx-date-grid > div:empty{display:none}
+  /* 고정지출 날짜 인풋 */
+  .fixed-day-input{width:44px !important;padding:2px 4px !important;font-size:11px !important}
 }
 /* 태블릿 (768px ~ 1024px) */
 @media(max-width:1024px){
@@ -236,7 +245,7 @@ tr:hover td{background:var(--surface2)}
     order:1;
     -webkit-overflow-scrolling:touch;
   }
-  .page{padding:14px 12px;max-width:100%}
+  .page{padding:14px 12px;max-width:100%;overflow-x:hidden}
   .page-title{font-size:18px}
   /* 그리드 조정 */
   .g4{grid-template-columns:repeat(2,1fr);gap:8px}
@@ -252,7 +261,7 @@ tr:hover td{background:var(--surface2)}
   .row2{flex-direction:column;gap:10px}
   .row2 .card{flex:none}
   /* 카드 */
-  .card{padding:14px 12px}
+  .card{padding:14px 12px;overflow:hidden}
   .metric{padding:12px}
   .metric-value{font-size:18px}
   /* 테이블 스크롤 */
@@ -272,9 +281,9 @@ tr:hover td{background:var(--surface2)}
   /* 버튼 */
   .btn{padding:8px 14px;font-size:13px}
   .btn-sm{padding:5px 8px;font-size:11px}
-  /* 고정지출 입력칸 */
-  .fixed-item{align-items:flex-start;gap:6px}
-  .fixed-item-main{gap:6px}
+  /* 고정지출 입력칸 — 모바일 최적화 */
+  .fixed-item{align-items:flex-start;gap:6px;flex-wrap:wrap}
+  .fixed-item-main{gap:6px;min-width:0;flex:1;overflow:hidden}
   .fixed-item-main .fi-name{font-size:12px}
   .fixed-item-main .fi-meta{font-size:10px}
   .fixed-item-amt{max-width:58%;flex-wrap:nowrap;justify-content:flex-end;gap:3px}
@@ -285,6 +294,14 @@ tr:hover td{background:var(--surface2)}
   .fixed-action-left,.fixed-action-right{gap:6px}
   /* 테마 버튼 - 모바일에서 다시 표시 */
   .theme-btn{display:none}
+  /* 거래 입력 — 날짜 영역 전폭 사용 */
+  .tx-typecat-row{grid-template-columns:1fr 1fr;gap:8px}
+  /* 고정지출 관리 그리드 모바일 최적화 */
+  .fixed-manage-grid{grid-template-columns:1fr 1fr !important;gap:8px !important}
+  .fixed-manage-grid .fixed-manage-add-btn{grid-column:1/-1}
+  /* iOS Safari input 오버플로우 최종 방어 */
+  .main{overflow-x:hidden}
+  .inner{overflow-x:hidden}
 }
 
 /* PIN 로그인 */
@@ -645,8 +662,8 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   <div class="page-sub">수입과 지출을 기록하세요</div>
   <div class="card">
     <div class="card-title">새 거래</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;align-items:end">
-      <div><label>날짜</label><input type="date" id="tx-date" style="font-size:13px;padding:8px 8px"></div>
+    <div class="tx-date-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;align-items:end">
+      <div><label>날짜</label><input type="date" id="tx-date" style="font-size:13px;padding:8px 8px;max-width:100%"></div>
       <div></div>
     </div>
     <div class="tx-typecat-row">
@@ -1844,13 +1861,13 @@ function renderTxList(){
       const cats=t.type==='expense'?EXPENSE_CATS:[];
       return`<div style="position:relative;padding:10px 0 8px;border-bottom:1px solid var(--border)">
         <button class="btn-ghost" onclick="delTx(${t.id})" style="position:absolute;top:8px;right:0;font-size:12px;padding:0 2px;color:var(--text3);line-height:1">×</button>
-        <div style="display:grid;grid-template-columns:85px auto auto auto;gap:4px;align-items:center;margin-bottom:6px;padding-right:18px">
-          <input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:9px;padding:2px 2px;background:var(--surface);color:var(--text)">
-          <select onchange="updateTxField(${t.id},'type',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text)">
+        <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,0.8fr) minmax(0,0.8fr);gap:4px;align-items:center;margin-bottom:6px;padding-right:18px">
+          <input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:9px;padding:2px 2px;background:var(--surface);color:var(--text);max-width:100%;min-width:0;-webkit-appearance:none;appearance:none;overflow:hidden">
+          <select onchange="updateTxField(${t.id},'type',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text);max-width:100%;min-width:0">
             <option${t.type==='expense'?' selected':''} value="expense">지출</option>
             <option${t.type==='income'?' selected':''} value="income">수입</option>
           </select>
-          ${t.type==='income'?'<span style="font-size:10px;color:var(--text3);text-align:center">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text)">${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}</select>`}
+          ${t.type==='income'?'<span style="font-size:10px;color:var(--text3);text-align:center">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text);max-width:100%;min-width:0">${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}</select>`}
         </div>
         <div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center">
           <input type="text" value="${t.desc||''}" onchange="updateTxField(${t.id},'desc',this.value)" placeholder="내용" style="border:none;background:transparent;color:var(--text);font-size:12px;font-weight:500;padding:0;min-width:0">
@@ -2432,22 +2449,22 @@ function renderFixed(){
   document.getElementById('fixed-list').innerHTML=`
     <div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:10px">항목 관리</div>
-      <div class="fixed-manage-grid">
+      <div class="fixed-manage-grid" style="display:grid;grid-template-columns:1fr 1fr 80px 1fr;gap:10px;align-items:end">
         <div>
           <label>항목명</label>
-          <input id="fixed-new-name" type="text" placeholder="예: 넷플릭스">
+          <input id="fixed-new-name" type="text" placeholder="예: 넷플릭스" style="min-width:0">
         </div>
         <div>
           <label>금액</label>
-          <input id="fixed-new-amt" type="text" oninput="formatNumInput(this)" inputmode="numeric" placeholder="0" class="num-input">
+          <input id="fixed-new-amt" type="text" oninput="formatNumInput(this)" inputmode="numeric" placeholder="0" class="num-input" style="min-width:0">
         </div>
         <div>
           <label>날짜</label>
-          <input id="fixed-new-day" type="number" min="1" max="31" inputmode="numeric" value="1">
+          <input id="fixed-new-day" type="number" min="1" max="31" inputmode="numeric" value="1" style="min-width:0;max-width:100%">
         </div>
         <div>
           <label>분류</label>
-          <select id="fixed-new-group"></select>
+          <select id="fixed-new-group" style="min-width:0"></select>
         </div>
         <button class="btn btn-p fixed-manage-add-btn" onclick="addFixedItemFromForm()">항목 추가</button>
       </div>
@@ -2477,9 +2494,9 @@ function renderFixed(){
             ${isToday?'<span style="color:var(--amber);font-weight:600;margin-right:4px;">★</span>':''}
             <input type="text" class="fixed-name-input" value="${localStorage.getItem(k+'_name') || item.name}" onchange="updateFixedItemName('${k}',this.value,${isCustom})" style="font-size:14px; width:100%; max-width:180px; padding:2px 4px; border-radius:6px; border:1px solid transparent; ${isDone?'text-decoration:line-through; opacity:0.6;':''} ${isToday?'color:var(--amber);font-weight:600;':''}">
           </div>
-              <div class="fi-meta" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+              <div class="fi-meta" style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">
                 <span>매달</span>
-                <input type="number" min="1" max="31" inputmode="numeric" value="${day}" onchange="updateFixedDay('${k}',this.value)" style="width:62px;padding:2px 6px;font-size:12px" class="fixed-day-input">
+                <input type="number" min="1" max="31" inputmode="numeric" value="${day}" onchange="updateFixedDay('${k}',this.value)" style="width:50px;max-width:50px;padding:2px 4px;font-size:12px" class="fixed-day-input">
                 <span>일</span>
               </div>
             </div>
