@@ -27,7 +27,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;background:var(--bg)}
 input[type=number]{-moz-appearance:textfield}
 /* iOS date input 오버플로우 방지 — 글로벌 */
 input[type="date"]{-webkit-appearance:none;appearance:none;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -1571,8 +1571,19 @@ function updateThemeColorMeta(isModalOpen = false) {
   } else {
     color = isDark ? '#000000' : '#f2f2f7';
   }
-  const meta = document.getElementById('meta-theme-color');
-  if (meta) meta.setAttribute('content', color);
+  
+  // iOS에서 meta tag 업데이트가 가끔 무시되는 현상을 방지하기 위해 태그 자체를 교체
+  let meta = document.getElementById('meta-theme-color');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    meta.id = 'meta-theme-color';
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute('content', color);
+  
+  // html 배경색도 즉시 동기화
+  document.documentElement.style.backgroundColor = color;
 }
 
 function toggleTheme(){
@@ -1955,7 +1966,7 @@ function addTx(){
   saveAll();
   document.getElementById('tx-amt').value='';
   document.getElementById('tx-desc').value='';
-  document.getElementById('tx-modal-overlay').classList.remove('open');
+  closeTxModal();
   showToast('거래가 추가됐어요 ✓');
   renderTxList();
   renderHome();
