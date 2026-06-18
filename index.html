@@ -27,7 +27,8 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;background:#f2f2f7}
+html.dark{background:#000000}
 input[type=number]{-moz-appearance:textfield}
 /* iOS date input 오버플로우 방지 — 글로벌 */
 input[type="date"]{-webkit-appearance:none;appearance:none;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -55,7 +56,7 @@ body.dark{
   --blue:#0a84ff;--blue-light:#001f3f;
   --teal:#5DCAA5;--teal-light:#04342C;
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;min-height:100vh;transition:background .2s,color .2s}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;min-height:100vh;min-height:100dvh;transition:background .2s,color .2s}
 .app{display:flex;min-height:100vh;width:100vw;overflow:hidden}
 .sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:background .2s;padding-top:env(safe-area-inset-top)}
 .logo{padding:20px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
@@ -1580,7 +1581,10 @@ function updateThemeColorMeta(isModalOpen = false) {
   const bgColor = isDark ? '#000000' : '#f2f2f7';
   const meta = document.getElementById('meta-theme-color');
   if (meta) meta.setAttribute('content', bgColor);
+  /* html과 body 모두에 인라인으로 강제 — 키보드 표시/숨김 시 노치 영역이
+     비어 보이며 회색으로 굳는 iOS 버그 방지 (특정 요소만 두면 안 됨) */
   document.documentElement.style.backgroundColor = bgColor;
+  document.body.style.backgroundColor = bgColor;
 
   /* 상태바 스타일: 라이트=default(검정 텍스트/아이콘), 다크=black(흰 텍스트/아이콘) */
   const statusMeta = document.getElementById('meta-status-bar');
@@ -1633,10 +1637,15 @@ function openTxModal(){
 function closeTxModal(e){
   /* 인수 없이 호출(✕ 버튼) 또는 오버레이 배경 클릭 시 닫기 */
   if(e&&e.target!==document.getElementById('tx-modal-overlay')&&e.target!==undefined)return;
+  /* 모달 닫기 전 키보드를 확실히 내려 — 열려있으면 닫힘 애니메이션과 겹쳐 노치 영역이 회색으로 남을 수 있음 */
+  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
   document.getElementById('tx-modal-overlay').classList.remove('open');
   updateThemeColorMeta(false);
-  /* iOS Safari: 앱 복귀 시 theme-color가 회색으로 굳는 현상 방지 — 한 프레임 뒤에도 강제 복원 */
+  /* iOS Safari: 키보드 dismiss 애니메이션(약 300ms) 동안 노치 영역이 회색으로 굳는 현상 방지
+     — 여러 타이밍에 중복으로 강제 복원 */
   requestAnimationFrame(()=>updateThemeColorMeta(false));
+  setTimeout(()=>updateThemeColorMeta(false),100);
+  setTimeout(()=>updateThemeColorMeta(false),350);
 }
 /* ESC 키로 모달 닫기 */
 document.addEventListener('keydown',e=>{
@@ -1986,6 +1995,8 @@ function addTx(){
   saveAll();
   document.getElementById('tx-amt').value='';
   document.getElementById('tx-desc').value='';
+  /* 키보드를 확실히 내려서(blur) iOS가 노치 영역을 회색으로 남기는 현상 방지 */
+  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
   closeTxModal();
   showToast('거래가 추가됐어요 ✓');
   renderTxList();
