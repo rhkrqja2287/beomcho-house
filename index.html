@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="범초하우스">
 <!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1c1c1e">
+<meta name="theme-color" id="theme-color-meta" content="#1c1c1e">
 <!-- OG (네이버 웨일 북마크 썸네일) -->
 <meta property="og:title" content="범초하우스">
 <meta property="og:description" content="범초하우스">
@@ -1566,11 +1566,14 @@ function toggleTheme(){
   const isDark=document.body.classList.toggle('dark');
   localStorage.setItem('bch_theme',isDark?'dark':'light');
   document.getElementById('theme-btn').textContent=isDark?'☀ 라이트':'🌙 다크';
+  document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#000000' : '#f2f2f7');
   saveAll(); /* 테마도 Firebase에 동기화 */
 }
 (function initTheme(){
   const t=localStorage.getItem('bch_theme');
-  if(t==='dark'){document.body.classList.add('dark');document.getElementById('theme-btn').textContent='☀ 라이트';}
+  const isDark = (t==='dark');
+  if(isDark){document.body.classList.add('dark');document.getElementById('theme-btn').textContent='☀ 라이트';}
+  document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#000000' : '#f2f2f7');
 })();
 
 /* ==============================
