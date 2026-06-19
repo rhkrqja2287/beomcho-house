@@ -9,7 +9,7 @@
 <!-- Apple -->
 <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" id="meta-status-bar">
 <meta name="apple-mobile-web-app-title" content="범초하우스">
 <!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
@@ -28,7 +28,10 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-html{-webkit-text-size-adjust:100%;background:var(--bg)}
+html{-webkit-text-size-adjust:100%;background:var(--bg);
+  /* iOS standalone PWA: 상단 노치/상태바 영역 배경색 채우기 */
+  padding-top:env(safe-area-inset-top);
+}
 input[type=number]{-moz-appearance:textfield}
 /* iOS date input 오버플로우 방지 — 글로벌 */
 input[type="date"]{-webkit-appearance:none;appearance:none;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -56,9 +59,12 @@ body.dark{
   --blue:#0a84ff;--blue-light:#001f3f;
   --teal:#5DCAA5;--teal-light:#04342C;
 }
-html,body{height:100%;overflow:hidden;width:100%;position:fixed}
+html,body{height:100%;overflow:hidden;width:100%;position:fixed;
+  /* iOS Safari 주소바 나타남/사라짐으로 인한 리플로우 방지 */
+  height: 100dvh;
+}
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;transition:background .2s,color .2s}
-.app{display:flex;height:100%;width:100vw;overflow:hidden}
+.app{display:flex;height:100%;height:100dvh;width:100vw;overflow:hidden}
 .sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:background .2s}
 .logo{padding:20px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .logo-text{font-size:16px;font-weight:700}
@@ -72,7 +78,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display'
 .nav-item.active{background:var(--purple-light);color:var(--purple-dark);font-weight:500}
 .nav-icon{width:18px;height:18px;opacity:.7;flex-shrink:0}
 .nav-item.active .nav-icon{opacity:1}
-.main{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);padding-top:env(safe-area-inset-top)}
+.main{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;background:var(--bg)}
 .inner{max-width:1200px;margin:0 auto}
 .page{display:none;padding:28px 32px;box-sizing:border-box;max-width:900px}
 .page.active{display:block}
@@ -223,6 +229,12 @@ tr:hover td{background:var(--surface2)}
     display: flex;
     flex-direction:row;
     transition: none;
+    /* iOS Safari 하단바 흔들림 방지: GPU 레이어 고정 */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    will-change: transform;
   }
   .logo{display:none}
   .nav{
@@ -240,6 +252,7 @@ tr:hover td{background:var(--surface2)}
   .nav-icon{width:20px;height:20px}
   .main{
     height: 100%;
+    height: 100dvh;
     overflow-y:auto;
     overflow-x:hidden;
     -webkit-overflow-scrolling:touch;
@@ -1565,8 +1578,9 @@ function escJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 ============================== */
 function updateThemeColorMeta(isModalOpen = false) {
   const isDark = document.body.classList.contains('dark');
-  let color = isDark ? '#000000' : '#f2f2f7';
-  
+  const color = isDark ? '#000000' : '#f2f2f7';
+
+  // theme-color 업데이트 (Chrome/Android + Safari 브라우저 탭)
   let meta = document.getElementById('meta-theme-color');
   if (!meta) {
     meta = document.createElement('meta');
@@ -1581,8 +1595,8 @@ function updateThemeColorMeta(isModalOpen = false) {
   if (scheme) {
     scheme.setAttribute('content', isDark ? 'dark' : 'light');
   }
-  
-  // html/body 배경색 동기화
+
+  // html/body 배경색 동기화 (iOS 상단 safe-area 배경 채우기)
   document.documentElement.style.backgroundColor = color;
   document.body.style.backgroundColor = color;
 }
@@ -1598,6 +1612,36 @@ function toggleTheme(){
   const t=localStorage.getItem('bch_theme');
   if(t==='dark'){document.body.classList.add('dark');document.getElementById('theme-btn').textContent='☀ 라이트';}
   updateThemeColorMeta();
+})();
+
+/* ==============================
+   iOS 키보드 대응 — 하단 탭바 고정
+   visualViewport API: 키보드가 올라와도 sidebar가 화면 하단에 고정
+============================== */
+(function fixIOSBottomBar(){
+  const sidebar = document.querySelector('.sidebar');
+  if(!sidebar || !window.visualViewport) return;
+  let rafId = null;
+  function onViewportChange(){
+    if(rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(function(){
+      const vv = window.visualViewport;
+      // 키보드가 올라오면 visualViewport.height < window.innerHeight
+      // sidebar를 window 기준 bottom에 고정시키기 위해 offset 보정
+      const offsetY = window.innerHeight - vv.height - vv.offsetTop;
+      if(offsetY > 10){
+        // 키보드가 올라온 경우: 탭바를 키보드 위로 올림
+        sidebar.style.bottom = offsetY + 'px';
+        sidebar.style.transform = 'translateZ(0)';
+      } else {
+        // 키보드 닫힌 경우: 원래 위치로
+        sidebar.style.bottom = '';
+        sidebar.style.transform = 'translateZ(0)';
+      }
+    });
+  }
+  window.visualViewport.addEventListener('resize', onViewportChange);
+  window.visualViewport.addEventListener('scroll', onViewportChange);
 })();
 
 /* ==============================
