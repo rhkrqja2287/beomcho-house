@@ -9,17 +9,17 @@
 <!-- Apple -->
 <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="범초하우스">
 <!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1c1c1e">
+<meta name="theme-color" id="meta-theme-color" content="#f2f2f7">
 <!-- OG (네이버 웨일 북마크 썸네일) -->
 <meta property="og:title" content="범초하우스">
 <meta property="og:description" content="범초하우스">
 <meta property="og:image" content="https://rhkrqja2287.github.io/beomcho-house/icon.png">
 <meta property="og:url" content="https://rhkrqja2287.github.io/beomcho-house/">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>범초하우스</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -70,7 +70,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display'
 .nav-item.active{background:var(--purple-light);color:var(--purple-dark);font-weight:500}
 .nav-icon{width:18px;height:18px;opacity:.7;flex-shrink:0}
 .nav-item.active .nav-icon{opacity:1}
-.main{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;background:var(--bg)}
+.main{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);padding-top:env(safe-area-inset-top)}
 .inner{max-width:1200px;margin:0 auto}
 .page{display:none;padding:28px 32px;box-sizing:border-box;max-width:900px}
 .page.active{display:block}
@@ -601,7 +601,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   <div id="tx-modal" role="dialog" aria-modal="true" aria-labelledby="tx-modal-title">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div class="card-title" id="tx-modal-title" style="margin-bottom:0;font-size:16px">새 거래</div>
-      <button onclick="document.getElementById('tx-modal-overlay').classList.remove('open')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:4px 8px" aria-label="닫기">✕</button>
+      <button onclick="closeTxModal()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:4px 8px" aria-label="닫기">✕</button>
     </div>
     <!-- 행1: 날짜 / 유형 / 카테고리 -->
     <div class="tx-form-row1" style="margin-bottom:12px">
@@ -1468,6 +1468,7 @@ function applyFirebaseData(data){
     localStorage.setItem('bch_theme',data.theme);
     if(data.theme==='dark')document.body.classList.add('dark');
     else document.body.classList.remove('dark');
+    updateThemeColorMeta();
   }
   saveLocal();
 }
@@ -1562,15 +1563,29 @@ function escJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 /* ==============================
    ⑦ 테마 토글
 ============================== */
+function updateThemeColorMeta(isModalOpen = false) {
+  const isDark = document.body.classList.contains('dark');
+  let color;
+  if (isModalOpen) {
+    color = isDark ? '#000000' : '#8e8e93';
+  } else {
+    color = isDark ? '#000000' : '#f2f2f7';
+  }
+  const meta = document.getElementById('meta-theme-color');
+  if (meta) meta.setAttribute('content', color);
+}
+
 function toggleTheme(){
   const isDark=document.body.classList.toggle('dark');
   localStorage.setItem('bch_theme',isDark?'dark':'light');
   document.getElementById('theme-btn').textContent=isDark?'☀ 라이트':'🌙 다크';
+  updateThemeColorMeta();
   saveAll(); /* 테마도 Firebase에 동기화 */
 }
 (function initTheme(){
   const t=localStorage.getItem('bch_theme');
   if(t==='dark'){document.body.classList.add('dark');document.getElementById('theme-btn').textContent='☀ 라이트';}
+  updateThemeColorMeta();
 })();
 
 /* ==============================
@@ -1583,16 +1598,18 @@ function openTxModal(){
   document.getElementById('tx-amt').value='';
   document.getElementById('tx-desc').value='';
   document.getElementById('tx-modal-overlay').classList.add('open');
+  updateThemeColorMeta(true);
   setTimeout(()=>document.getElementById('tx-amt').focus(),250);
 }
 function closeTxModal(e){
   /* 인수 없이 호출(✕ 버튼) 또는 오버레이 배경 클릭 시 닫기 */
   if(e&&e.target!==document.getElementById('tx-modal-overlay'))return;
   document.getElementById('tx-modal-overlay').classList.remove('open');
+  updateThemeColorMeta();
 }
 /* ESC 키로 모달 닫기 */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape')document.getElementById('tx-modal-overlay').classList.remove('open');
+  if(e.key==='Escape') closeTxModal();
 });
 /* 기존 toggleNewTxForm — 하위 호환용 빈 함수 */
 function toggleNewTxForm(){}
