@@ -9,17 +9,17 @@
 <!-- Apple -->
 <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default" id="meta-status-bar">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="범초하우스">
 <!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" id="meta-theme-color" content="#f2f2f7">
+<meta name="theme-color" content="#1c1c1e">
 <!-- OG (네이버 웨일 북마크 썸네일) -->
 <meta property="og:title" content="범초하우스">
 <meta property="og:description" content="범초하우스">
 <meta property="og:image" content="https://rhkrqja2287.github.io/beomcho-house/icon.png">
 <meta property="og:url" content="https://rhkrqja2287.github.io/beomcho-house/">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>범초하우스</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -27,8 +27,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-html{-webkit-text-size-adjust:100%;background:#f2f2f7}
-html.dark{background:#000000}
+html{-webkit-text-size-adjust:100%}
 input[type=number]{-moz-appearance:textfield}
 /* iOS date input 오버플로우 방지 — 글로벌 */
 input[type="date"]{-webkit-appearance:none;appearance:none;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -56,9 +55,9 @@ body.dark{
   --blue:#0a84ff;--blue-light:#001f3f;
   --teal:#5DCAA5;--teal-light:#04342C;
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;min-height:100vh;min-height:100dvh;transition:background .2s,color .2s}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;min-height:100vh;transition:background .2s,color .2s}
 .app{display:flex;min-height:100vh;width:100vw;overflow:hidden}
-.sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:background .2s;padding-top:env(safe-area-inset-top)}
+.sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:background .2s}
 .logo{padding:20px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .logo-text{font-size:16px;font-weight:700}
 .logo-sub{font-size:11px;color:var(--text3);margin-top:1px}
@@ -71,7 +70,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display'
 .nav-item.active{background:var(--purple-light);color:var(--purple-dark);font-weight:500}
 .nav-icon{width:18px;height:18px;opacity:.7;flex-shrink:0}
 .nav-item.active .nav-icon{opacity:1}
-.main{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);padding-top:env(safe-area-inset-top)}
+.main{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;background:var(--bg)}
 .inner{max-width:1200px;margin:0 auto}
 .page{display:none;padding:28px 32px;box-sizing:border-box;max-width:900px}
 .page.active{display:block}
@@ -209,48 +208,37 @@ tr:hover td{background:var(--surface2)}
     height:100dvh; /* dynamic viewport height — 키보드/주소창 변화 대응 */
     overflow:hidden;
   }
-  /* 사이드바를 하단 탭바로 변환 — position:fixed이므로 flex에서 공간 미차지 */
+  /* 사이드바를 하단 탭바로 변환 */
   .sidebar{
     width:100%;
-    flex-direction:column; /* column으로 바꿔 safe-area를 하단에 독립 확보 */
+    flex-direction:row;
     border-right:none;border-top:1px solid var(--border);
     flex-shrink:0;
     order:2;
-    position:fixed;
-    bottom:0;
-    left:0;
-    right:0;
-    z-index:500;
-    background:var(--surface);
-    touch-action:none;
+    height:calc(60px + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);
+    position:static;
+    transform:none;
+    -webkit-transform:none;
+    touch-action:none; /* 탭바 터치가 스크롤로 전파되는 것 차단 */
     overscroll-behavior:none;
     user-select:none;
     -webkit-user-select:none;
   }
   .logo{display:none}
-  /* 탭 버튼이 들어가는 실제 60px 행 */
   .nav{
     display:flex;flex-direction:row;align-items:center;
-    justify-content:space-around;padding:0;width:100%;
-    height:60px;flex-shrink:0;
+    justify-content:space-around;padding:0 4px;width:100%;
   }
-  /* safe-area: sidebar에 padding-bottom으로 처리 (::after 방식보다 iOS에서 안정적) */
-  .sidebar::after{display:none}
-  .sidebar{padding-bottom:env(safe-area-inset-bottom);padding-top:0}
   .nav-item{
-    flex-direction:column;gap:3px;padding:0;
-    border-radius:0;font-size:10px;min-width:0;flex:1;
+    flex-direction:column;gap:3px;padding:6px 4px;
+    border-radius:8px;font-size:10px;min-width:0;flex:1;
     justify-content:center;align-items:center;margin-bottom:0;
-    height:60px;
-    border-top:2px solid transparent;transition:color .15s,border-color .15s;
-    border-bottom:none;
   }
-  .nav-item.active{background:none;border-top-color:var(--purple);color:var(--purple)}
-  .nav-item.active .nav-icon{opacity:1}
-  .nav-label{display:block;font-size:9px;color:inherit;line-height:1.2;text-align:center}
-  .nav-icon{width:22px;height:22px}
+  .nav-label{display:block;font-size:9px;color:inherit}
+  .nav-icon{width:20px;height:20px}
   .main{
-    padding-bottom:calc(60px + env(safe-area-inset-bottom));
+    padding-bottom:0; /* 하단바가 flex로 고정되므로 padding 불필요 */
     flex:1;
     overflow-y:auto;
     overflow-x:hidden;
@@ -613,7 +601,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   <div id="tx-modal" role="dialog" aria-modal="true" aria-labelledby="tx-modal-title">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div class="card-title" id="tx-modal-title" style="margin-bottom:0;font-size:16px">새 거래</div>
-      <button onclick="closeTxModal()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:4px 8px" aria-label="닫기">✕</button>
+      <button onclick="document.getElementById('tx-modal-overlay').classList.remove('open')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:4px 8px" aria-label="닫기">✕</button>
     </div>
     <!-- 행1: 날짜 / 유형 / 카테고리 -->
     <div class="tx-form-row1" style="margin-bottom:12px">
@@ -1480,7 +1468,6 @@ function applyFirebaseData(data){
     localStorage.setItem('bch_theme',data.theme);
     if(data.theme==='dark')document.body.classList.add('dark');
     else document.body.classList.remove('dark');
-    updateThemeColorMeta();
   }
   saveLocal();
 }
@@ -1575,50 +1562,15 @@ function escJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 /* ==============================
    ⑦ 테마 토글
 ============================== */
-function updateThemeColorMeta(isModalOpen = false) {
-  const isDark = document.body.classList.contains('dark');
-  /* theme-color는 항상 앱 배경색 — 밝으면 iOS가 검정 아이콘, 어두우면 흰 아이콘 자동 선택 */
-  const bgColor = isDark ? '#000000' : '#f2f2f7';
-  const meta = document.getElementById('meta-theme-color');
-  if (meta) meta.setAttribute('content', bgColor);
-  /* html과 body 모두에 인라인으로 강제 — 키보드 표시/숨김 시 노치 영역이
-     비어 보이며 회색으로 굳는 iOS 버그 방지 (특정 요소만 두면 안 됨) */
-  document.documentElement.style.backgroundColor = bgColor;
-  document.body.style.backgroundColor = bgColor;
-
-  /* 상태바 스타일: 라이트=default(검정 텍스트/아이콘), 다크=black(흰 텍스트/아이콘) */
-  const statusMeta = document.getElementById('meta-status-bar');
-  if (statusMeta) statusMeta.setAttribute('content', isDark ? 'black' : 'default');
-
-  /* 모달 딤 효과는 CSS overlay로만 처리 — theme-color는 건드리지 않음 */
-}
-
-/* 앱 재진입 / 포커스 복귀 시 상태바 색상 강제 복원
-   거래 입력 후 돌아왔을 때 회색으로 굳는 문제 해결:
-   모달 open 여부와 무관하게 항상 현재 테마 색으로 복원,
-   iOS Safari가 meta 변경을 인식하도록 두 타이밍에 중복 적용 */
-function _restoreThemeOnResume() {
-  updateThemeColorMeta(false);
-  requestAnimationFrame(() => updateThemeColorMeta(false));
-  setTimeout(() => updateThemeColorMeta(false), 300);
-}
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') _restoreThemeOnResume();
-});
-window.addEventListener('pageshow', _restoreThemeOnResume);
-window.addEventListener('focus', _restoreThemeOnResume);
-
 function toggleTheme(){
   const isDark=document.body.classList.toggle('dark');
   localStorage.setItem('bch_theme',isDark?'dark':'light');
   document.getElementById('theme-btn').textContent=isDark?'☀ 라이트':'🌙 다크';
-  updateThemeColorMeta();
   saveAll(); /* 테마도 Firebase에 동기화 */
 }
 (function initTheme(){
   const t=localStorage.getItem('bch_theme');
   if(t==='dark'){document.body.classList.add('dark');document.getElementById('theme-btn').textContent='☀ 라이트';}
-  updateThemeColorMeta();
 })();
 
 /* ==============================
@@ -1631,25 +1583,16 @@ function openTxModal(){
   document.getElementById('tx-amt').value='';
   document.getElementById('tx-desc').value='';
   document.getElementById('tx-modal-overlay').classList.add('open');
-  updateThemeColorMeta(true);
   setTimeout(()=>document.getElementById('tx-amt').focus(),250);
 }
 function closeTxModal(e){
   /* 인수 없이 호출(✕ 버튼) 또는 오버레이 배경 클릭 시 닫기 */
-  if(e&&e.target!==document.getElementById('tx-modal-overlay')&&e.target!==undefined)return;
-  /* 모달 닫기 전 키보드를 확실히 내려 — 열려있으면 닫힘 애니메이션과 겹쳐 노치 영역이 회색으로 남을 수 있음 */
-  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+  if(e&&e.target!==document.getElementById('tx-modal-overlay'))return;
   document.getElementById('tx-modal-overlay').classList.remove('open');
-  updateThemeColorMeta(false);
-  /* iOS Safari: 키보드 dismiss 애니메이션(약 300ms) 동안 노치 영역이 회색으로 굳는 현상 방지
-     — 여러 타이밍에 중복으로 강제 복원 */
-  requestAnimationFrame(()=>updateThemeColorMeta(false));
-  setTimeout(()=>updateThemeColorMeta(false),100);
-  setTimeout(()=>updateThemeColorMeta(false),350);
 }
 /* ESC 키로 모달 닫기 */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape') closeTxModal();
+  if(e.key==='Escape')document.getElementById('tx-modal-overlay').classList.remove('open');
 });
 /* 기존 toggleNewTxForm — 하위 호환용 빈 함수 */
 function toggleNewTxForm(){}
@@ -1995,9 +1938,7 @@ function addTx(){
   saveAll();
   document.getElementById('tx-amt').value='';
   document.getElementById('tx-desc').value='';
-  /* 키보드를 확실히 내려서(blur) iOS가 노치 영역을 회색으로 남기는 현상 방지 */
-  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
-  closeTxModal();
+  document.getElementById('tx-modal-overlay').classList.remove('open');
   showToast('거래가 추가됐어요 ✓');
   renderTxList();
   renderHome();
