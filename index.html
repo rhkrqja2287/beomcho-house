@@ -9,12 +9,11 @@
 <!-- Apple -->
 <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="범초하우스">
 <!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
-<meta name="color-scheme" content="light dark">
-<meta name="theme-color" id="meta-theme-color" content="#f2f2f7">
+<meta name="theme-color" id="meta-theme-color" content="#ffffff">
 <!-- OG (네이버 웨일 북마크 썸네일) -->
 <meta property="og:title" content="범초하우스">
 <meta property="og:description" content="범초하우스">
@@ -28,7 +27,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-html{-webkit-text-size-adjust:100%;background:var(--bg);padding-top:env(safe-area-inset-top)}
+html{-webkit-text-size-adjust:100%}
 input[type=number]{-moz-appearance:textfield}
 /* iOS date input 오버플로우 방지 — 글로벌 */
 input[type="date"]{-webkit-appearance:none;appearance:none;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -56,10 +55,9 @@ body.dark{
   --blue:#0a84ff;--blue-light:#001f3f;
   --teal:#5DCAA5;--teal-light:#04342C;
 }
-html,body{height:100%;overflow:hidden;width:100%;position:fixed}
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;transition:background .2s,color .2s}
-.app{display:flex;height:100%;width:100vw;overflow:hidden}
-.sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:background .2s}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;min-height:100vh;transition:background .2s,color .2s}
+.app{display:flex;min-height:100vh;width:100vw;overflow:hidden}
+.sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:background .2s;padding-top:env(safe-area-inset-top)}
 .logo{padding:20px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .logo-text{font-size:16px;font-weight:700}
 .logo-sub{font-size:11px;color:var(--text3);margin-top:1px}
@@ -72,7 +70,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display'
 .nav-item.active{background:var(--purple-light);color:var(--purple-dark);font-weight:500}
 .nav-icon{width:18px;height:18px;opacity:.7;flex-shrink:0}
 .nav-item.active .nav-icon{opacity:1}
-.main{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;background:var(--bg)}
+.main{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);padding-top:env(safe-area-inset-top)}
 .inner{max-width:1200px;margin:0 auto}
 .page{display:none;padding:28px 32px;box-sizing:border-box;max-width:900px}
 .page.active{display:block}
@@ -204,51 +202,53 @@ tr:hover td{background:var(--surface2)}
 }
 /* 모바일 (~ 768px) */
 @media(max-width:768px){
-  body{font-size:14px}
+  body{font-size:14px; overscroll-behavior: none;}
   .app{
     flex-direction:column;
+    height:100dvh; /* dynamic viewport height — 키보드/주소창 변화 대응 */
+    overflow:hidden;
   }
-  /* 사이드바를 하단 탭바로 변환 - 고정 위치로 변경하여 안정성 확보 */
+  /* 사이드바를 하단 탭바로 변환 */
   .sidebar{
     position: fixed;
     bottom: 0;
     left: 0;
-    width: 100%;
+    right: 0;
     z-index: 1000;
+    width: 100%;
+    flex-direction: row;
+    border-right: none;
+    border-top: 1px solid var(--border);
     background: var(--surface);
-    border-right:none;
-    border-top:1px solid var(--border);
-    height:calc(50px + env(safe-area-inset-bottom));
-    padding-bottom:env(safe-area-inset-bottom);
-    display: flex;
-    flex-direction:row;
-    transition: none;
-    /* iOS 하단바 고정: GPU 레이어 올려서 스크롤/키보드 후 반동 차단 */
-    -webkit-transform: translate3d(0,0,0);
-    transform: translate3d(0,0,0);
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
+    height: calc(65px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-top: 0;
+    touch-action: none;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+    box-shadow: 0 -1px 10px rgba(0,0,0,0.05);
   }
   .logo{display:none}
   .nav{
     display:flex;flex-direction:row;align-items:center;
-    justify-content:space-around;padding:0 4px;width:100%;
-    height: 50px;
+    justify-content:space-around;padding:0 8px;width:100%;
+    height: 100%;
   }
   .nav-item{
-    flex-direction:column;gap:3px;padding:4px;
-    border-radius:8px;font-size:10px;min-width:0;flex:1;
+    flex-direction:column;gap:4px;padding:8px 0;
+    border-radius:10px;font-size:10px;min-width:0;flex:1;
     justify-content:center;align-items:center;margin-bottom:0;
     height: 100%;
   }
-  .nav-label{display:block;font-size:9px;color:inherit}
-  .nav-icon{width:20px;height:20px}
+  .nav-label{display:block;font-size:10px;color:inherit;font-weight: 500;}
+  .nav-icon{width:22px;height:22px}
   .main{
-    height: 100dvh;
+    padding-bottom: calc(75px + env(safe-area-inset-bottom));
+    flex:1;
     overflow-y:auto;
     overflow-x:hidden;
     -webkit-overflow-scrolling:touch;
-    padding-bottom: calc(60px + env(safe-area-inset-bottom));
   }
   .page{padding:14px 12px;max-width:100%;overflow-x:hidden}
   .page-title{font-size:18px}
@@ -1570,19 +1570,16 @@ function escJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 ============================== */
 function updateThemeColorMeta(isModalOpen = false) {
   const isDark = document.body.classList.contains('dark');
-  const color = isDark ? '#000000' : '#f2f2f7';
-  let meta = document.getElementById('meta-theme-color');
-  if (!meta) {
-    meta = document.createElement('meta');
-    meta.name = 'theme-color';
-    meta.id = 'meta-theme-color';
-    document.head.appendChild(meta);
+  let color;
+  if (isModalOpen) {
+    color = isDark ? '#1c1c1e' : '#f2f2f7';
+  } else {
+    color = isDark ? '#000000' : '#ffffff';
   }
-  meta.setAttribute('content', color);
-  const scheme = document.querySelector('meta[name="color-scheme"]');
-  if (scheme) scheme.setAttribute('content', isDark ? 'dark' : 'light');
+  const meta = document.getElementById('meta-theme-color');
+  if (meta) meta.setAttribute('content', color);
+  // html 배경색도 즉시 동기화 (iOS 여백 색상 일치)
   document.documentElement.style.backgroundColor = color;
-  document.body.style.backgroundColor = color;
 }
 
 function toggleTheme(){
@@ -1596,23 +1593,6 @@ function toggleTheme(){
   const t=localStorage.getItem('bch_theme');
   if(t==='dark'){document.body.classList.add('dark');document.getElementById('theme-btn').textContent='☀ 라이트';}
   updateThemeColorMeta();
-})();
-
-/* 하단 탭바 키보드 반동 방지 — visualViewport */
-(function(){
-  if(window.innerWidth > 768) return;
-  const bar = document.querySelector('.sidebar');
-  if(!bar || !window.visualViewport) return;
-  let raf;
-  function fix(){
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(function(){
-      const kb = window.innerHeight - window.visualViewport.height;
-      bar.style.bottom = (kb > 50 ? kb : 0) + 'px';
-    });
-  }
-  window.visualViewport.addEventListener('resize', fix);
-  window.visualViewport.addEventListener('scroll', fix);
 })();
 
 /* ==============================
@@ -1630,9 +1610,9 @@ function openTxModal(){
 }
 function closeTxModal(e){
   /* 인수 없이 호출(✕ 버튼) 또는 오버레이 배경 클릭 시 닫기 */
-  if(e&&e.target!==document.getElementById('tx-modal-overlay'))return;
+  if(e&&e.target!==document.getElementById('tx-modal-overlay')&&e.target!==undefined)return;
   document.getElementById('tx-modal-overlay').classList.remove('open');
-  updateThemeColorMeta();
+  updateThemeColorMeta(false);
 }
 /* ESC 키로 모달 닫기 */
 document.addEventListener('keydown',e=>{
