@@ -474,6 +474,25 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   border:1px solid var(--border2) !important;
   cursor:text;
 }
+/* 거래 내역 - 기본(비수정) 모드: 입력칸을 텍스트처럼, 삭제 버튼 숨김 */
+#page-input .tx-edit-input{
+  pointer-events:none !important;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  cursor:default !important;
+  -webkit-appearance:none;appearance:none;
+}
+#page-input .tx-del-btn{display:none !important}
+/* 수정 모드: 편집 가능 + 삭제 버튼 표시 */
+#page-input.tx-edit-on .tx-edit-input{
+  pointer-events:auto !important;
+  background:var(--surface) !important;
+  border:1px solid var(--border) !important;
+  cursor:text !important;
+}
+#page-input.tx-edit-on select.tx-edit-input{cursor:pointer !important}
+#page-input.tx-edit-on .tx-del-btn{display:inline-flex !important}
 
 
 /* 예산 행 그리드 - 수정모드 아닐때 버튼 칸 축소 */
@@ -740,6 +759,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
         <select id="filter-type" onchange="renderTxList()" style="width:auto;padding:6px 10px;font-size:12px">
           <option value="">전체</option><option value="income">수입</option><option value="expense">지출</option>
         </select>
+        <button class="btn btn-sm" id="tx-edit-toggle" onclick="toggleTxEditMode()">✏ 수정</button>
       </div>
     </div>
     <table>
@@ -1307,6 +1327,7 @@ let dashboardEditMode=false;
 let budgetEditMode=false; /* 예산 편집 모드 */
 let fixedEditMode=false;  /* 고정지출 편집 모드 */
 let savingsEditMode=false; /* 저축 편집 모드 */ /* Firebase 로드 완료 여부 */
+let txEditMode=false; /* 거래 내역 편집 모드 */
 
 /* ==============================
    동기화 상태 UI
@@ -1457,6 +1478,10 @@ function applyFirebaseData(data){
 }
 function fmt(n){return Math.round(n).toLocaleString('ko-KR')+'원'}
 function fmtN(n){return Math.round(n).toLocaleString('ko-KR')}
+/* 사용자 입력 텍스트를 HTML에 안전하게 삽입(따옴표/태그 등으로 인한 마크업 깨짐 방지) */
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function fmtShort(n){
   const v=Math.abs(Math.round(n));
   if(v>=10000000)return(v/10000000).toFixed(1)+'천만';
@@ -1901,7 +1926,7 @@ function renderHome(){
   /* 최근 거래 */
   document.getElementById('home-recent').innerHTML=txs.slice(0,6).map(t=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-      <div><div style="font-size:13px;font-weight:500">${t.desc||t.cat||'—'}</div>
+      <div><div style="font-size:13px;font-weight:500">${esc(t.desc||t.cat||'—')}</div>
         <div style="font-size:11px;color:var(--text3)">${t.date}${t.cat?' · '+t.cat:''}</div></div>
       <span style="font-size:13px;font-weight:700;color:${t.type==='income'?'var(--green)':'var(--red)'}">${t.type==='income'?'+':'-'}${fmt(t.amt)}</span>
     </div>`).join('')||'<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">거래 내역이 없어요</div>';
@@ -1921,6 +1946,11 @@ function updateCats(){
     document.getElementById('tx-cat').innerHTML=EXPENSE_CATS.map(c=>`<option>${c}</option>`).join('');
   }
 }
+/* 거래 ID 생성 — 같은 밀리초에 여러 번 추가돼도 중복되지 않도록 보장 (삭제/수정 먹통 방지) */
+let _txIdSeq=0;
+function genTxId(){
+  return Date.now()*1000+(_txIdSeq++%1000);
+}
 function addTx(){
   const date=document.getElementById('tx-date').value;
   const type=document.getElementById('tx-type').value;
@@ -1928,7 +1958,7 @@ function addTx(){
   const desc=document.getElementById('tx-desc').value.trim();
   const amt=parseNum(document.getElementById('tx-amt').value);
   if(!date||!amt){showToast('날짜와 금액을 입력해주세요');return;}
-  txs.unshift({id:Date.now(),date,type,cat,desc,amt});
+  txs.unshift({id:genTxId(),date,type,cat,desc,amt});
   saveAll();
   document.getElementById('tx-amt').value='';
   document.getElementById('tx-desc').value='';
@@ -1965,6 +1995,14 @@ function renderInput(){
   renderTxMonthLabel();
   renderTxList();
 }
+function toggleTxEditMode(){
+  commitPendingFields();
+  txEditMode=!txEditMode;
+  if(!txEditMode)saveAll();
+  const btn=document.getElementById('tx-edit-toggle');
+  if(btn)btn.textContent=txEditMode?'✓ 완료':'✏ 수정';
+  renderTxList();
+}
 function renderTxList(){
   const mf=txMonthKey();
   renderTxMonthLabel();
@@ -1974,11 +2012,27 @@ function renderTxList(){
   const headRow=document.querySelector('#page-input table thead tr');
   if(isMobile){
     if(headRow)headRow.innerHTML='';
-    /* 모바일: 카드형 리스트 */
     document.getElementById('tx-tbody').innerHTML='';
     const wrap=document.getElementById('tx-card-list');
     if(!wrap)return;
-    wrap.innerHTML=list.length?list.map(t=>{
+    if(!list.length){
+      wrap.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3)">거래 내역이 없어요</div>';
+      return;
+    }
+    if(!txEditMode){
+      /* 보기 모드: 읽기 전용 카드 */
+      wrap.innerHTML=list.map(t=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="min-width:0;overflow:hidden">
+            <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.desc||t.cat||'—')}</div>
+            <div style="font-size:11px;color:var(--text3)">${t.date}${t.type==='expense'&&t.cat?' · '+esc(t.cat):''}</div>
+          </div>
+          <span style="font-size:13px;font-weight:700;flex-shrink:0;color:${t.type==='income'?'var(--green)':'var(--red)'}">${t.type==='income'?'+':'-'}${fmt(t.amt)}</span>
+        </div>`).join('');
+      return;
+    }
+    /* 수정 모드: 편집 가능 카드 */
+    wrap.innerHTML=list.map(t=>{
       const cats=t.type==='expense'?EXPENSE_CATS:[];
       return`<div style="position:relative;padding:10px 0 8px;border-bottom:1px solid var(--border)">
         <button class="btn-ghost" onclick="delTx(${t.id})" style="position:absolute;top:8px;right:0;font-size:12px;padding:0 2px;color:var(--text3);line-height:1">×</button>
@@ -1988,31 +2042,49 @@ function renderTxList(){
             <option${t.type==='expense'?' selected':''} value="expense">지출</option>
             <option${t.type==='income'?' selected':''} value="income">수입</option>
           </select>
-          ${t.type==='income'?'<span style="font-size:10px;color:var(--text3);text-align:center">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text);max-width:100%;min-width:0">${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}</select>`}
+          ${t.type==='income'?'<span style="font-size:10px;color:var(--text3);text-align:center">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text);max-width:100%;min-width:0">${cats.map(c=>`<option${c===t.cat?' selected':''}>${esc(c)}</option>`).join('')}</select>`}
         </div>
         <div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center">
-          <input type="text" value="${t.desc||''}" onchange="updateTxField(${t.id},'desc',this.value)" placeholder="내용" style="border:none;background:transparent;color:var(--text);font-size:12px;font-weight:500;padding:0;min-width:0">
+          <input type="text" value="${esc(t.desc||'')}" onchange="updateTxField(${t.id},'desc',this.value)" placeholder="내용" style="border:none;background:transparent;color:var(--text);font-size:12px;font-weight:500;padding:0;min-width:0">
           <input type="text" value="${fmtN(t.amt)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateTxField(${t.id},'amt',this.value)" style="border:none;background:transparent;text-align:right;font-weight:700;color:${t.type==='income'?'var(--green)':'var(--red)'};font-size:12px;padding:0;white-space:nowrap">
         </div>
       </div>`;
-    }).join(''):'<div style="text-align:center;padding:30px;color:var(--text3)">거래 내역이 없어요</div>';
+    }).join('');
   } else {
-    if(headRow){
-      headRow.innerHTML='<th>날짜</th><th>내용</th><th>유형</th><th>카테고리</th><th style="text-align:right">금액</th><th></th>';
-    }
-    /* PC: 기존 테이블 */
     if(document.getElementById('tx-card-list'))document.getElementById('tx-card-list').innerHTML='';
-    document.getElementById('tx-tbody').innerHTML=list.length?list.map(t=>{
+    if(headRow){
+      headRow.innerHTML=txEditMode
+        ?'<th>날짜</th><th>내용</th><th>유형</th><th>카테고리</th><th style="text-align:right">금액</th><th></th>'
+        :'<th>날짜</th><th>내용</th><th>유형</th><th>카테고리</th><th style="text-align:right">금액</th>';
+    }
+    if(!list.length){
+      document.getElementById('tx-tbody').innerHTML=`<tr><td colspan="${txEditMode?6:5}" style="text-align:center;padding:30px;color:var(--text3)">거래 내역이 없어요</td></tr>`;
+      return;
+    }
+    if(!txEditMode){
+      /* 보기 모드: 읽기 전용 표 */
+      document.getElementById('tx-tbody').innerHTML=list.map(t=>`
+        <tr>
+          <td style="font-size:13px;color:var(--text2);white-space:nowrap">${t.date}</td>
+          <td style="font-size:13px">${esc(t.desc||'')||'<span style="color:var(--text3)">—</span>'}</td>
+          <td style="font-size:13px;color:var(--text2)">${t.type==='income'?'수입':'지출'}</td>
+          <td style="font-size:13px;color:var(--text2)">${t.type==='income'?'—':esc(t.cat||'')}</td>
+          <td style="text-align:right;font-weight:700;font-size:13px;color:${t.type==='income'?'var(--green)':'var(--red)'}">${t.type==='income'?'+':'-'}${fmt(t.amt)}</td>
+        </tr>`).join('');
+      return;
+    }
+    /* 수정 모드: 편집 가능 표 */
+    document.getElementById('tx-tbody').innerHTML=list.map(t=>{
       const cats=t.type==='expense'?EXPENSE_CATS:[];
       const catCell=t.type==='income'?`<td style="color:var(--text3);font-size:12px">—</td>`
         :`<td><select onchange="updateTxField(${t.id},'cat',this.value)"
             style="border:1px solid var(--border);border-radius:6px;font-size:12px;padding:3px 6px;background:var(--surface);color:var(--text);width:auto">
-            ${cats.map(c=>`<option${c===t.cat?' selected':''}>${c}</option>`).join('')}
+            ${cats.map(c=>`<option${c===t.cat?' selected':''}>${esc(c)}</option>`).join('')}
           </select></td>`;
       return`<tr>
         <td><input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)"
             style="border:1px solid var(--border);border-radius:6px;font-size:12px;padding:3px 6px;background:var(--surface);color:var(--text);width:130px"></td>
-        <td><input type="text" value="${t.desc||''}" onchange="updateTxField(${t.id},'desc',this.value)"
+        <td><input type="text" value="${esc(t.desc||'')}" onchange="updateTxField(${t.id},'desc',this.value)"
             style="border:none;background:transparent;width:100%;padding:3px;color:var(--text);font-size:13px;min-width:60px"></td>
         <td><select onchange="updateTxField(${t.id},'type',this.value)"
             style="border:1px solid var(--border);border-radius:6px;font-size:12px;padding:3px 6px;background:var(--surface);color:var(--text);width:auto">
@@ -2025,7 +2097,7 @@ function renderTxList(){
             style="border:none;background:transparent;text-align:right;width:110px;font-weight:700;color:${t.type==='income'?'var(--green)':'var(--red)'};font-size:13px"></td>
         <td><button class="btn-ghost" onclick="delTx(${t.id})">&#10005;</button></td>
       </tr>`;
-    }).join(''):`<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text3)">거래 내역이 없어요</td></tr>`;
+    }).join('');
   }
 }
 
