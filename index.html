@@ -686,15 +686,16 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
       </div>
       <div id="weekly-budget-edit-wrap" style="display:none;flex-direction:column;gap:10px;margin-bottom:16px;background:var(--surface2);padding:14px;border-radius:12px;border:1px solid var(--border)">
         <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:10px;font-size:11px;color:var(--text3);padding-bottom:6px;border-bottom:1px solid var(--border)">
-          <span>주차</span><span style="text-align:center">목표 예산</span><span style="text-align:center">조정액 (+/−)</span>
+          <span>주차</span><span style="text-align:center">목표 예산</span><span style="text-align:center">조정 금액</span>
         </div>
         <!-- 1주 -->
         <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:8px;align-items:center">
           <span style="font-size:12px;font-weight:600;color:var(--text2)">1주</span>
           <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[0]=parseNum(this.value)">
           <div style="display:flex;align-items:center;gap:4px">
-            <button class="btn" onclick="toggleInputSign(this.nextElementSibling)" style="padding:4px;min-width:28px;height:31px;flex-shrink:0;font-size:12px">±</button>
-            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[0]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right;flex:1;min-width:0" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[0]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+            <button class="btn" onclick="applyWeeklyAdjust(0,-1)" title="목표 예산에서 빼기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--red);border-color:var(--red)">−</button>
+            <button class="btn" onclick="applyWeeklyAdjust(0,1)" title="목표 예산에 더하기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--blue);border-color:var(--blue)">+</button>
           </div>
         </div>
         <!-- 2주 -->
@@ -702,8 +703,9 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
           <span style="font-size:12px;font-weight:600;color:var(--text2)">2주</span>
           <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[1]=parseNum(this.value)">
           <div style="display:flex;align-items:center;gap:4px">
-            <button class="btn" onclick="toggleInputSign(this.nextElementSibling)" style="padding:4px;min-width:28px;height:31px;flex-shrink:0;font-size:12px">±</button>
-            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[1]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right;flex:1;min-width:0" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[1]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+            <button class="btn" onclick="applyWeeklyAdjust(1,-1)" title="목표 예산에서 빼기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--red);border-color:var(--red)">−</button>
+            <button class="btn" onclick="applyWeeklyAdjust(1,1)" title="목표 예산에 더하기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--blue);border-color:var(--blue)">+</button>
           </div>
         </div>
         <!-- 3주 -->
@@ -711,8 +713,9 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
           <span style="font-size:12px;font-weight:600;color:var(--text2)">3주</span>
           <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[2]=parseNum(this.value)">
           <div style="display:flex;align-items:center;gap:4px">
-            <button class="btn" onclick="toggleInputSign(this.nextElementSibling)" style="padding:4px;min-width:28px;height:31px;flex-shrink:0;font-size:12px">±</button>
-            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[2]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right;flex:1;min-width:0" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[2]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+            <button class="btn" onclick="applyWeeklyAdjust(2,-1)" title="목표 예산에서 빼기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--red);border-color:var(--red)">−</button>
+            <button class="btn" onclick="applyWeeklyAdjust(2,1)" title="목표 예산에 더하기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--blue);border-color:var(--blue)">+</button>
           </div>
         </div>
         <!-- 4주 -->
@@ -720,8 +723,9 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
           <span style="font-size:12px;font-weight:600;color:var(--text2)">4주</span>
           <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[3]=parseNum(this.value)">
           <div style="display:flex;align-items:center;gap:4px">
-            <button class="btn" onclick="toggleInputSign(this.nextElementSibling)" style="padding:4px;min-width:28px;height:31px;flex-shrink:0;font-size:12px">±</button>
-            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[3]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right;flex:1;min-width:0" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[3]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+            <button class="btn" onclick="applyWeeklyAdjust(3,-1)" title="목표 예산에서 빼기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--red);border-color:var(--red)">−</button>
+            <button class="btn" onclick="applyWeeklyAdjust(3,1)" title="목표 예산에 더하기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--blue);border-color:var(--blue)">+</button>
           </div>
         </div>
         <!-- 5주 -->
@@ -729,9 +733,16 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
           <span style="font-size:12px;font-weight:600;color:var(--text2)">5주</span>
           <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[4]=parseNum(this.value)">
           <div style="display:flex;align-items:center;gap:4px">
-            <button class="btn" onclick="toggleInputSign(this.nextElementSibling)" style="padding:4px;min-width:28px;height:31px;flex-shrink:0;font-size:12px">±</button>
-            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[4]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right;flex:1;min-width:0" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[4]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
+            <button class="btn" onclick="applyWeeklyAdjust(4,-1)" title="목표 예산에서 빼기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--red);border-color:var(--red)">−</button>
+            <button class="btn" onclick="applyWeeklyAdjust(4,1)" title="목표 예산에 더하기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--blue);border-color:var(--blue)">+</button>
           </div>
+        </div>
+        <!-- 이번달 총 예산 -->
+        <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:8px;align-items:center;padding-top:10px;margin-top:2px;border-top:1px solid var(--border)">
+          <span style="font-size:12px;font-weight:600;color:var(--text2)">총액</span>
+          <input type="text" id="monthly-budget-input" class="num-input" inputmode="numeric" placeholder="이번달 총 예산" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="updateMonthlyBudgetManual(this.value)">
+          <span id="monthly-budget-need" style="font-size:12px;font-weight:700;text-align:right;padding-right:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
         </div>
       </div>
       <div id="weekly-bars-container"></div>
@@ -1387,6 +1398,7 @@ function saveAll(){
       fixedCustom,
       budgetCustom,
       fixedBudgetManual:localStorage.getItem('bch_fixed_budget_manual')||null,
+      monthlyBudgetManual:localStorage.getItem('bch_monthly_budget_manual')||null,
       theme:localStorage.getItem('bch_theme')||null,
       _updated:_now
     }).then(()=>{
@@ -1469,6 +1481,7 @@ function applyFirebaseData(data){
   if(data.fixedAmts)Object.entries(data.fixedAmts).forEach(([k,v])=>localStorage.setItem(k,v));
   if(data.fixedDays)Object.entries(data.fixedDays).forEach(([k,v])=>localStorage.setItem(k,v));
   if(data.fixedBudgetManual)localStorage.setItem('bch_fixed_budget_manual',data.fixedBudgetManual);
+  if(data.monthlyBudgetManual)localStorage.setItem('bch_monthly_budget_manual',data.monthlyBudgetManual);
   if(data.theme){
     localStorage.setItem('bch_theme',data.theme);
     if(data.theme==='dark')document.body.classList.add('dark');
@@ -1558,13 +1571,24 @@ function parseNum(val){
   const n=parseInt(s.replace(/[^0-9]/g,''))||0;
   return isNeg?-n:n;
 }
-function toggleInputSign(el){
-  if(!el)return;
-  let v=el.value;
-  if(v.startsWith('-'))el.value=v.substring(1);
-  else el.value='-'+v;
-  el.dispatchEvent(new Event('input'));
-  el.dispatchEvent(new Event('change'));
+/* 조정액 입력칸의 숫자를 목표 예산(왼쪽)에 +/- 적용하고, 조정액은 0으로 초기화 */
+function applyWeeklyAdjust(idx,sign){
+  const adjInput=document.querySelectorAll('.weekly-adj-input')[idx];
+  const targetInput=document.querySelectorAll('.target-budget-input')[idx];
+  if(!adjInput||!targetInput)return;
+  const delta=Math.abs(parseNum(adjInput.value));
+  if(!delta)return;
+  targetBudgets[idx]=Math.max(0,(targetBudgets[idx]||0)+sign*delta);
+  weeklyAdjustments[idx]=0;
+  targetInput.value=fmtN(targetBudgets[idx]);
+  adjInput.value=fmtN(0);
+  adjInput.style.color='';
+  renderHome();
+}
+/* 이번달 총 예산(수동 입력) 저장 */
+function updateMonthlyBudgetManual(val){
+  localStorage.setItem('bch_monthly_budget_manual',parseNum(val));
+  renderHome();
 }
 function escJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 
@@ -1602,6 +1626,7 @@ function updateFabVisibility(p){
   const show=(p==='home'||p==='input'||p==='calendar');
   fab.classList.toggle('fab-hidden',!show);
 }
+let _txFocusTimer=null;
 function openTxModal(){
   const overlay=document.getElementById('tx-modal-overlay');
   if(!overlay)return;
@@ -1611,15 +1636,25 @@ function openTxModal(){
 function closeTxModal(){
   const overlay=document.getElementById('tx-modal-overlay');
   if(!overlay)return;
+  clearTimeout(_txFocusTimer);
   overlay.classList.remove('show');
   document.body.style.overflow='';
+  /* 모달 내부 입력칸에 포커스가 남아있으면 즉시 블러 처리 — 모바일 키보드가
+     모달이 닫힌 뒤 늦게 닫히면서 레이아웃이 밀려 바로 아래 삭제 버튼을 잘못
+     누르게 되는(오탭) 현상을 방지 */
+  const active=document.activeElement;
+  if(active&&overlay.contains(active)&&typeof active.blur==='function')active.blur();
 }
 function openNewTxFab(){
   commitPendingFields();
   document.getElementById('tx-date').value=todayStr();
   updateCats();
   openTxModal();
-  setTimeout(()=>{
+  clearTimeout(_txFocusTimer);
+  _txFocusTimer=setTimeout(()=>{
+    /* 그 사이 모달이 닫혔다면(빠르게 추가 후 닫음) 포커스를 주지 않음 */
+    const overlay=document.getElementById('tx-modal-overlay');
+    if(!overlay||!overlay.classList.contains('show'))return;
     const descInput=document.getElementById('tx-desc');
     if(descInput)descInput.focus({preventScroll:true});
   },60);
@@ -1797,13 +1832,15 @@ function renderHome(){
   // [Manual Adjustment Guide] 로직 시작
   const todayD = new Date().getDate();
   let historyBalance = 0; // 과거 주차들의 (가용예산 - 지출) 합계
-  
+  let sumAvailable = 0; // 5주차 가용예산(목표+조정) 합계 — 이번달 총 예산과 비교용
+
   // 1. 지금까지(오늘 이전) 마감된 주차들의 잔액 계산
   for (let i = 0; i < weekRanges.length; i++) {
     const spent = weeklySpending[i];
     const target = targetBudgets[i] || 0;
     const adj = weeklyAdjustments[i] || 0;
     const available = target + adj;
+    sumAvailable += available;
 
     if (weekRanges[i].end < todayD) {
       historyBalance += (available - spent);
@@ -1821,6 +1858,29 @@ function renderHome(){
       headerEl.textContent = `[여유 예산: ${fmt(historyBalance)}]`;
     } else {
       headerEl.textContent = '';
+    }
+  }
+
+  // 이번달 총 예산(수동 입력) 대비 조절 필요 금액 표시
+  const monthlyBudgetManual = parseNum(localStorage.getItem('bch_monthly_budget_manual') || '0');
+  const monthlyBudgetInput = document.getElementById('monthly-budget-input');
+  if (monthlyBudgetInput) monthlyBudgetInput.value = monthlyBudgetManual ? fmtN(monthlyBudgetManual) : '';
+  const monthlyNeedEl = document.getElementById('monthly-budget-need');
+  if (monthlyNeedEl) {
+    if (!monthlyBudgetManual) {
+      monthlyNeedEl.textContent = '';
+    } else {
+      const needDiff = monthlyBudgetManual - sumAvailable;
+      if (needDiff > 0) {
+        monthlyNeedEl.style.color = 'var(--blue)';
+        monthlyNeedEl.textContent = `조절 필요 +${fmt(needDiff)}`;
+      } else if (needDiff < 0) {
+        monthlyNeedEl.style.color = 'var(--red)';
+        monthlyNeedEl.textContent = `조절 필요 ${fmt(needDiff)}`;
+      } else {
+        monthlyNeedEl.style.color = 'var(--text3)';
+        monthlyNeedEl.textContent = '✓ 예산 일치';
+      }
     }
   }
 
@@ -1868,9 +1928,9 @@ function renderHome(){
       if (daysInWeekFromToday > 0) {
         const recAmt = Math.round(dailyRec * daysInWeekFromToday);
         if (recAmt > 0) {
-          recText = `<span style="color:var(--blue);font-size:10px;margin-left:6px">💡 추천 증액: +${fmtShort(recAmt)}</span>`;
+          recText = `<span style="color:var(--blue);font-size:10px;margin-left:6px">💡 추천 증액: +${fmt(recAmt)}</span>`;
         } else if (recAmt < 0) {
-          recText = `<span style="color:var(--amber);font-size:10px;margin-left:6px">💡 추천 삭감: -${fmtShort(Math.abs(recAmt))}</span>`;
+          recText = `<span style="color:var(--amber);font-size:10px;margin-left:6px">💡 추천 삭감: -${fmt(Math.abs(recAmt))}</span>`;
         }
       }
     }
@@ -1898,7 +1958,7 @@ function renderHome(){
           </div>
           <div class="divider" style="margin:12px 0;opacity:0.3"></div>
           <div style="font-size:11px;color:var(--text2);display:flex;justify-content:space-between">
-            <span>목표 ${fmtShort(target)} / 조정 ${adj !== 0 ? (adj > 0 ? '+' : '-') + fmtShort(Math.abs(adj)) : '없음'}</span>
+            <span>목표 ${fmt(target)} / 조정 ${adj !== 0 ? (adj > 0 ? '+' : '-') + fmt(Math.abs(adj)) : '없음'}</span>
             ${recText}
           </div>
         </div>`;
@@ -1915,8 +1975,8 @@ function renderHome(){
         </div>
         <div class="pw" style="height:4px;margin-bottom:3px"><div class="pb ${barCls}" style="width:${Math.min(100, Math.max(0, pct))}%"></div></div>
         <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3)">
-          <span>지출 ${fmtShort(spent)}</span>
-          <span>가용 ${fmtShort(available)}</span>
+          <span>지출 ${fmt(spent)}</span>
+          <span>가용 ${fmt(available)}</span>
         </div>
       </div>`;
   }
@@ -1952,21 +2012,26 @@ function genTxId(){
   return Date.now()*1000+(_txIdSeq++%1000);
 }
 function addTx(){
-  const date=document.getElementById('tx-date').value;
-  const type=document.getElementById('tx-type').value;
-  const cat=type==='expense'?document.getElementById('tx-cat').value:'—';
-  const desc=document.getElementById('tx-desc').value.trim();
-  const amt=parseNum(document.getElementById('tx-amt').value);
-  if(!date||!amt){showToast('날짜와 금액을 입력해주세요');return;}
-  txs.unshift({id:genTxId(),date,type,cat,desc,amt});
-  saveAll();
-  document.getElementById('tx-amt').value='';
-  document.getElementById('tx-desc').value='';
-  renderTxList();
-  renderHome();
-  if(document.getElementById('page-calendar')?.classList.contains('active'))renderCalendar();
-  closeTxModal();
-  showToast('거래가 추가되었어요');
+  try{
+    const date=document.getElementById('tx-date').value;
+    const type=document.getElementById('tx-type').value;
+    const cat=type==='expense'?document.getElementById('tx-cat').value:'—';
+    const desc=document.getElementById('tx-desc').value.trim();
+    const amt=parseNum(document.getElementById('tx-amt').value);
+    if(!date||!amt){showToast('날짜와 금액을 입력해주세요');return;}
+    txs.unshift({id:genTxId(),date,type,cat,desc,amt});
+    saveAll();
+    document.getElementById('tx-amt').value='';
+    document.getElementById('tx-desc').value='';
+    renderTxList();
+    renderHome();
+    if(document.getElementById('page-calendar')?.classList.contains('active'))renderCalendar();
+    closeTxModal();
+    showToast('거래가 추가되었어요');
+  }catch(e){
+    console.error('addTx 오류:',e);
+    showToast('거래 추가 중 오류가 발생했어요. 다시 시도해주세요');
+  }
 }
 function clearForm(){
   document.getElementById('tx-amt').value='';
@@ -1974,19 +2039,29 @@ function clearForm(){
   document.getElementById('tx-date').value=todayStr();
 }
 function delTx(id){
-  if(!window.confirm('이 거래를 삭제할까요?'))return;
-  txs=txs.filter(t=>t.id!==id);
-  saveAll();renderTxList();renderHome();
+  try{
+    if(!window.confirm('이 거래를 삭제할까요?'))return;
+    txs=txs.filter(t=>t.id!==id);
+    saveAll();renderTxList();renderHome();
+  }catch(e){
+    console.error('delTx 오류:',e);
+    showToast('삭제 중 오류가 발생했어요. 다시 시도해주세요');
+  }
 }
 function updateTxField(id,field,value){
-  const t=txs.find(t=>t.id===id);if(!t)return;
-  if(field==='amt')t.amt=parseNum(value);
-  else if(field==='type'){
-    t.type=value;
-    /* ① 유형 바꾸면 카테고리 초기화 */
-    t.cat=value==='income'?'—':EXPENSE_CATS[0];
-  } else t[field]=value;
-  saveAll();renderTxList();renderHome();
+  try{
+    const t=txs.find(t=>t.id===id);if(!t)return;
+    if(field==='amt')t.amt=parseNum(value);
+    else if(field==='type'){
+      t.type=value;
+      /* ① 유형 바꾸면 카테고리 초기화 */
+      t.cat=value==='income'?'—':EXPENSE_CATS[0];
+    } else t[field]=value;
+    saveAll();renderTxList();renderHome();
+  }catch(e){
+    console.error('updateTxField 오류:',e);
+    showToast('수정 중 오류가 발생했어요. 다시 시도해주세요');
+  }
 }
 function renderInput(){
   document.getElementById('tx-date').value=todayStr();
