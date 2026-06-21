@@ -306,7 +306,7 @@ tr:hover td{background:var(--surface2)}
 
 /* PIN 로그인 */
 #toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);color:var(--text);padding:10px 20px;border-radius:20px;font-size:14px;opacity:0;transition:all .25s;z-index:99999;pointer-events:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.15)}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
 #pin-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
 #pin-screen.hidden{display:none}
 body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
@@ -770,7 +770,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
         <select id="filter-type" onchange="renderTxList()" style="width:auto;padding:6px 10px;font-size:12px">
           <option value="">전체</option><option value="income">수입</option><option value="expense">지출</option>
         </select>
-        <button class="btn btn-sm" id="tx-edit-toggle" onclick="toggleTxEditMode()">✏ 수정</button>
+        <span id="tx-edit-controls" style="display:flex;gap:6px"><button class="btn btn-sm" id="tx-edit-toggle" onclick="toggleTxEdit()">✏ 수정</button></span>
       </div>
     </div>
     <table>
@@ -1188,16 +1188,18 @@ function showToast(msg){
 }
 
 /* 삭제 확인 토스트 */
+let _confirmDeleteCb=null;
 function confirmDelete(msg, onConfirm){
   const t = document.getElementById('toast');
+  _confirmDeleteCb = onConfirm;
   t.innerHTML = `<span>${msg}</span>
-    <button onclick="document.getElementById('toast').classList.remove('show');(${onConfirm.toString()})()" 
+    <button onclick="document.getElementById('toast').classList.remove('show');if(typeof _confirmDeleteCb==='function')_confirmDeleteCb();_confirmDeleteCb=null;" 
       style="margin-left:12px;background:#ff3b30;color:#fff;border:none;border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer">삭제</button>
-    <button onclick="document.getElementById('toast').classList.remove('show')" 
+    <button onclick="document.getElementById('toast').classList.remove('show');_confirmDeleteCb=null;" 
       style="margin-left:6px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer">취소</button>`;
   t.classList.add('show');
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(()=>t.classList.remove('show'), 4000);
+  _toastTimer = setTimeout(()=>{t.classList.remove('show');_confirmDeleteCb=null;}, 4000);
 }
 
 firebase.initializeApp(firebaseConfig);
@@ -1339,6 +1341,7 @@ let budgetEditMode=false; /* 예산 편집 모드 */
 let fixedEditMode=false;  /* 고정지출 편집 모드 */
 let savingsEditMode=false; /* 저축 편집 모드 */ /* Firebase 로드 완료 여부 */
 let txEditMode=false; /* 거래 내역 편집 모드 */
+let txsBeforeEdit=null; /* 수정 모드 진입 시점 스냅샷(취소 시 복원용) */
 
 /* ==============================
    동기화 상태 UI
@@ -2039,14 +2042,15 @@ function clearForm(){
   document.getElementById('tx-date').value=todayStr();
 }
 function delTx(id){
-  try{
-    if(!window.confirm('이 거래를 삭제할까요?'))return;
-    txs=txs.filter(t=>t.id!==id);
-    saveAll();renderTxList();renderHome();
-  }catch(e){
-    console.error('delTx 오류:',e);
-    showToast('삭제 중 오류가 발생했어요. 다시 시도해주세요');
-  }
+  confirmDelete('이 거래를 삭제할까요?', ()=>{
+    try{
+      txs=txs.filter(t=>t.id!==id);
+      saveAll();renderTxList();renderHome();
+    }catch(e){
+      console.error('delTx 오류:',e);
+      showToast('삭제 중 오류가 발생했어요. 다시 시도해주세요');
+    }
+  });
 }
 function updateTxField(id,field,value){
   try{
@@ -2070,13 +2074,37 @@ function renderInput(){
   renderTxMonthLabel();
   renderTxList();
 }
-function toggleTxEditMode(){
-  commitPendingFields();
-  txEditMode=!txEditMode;
-  if(!txEditMode)saveAll();
-  const btn=document.getElementById('tx-edit-toggle');
-  if(btn)btn.textContent=txEditMode?'✓ 완료':'✏ 수정';
+function _renderTxEditControls(){
+  const wrap=document.getElementById('tx-edit-controls');
+  if(!wrap)return;
+  wrap.innerHTML=txEditMode
+    ?`<button class="btn btn-sm" style="background:var(--amber);color:#fff;border-color:var(--amber)" onclick="saveTxEdit()">✓ 저장</button>
+      <button class="btn btn-sm" onclick="cancelTxEdit()">✕ 취소</button>`
+    :`<button class="btn btn-sm" id="tx-edit-toggle" onclick="toggleTxEdit()">✏ 수정</button>`;
+}
+function toggleTxEdit(){
+  txsBeforeEdit=JSON.parse(JSON.stringify(txs));
+  txEditMode=true;
+  _renderTxEditControls();
   renderTxList();
+}
+function saveTxEdit(){
+  commitPendingFields();
+  txEditMode=false;
+  txsBeforeEdit=null;
+  saveAll();
+  _renderTxEditControls();
+  renderTxList();
+}
+function cancelTxEdit(){
+  if(txsBeforeEdit){
+    txs=JSON.parse(JSON.stringify(txsBeforeEdit));
+    txsBeforeEdit=null;
+  }
+  txEditMode=false;
+  _renderTxEditControls();
+  renderTxList();
+  renderHome();
 }
 function renderTxList(){
   const mf=txMonthKey();
