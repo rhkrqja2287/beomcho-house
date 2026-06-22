@@ -756,7 +756,10 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 
 <!-- 거래 내역 -->
 <div id="page-input" class="page">
-  <div class="page-title">거래 내역</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div class="page-title">거래 내역</div>
+    <span id="tx-edit-controls" style="display:flex;gap:6px"><button class="btn btn-sm" id="tx-edit-toggle" onclick="toggleTxEdit()">✏ 수정</button></span>
+  </div>
   <div class="page-sub">수입과 지출 내역을 확인하세요</div>
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px">
@@ -770,7 +773,6 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
         <select id="filter-type" onchange="renderTxList()" style="width:auto;padding:6px 10px;font-size:12px">
           <option value="">전체</option><option value="income">수입</option><option value="expense">지출</option>
         </select>
-        <span id="tx-edit-controls" style="display:flex;gap:6px"><button class="btn btn-sm" id="tx-edit-toggle" onclick="toggleTxEdit()">✏ 수정</button></span>
       </div>
     </div>
     <table>
