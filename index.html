@@ -537,7 +537,8 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 /* ===== 새 거래 플로팅 버튼(FAB) ===== */
 .fab-new-tx{
   position:fixed;
-  right:28px;
+  /* 데스크톱: 화면 끝이 아니라 콘텐츠 영역(사이드바 220px + 본문 최대 900px) 우측 안쪽에 맞춤 */
+  right:max(28px, calc(100vw - 220px - 900px + 28px));
   bottom:28px;
   width:56px;height:56px;
   border-radius:50%;
