@@ -538,7 +538,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 .fab-new-tx{
   position:fixed;
   /* 데스크톱: 화면 끝이 아니라 콘텐츠 영역(사이드바 220px + 본문 최대 900px) 우측 안쪽에 맞춤 */
-  right:max(44px, calc(100vw - 220px - 900px + 44px));
+  right:max(28px, calc(100vw - 220px - 900px + 28px));
   bottom:28px;
   width:56px;height:56px;
   border-radius:50%;
@@ -1401,6 +1401,7 @@ function saveAll(){
       fixedChecks:getFixedChecks(),
       fixedAmts:getFixedAmts(),
       fixedDays:getFixedDays(),
+      fixedNames:getFixedNames(),
       fixedCustom,
       budgetCustom,
       fixedBudgetManual:localStorage.getItem('bch_fixed_budget_manual')||null,
@@ -1442,6 +1443,11 @@ function getFixedAmts(){
 function getFixedDays(){
   const o={};
   rawFixedList().forEach(i=>{const k=fixedKey(i)+'_day';const v=localStorage.getItem(k);if(v)o[k]=v;});
+  return o;
+}
+function getFixedNames(){
+  const o={};
+  rawFixedList().forEach(i=>{const k=fixedKey(i)+'_name';const v=localStorage.getItem(k);if(v)o[k]=v;});
   return o;
 }
 /* Firebase → 로컬 상태에 반영 */
@@ -1486,6 +1492,7 @@ function applyFirebaseData(data){
   });
   if(data.fixedAmts)Object.entries(data.fixedAmts).forEach(([k,v])=>localStorage.setItem(k,v));
   if(data.fixedDays)Object.entries(data.fixedDays).forEach(([k,v])=>localStorage.setItem(k,v));
+  if(data.fixedNames)Object.entries(data.fixedNames).forEach(([k,v])=>localStorage.setItem(k,v));
   if(data.fixedBudgetManual)localStorage.setItem('bch_fixed_budget_manual',data.fixedBudgetManual);
   if(data.monthlyBudgetManual)localStorage.setItem('bch_monthly_budget_manual',data.monthlyBudgetManual);
   if(data.theme){
@@ -3166,18 +3173,28 @@ function initDataListener() {
   /* Firebase 실시간 리스너 — 다른 기기에서 변경되면 자동으로 반영 */
   db.ref(ROOT).on('value', snapshot=>{
     const data=snapshot.val();
+    let applied=false;
     if(data){
       const incomingTime = data._updated || 0;
       if(!isSavePending && (!fbReady || incomingTime > myLastSaveTime)){
         applyFirebaseData(data);
+        applied=true;
         if(incomingTime) localStorage.setItem('bch_last_updated', incomingTime);
       }
     }
-    
+
     if(!fbReady){
       fbReady=true;
       const activePage=document.querySelector('.page.active')?.id?.replace('page-','');
       if(activePage)({home:renderHome,input:renderInput,calendar:renderCalendar,budget:renderBudget,fixed:renderFixed,savings:renderSavings})[activePage]?.();
+    } else if(applied){
+      /* 다른 기기에서 들어온 변경사항을 현재 보고 있는 화면에도 즉시 반영
+         (단, 내가 지금 수정 모드로 입력 중이면 화면을 덮어쓰지 않음) */
+      const anyEditing=dashboardEditMode||budgetEditMode||fixedEditMode||savingsEditMode||txEditMode;
+      if(!anyEditing){
+        const activePage=document.querySelector('.page.active')?.id?.replace('page-','');
+        if(activePage)({home:renderHome,input:renderInput,calendar:renderCalendar,budget:renderBudget,fixed:renderFixed,savings:renderSavings})[activePage]?.();
+      }
     }
     setSyncStatus('ok');
   },err=>{
