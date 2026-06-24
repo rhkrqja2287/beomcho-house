@@ -70,9 +70,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display'
 .nav-item.active{background:var(--purple-light);color:var(--purple-dark);font-weight:500}
 .nav-icon{width:18px;height:18px;opacity:.7;flex-shrink:0}
 .nav-item.active .nav-icon{opacity:1}
-.main{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;background:var(--bg)}
+.main{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);scrollbar-gutter:stable}
 .inner{max-width:1200px;margin:0 auto}
-.page{display:none;padding:28px 32px;box-sizing:border-box;max-width:900px}
+.page{display:none;padding:28px 32px;box-sizing:border-box;max-width:900px;overflow-x:hidden}
 .page.active{display:block}
 .page-title{font-size:22px;font-weight:700;margin-bottom:4px}
 .page-sub{font-size:13px;color:var(--text3);margin-bottom:22px}
@@ -534,11 +534,24 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   .tx-form-row1 .tx-date-cell{grid-column:1/-1}
   .tx-form-row2{grid-template-columns:1fr 1fr;gap:6px}
 }
-/* ===== 새 거래 플로팅 버튼(FAB) ===== */
-.fab-new-tx{
+/* ===== 새 거래 플로팅 버튼(FAB) 구조 및 스타일 ===== */
+.fab-wrapper {
   position:fixed;
-  /* 데스크톱: 화면 끝이 아니라 콘텐츠 영역(사이드바 220px + 본문 최대 900px) 우측 안쪽에 맞춤 */
-  right:max(28px, calc(100vw - 220px - 900px + 28px));
+  left:220px;
+  width:900px;
+  bottom:0;
+  height:0;
+  pointer-events:none;
+  z-index:400;
+}
+.fab-inner {
+  width:100%;
+  position:relative;
+  height:0;
+}
+.fab-new-tx{
+  position:absolute;
+  right:62px;
   bottom:28px;
   width:56px;height:56px;
   border-radius:50%;
@@ -548,16 +561,18 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 4px 14px rgba(0,0,0,.25);
   cursor:pointer;
-  z-index:400;
-  transition:background .15s,transform .15s,opacity .2s,visibility .2s;
+  pointer-events:auto;
+  transition:background .15s,transform .3s cubic-bezier(0.4, 0, 0.2, 1),opacity .3s ease,visibility .3s;
 }
 .fab-new-tx:hover{background:var(--purple-dark);transform:translateY(-2px)}
 .fab-new-tx:active{transform:translateY(0) scale(.94)}
-.fab-new-tx.fab-hidden{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(10px)}
+.fab-new-tx.fab-hidden{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(150px)}
 @media(max-width:1024px){
+  .fab-wrapper{left:64px;right:0;width:auto}
   .fab-new-tx{right:20px;bottom:24px}
 }
 @media(max-width:768px){
+  .fab-wrapper{left:0;right:0;width:auto}
   .fab-new-tx{
     right:16px;
     bottom:calc(60px + env(safe-area-inset-bottom) + 14px);
@@ -846,9 +861,13 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 </main>
 </div>
 </div>
-<button class="fab-new-tx" id="fab-new-tx" onclick="openNewTxFab()" aria-label="새 거래 추가" title="새 거래 추가">
-  <svg viewBox="0 0 20 20" fill="currentColor" width="26" height="26"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
-</button>
+<div class="fab-wrapper">
+  <div class="fab-inner">
+    <button class="fab-new-tx" id="fab-new-tx" onclick="openNewTxFab()" aria-label="새 거래 추가" title="새 거래 추가">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="26" height="26"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+    </button>
+  </div>
+</div>
 <!-- 새 거래 팝업(모달) -->
 <div class="tx-modal-overlay" id="tx-modal-overlay" onclick="if(event.target===this)closeTxModal()">
   <div class="tx-modal" role="dialog" aria-modal="true" aria-labelledby="tx-modal-title">
