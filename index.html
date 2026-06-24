@@ -2139,7 +2139,8 @@ function renderTxList(){
   const mf=txMonthKey();
   renderTxMonthLabel();
   const tf=document.getElementById('filter-type').value;
-  const list=txs.filter(t=>(!mf||t.date.startsWith(mf))&&(!tf||t.type===tf));
+  const list=txs.filter(t=>(!mf||t.date.startsWith(mf))&&(!tf||t.type===tf))
+    .sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id); /* 날짜 내림차순(최신 날짜 먼저), 같은 날짜면 최근 추가한 항목 먼저 */
   const isMobile=window.innerWidth<=768;
   const headRow=document.querySelector('#page-input table thead tr');
   if(isMobile){
