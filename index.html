@@ -609,6 +609,27 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   .tx-modal-overlay{align-items:flex-end;padding:0}
   .tx-modal{max-width:100%;border-radius:18px 18px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));max-height:85vh}
 }
+/* ===== 지출(예상) 강조 스타일 ===== */
+.tx-planned-row td{
+  background:var(--amber-light) !important;
+}
+.tx-planned-row:hover td{
+  background:color-mix(in srgb, var(--amber-light) 80%, var(--surface2)) !important;
+}
+.tx-planned-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  background:var(--amber);color:#fff;
+  font-size:10px;font-weight:700;
+  padding:1px 6px;border-radius:10px;
+  white-space:nowrap;vertical-align:middle;margin-left:4px;
+}
+.tx-planned-card{
+  background:var(--amber-light);
+  border-left:3px solid var(--amber);
+  border-radius:8px;
+  padding:10px 10px 8px;
+  margin-bottom:2px;
+}
 </style>
 </head>
 <body>
@@ -786,7 +807,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
           <button class="icon-btn" onclick="txNextMonth()" aria-label="다음 달">&#8594;</button>
         </div>
         <select id="filter-type" onchange="renderTxList()" style="width:auto;padding:6px 10px;font-size:12px">
-          <option value="">전체</option><option value="income">수입</option><option value="expense">지출</option>
+          <option value="">전체</option><option value="income">수입</option><option value="expense">지출</option><option value="expense_planned">지출(예상)</option>
         </select>
       </div>
     </div>
@@ -885,6 +906,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
         <select id="tx-type" onchange="updateCats()" style="padding:7px 10px">
           <option value="expense">지출</option>
           <option value="income">수입</option>
+          <option value="expense_planned">지출(예상)</option>
         </select>
       </div>
       <div id="cat-wrap">
@@ -1543,10 +1565,15 @@ function monthlyData(){
   const m={};
   txs.forEach(t=>{
     const k=t.date.slice(0,7);
-    if(!m[k])m[k]={income:0,expense:0,cats:{},incomeByDay:{},expByDay:{}};
+    if(!m[k])m[k]={income:0,expense:0,expensePlanned:0,cats:{},incomeByDay:{},expByDay:{}};
     if(t.type==='income'){
       m[k].income+=t.amt;
       m[k].incomeByDay[t.date]=(m[k].incomeByDay[t.date]||0)+t.amt;
+    } else if(t.type==='expense_planned'){
+      m[k].expensePlanned+=t.amt;
+      m[k].expense+=t.amt;
+      m[k].cats[t.cat]=(m[k].cats[t.cat]||0)+t.amt;
+      m[k].expByDay[t.date]=(m[k].expByDay[t.date]||0)+t.amt;
     } else {
       m[k].expense+=t.amt;
       m[k].cats[t.cat]=(m[k].cats[t.cat]||0)+t.amt;
@@ -1848,7 +1875,7 @@ function renderHome(){
       const d=parseInt(t.date.split('-')[2]);
       const wIdx=weekRanges.findIndex(r => d >= r.start && d <= r.end);
       if(wIdx !== -1 && wIdx < 5){
-        if(t.type==='expense') weeklySpending[wIdx]+=t.amt;
+        if(t.type==='expense' || t.type==='expense_planned') weeklySpending[wIdx]+=t.amt;
         else weeklyIncome[wIdx]+=t.amt;
       }
     }
@@ -1974,12 +2001,17 @@ function renderHome(){
   document.getElementById('weekly-bars-container').innerHTML=weeklyHtml;
 
   /* 최근 거래 */
-  document.getElementById('home-recent').innerHTML=txs.slice(0,6).map(t=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-      <div><div style="font-size:13px;font-weight:500">${esc(t.desc||t.cat||'—')}</div>
-        <div style="font-size:11px;color:var(--text3)">${t.date}${t.cat?' · '+t.cat:''}</div></div>
-      <span style="font-size:13px;font-weight:700;color:${t.type==='income'?'var(--green)':'var(--red)'}">${t.type==='income'?'+':'-'}${fmt(t.amt)}</span>
-    </div>`).join('')||'<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">거래 내역이 없어요</div>';
+  document.getElementById('home-recent').innerHTML=txs.slice(0,6).map(t=>{
+    const planned=isPlanned(t);
+    const amtColor=t.type==='income'?'var(--green)':planned?'var(--amber)':'var(--red)';
+    const prefix=t.type==='income'?'+':'-';
+    const badge=planned?'<span style="color:var(--amber);font-weight:700;margin-right:4px">★예상)</span>':'';
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);${planned?'background:var(--amber-light);border-radius:6px;padding-left:6px':''}">
+      <div><div style="font-size:13px;font-weight:500">${badge}${esc(t.desc||t.cat||'—')}</div>
+        <div style="font-size:11px;color:var(--text3)">${t.date}${t.cat&&t.cat!=='—'?' · '+t.cat:''}</div></div>
+      <span style="font-size:13px;font-weight:700;color:${amtColor}">${prefix}${fmt(t.amt)}</span>
+    </div>`;
+  }).join('')||'<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">거래 내역이 없어요</div>';
 }
 
 /* ==============================
@@ -1996,6 +2028,12 @@ function updateCats(){
     document.getElementById('tx-cat').innerHTML=EXPENSE_CATS.map(c=>`<option>${c}</option>`).join('');
   }
 }
+function isPlanned(t){return t.type==='expense_planned';}
+function txTypeLabel(type){
+  if(type==='income')return '수입';
+  if(type==='expense_planned')return '지출(예상)';
+  return '지출';
+}
 /* 거래 ID 생성 — 같은 밀리초에 여러 번 추가돼도 중복되지 않도록 보장 (삭제/수정 먹통 방지) */
 let _txIdSeq=0;
 function genTxId(){
@@ -2005,7 +2043,7 @@ function addTx(){
   try{
     const date=document.getElementById('tx-date').value;
     const type=document.getElementById('tx-type').value;
-    const cat=type==='expense'?document.getElementById('tx-cat').value:'—';
+    const cat=(type==='expense'||type==='expense_planned')?document.getElementById('tx-cat').value:'—';
     const desc=document.getElementById('tx-desc').value.trim();
     const amt=parseNum(document.getElementById('tx-amt').value);
     if(!date||!amt){showToast('날짜와 금액을 입력해주세요');return;}
@@ -2046,7 +2084,7 @@ function updateTxField(id,field,value){
     else if(field==='type'){
       t.type=value;
       /* ① 유형 바꾸면 카테고리 초기화 */
-      t.cat=value==='income'?'—':EXPENSE_CATS[0];
+      t.cat=(value==='income')?'—':EXPENSE_CATS[0];
     } else t[field]=value;
     saveAll();renderTxList();renderHome();
   }catch(e){
@@ -2099,6 +2137,8 @@ function renderTxList(){
   const tf=document.getElementById('filter-type').value;
   const list=txs.filter(t=>(!mf||t.date.startsWith(mf))&&(!tf||t.type===tf))
     .sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id); /* 날짜 내림차순(최신 날짜 먼저), 같은 날짜면 최근 추가한 항목 먼저 */
+  /* 지출(예상) 배지 헬퍼 - 주황색 원형 뱃지 없이 일반 텍스트에 색상만 강조 */
+  const plannedBadge='<span style="color:var(--amber);font-weight:700;margin-right:4px">★예상)</span>';
   const isMobile=window.innerWidth<=768;
   const headRow=document.querySelector('#page-input table thead tr');
   if(isMobile){
@@ -2111,33 +2151,41 @@ function renderTxList(){
       return;
     }
     if(!txEditMode){
-      /* 보기 모드: 읽기 전용 카드 */
-      wrap.innerHTML=list.map(t=>`
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)">
-          <div style="min-width:0;overflow:hidden">
-            <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.desc||t.cat||'—')}</div>
-            <div style="font-size:11px;color:var(--text3)">${t.date}${t.type==='expense'&&t.cat?' · '+esc(t.cat):''}</div>
+      /* 보기 모드: 읽기 전용 목록 (예상 지출은 배경색만 주황색으로 강조, 안쪽 여백이나 다른 품목 글씨 정렬을 해치지 않도록 padding 동일 부여) */
+      wrap.innerHTML=list.map(t=>{
+        const planned=isPlanned(t);
+        const amtColor=t.type==='income'?'var(--green)':planned?'var(--amber)':'var(--red)';
+        const prefix=t.type==='income'?'+':'-';
+        const badge=planned?plannedBadge:'';
+        return`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 8px;border-bottom:1px solid var(--border);${planned?'background:var(--amber-light);':''}">
+          <div style="min-width:0;overflow:hidden;flex:1">
+            <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${badge}${esc(t.desc||t.cat||'—')}</div>
+            <div style="font-size:11px;color:var(--text3)">${t.date}${(t.type==='expense'||planned)&&t.cat&&t.cat!=='—'?' · '+esc(t.cat):''}</div>
           </div>
-          <span style="font-size:13px;font-weight:700;flex-shrink:0;color:${t.type==='income'?'var(--green)':'var(--red)'}">${t.type==='income'?'+':'-'}${fmt(t.amt)}</span>
-        </div>`).join('');
+          <span style="font-size:13px;font-weight:700;flex-shrink:0;color:${amtColor}">${prefix}${fmt(t.amt)}</span>
+        </div>`;
+      }).join('');
       return;
     }
-    /* 수정 모드: 편집 가능 카드 */
+    /* 수정 모드: 편집 가능 목록 (수정모드에서도 패딩을 10px 8px로 일정하게 맞춰 다른 품목과 정렬을 맞추고 배경만 변경) */
     wrap.innerHTML=list.map(t=>{
-      const cats=t.type==='expense'?EXPENSE_CATS:[];
-      return`<div style="position:relative;padding:10px 0 8px;border-bottom:1px solid var(--border)">
-        <button class="btn-ghost" onclick="delTx(${t.id})" style="position:absolute;top:8px;right:0;font-size:12px;padding:0 2px;color:var(--text3);line-height:1">×</button>
+      const planned=isPlanned(t);
+      const cats=(t.type==='expense'||planned)?EXPENSE_CATS:[];
+      const amtColor=t.type==='income'?'var(--green)':planned?'var(--amber)':'var(--red)';
+      return`<div style="position:relative;padding:10px 8px 8px;border-bottom:1px solid var(--border);${planned?'background:var(--amber-light);':''}">
+        <button class="btn-ghost" onclick="delTx(${t.id})" style="position:absolute;top:8px;right:4px;font-size:12px;padding:0 2px;color:var(--text3);line-height:1">×</button>
         <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,0.8fr) minmax(0,0.8fr);gap:4px;align-items:center;margin-bottom:6px;padding-right:18px">
           <input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:9px;padding:2px 2px;background:var(--surface);color:var(--text);max-width:100%;min-width:0;-webkit-appearance:none;appearance:none;overflow:hidden">
           <select onchange="updateTxField(${t.id},'type',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text);max-width:100%;min-width:0">
             <option${t.type==='expense'?' selected':''} value="expense">지출</option>
             <option${t.type==='income'?' selected':''} value="income">수입</option>
+            <option${planned?' selected':''} value="expense_planned">지출(예상)</option>
           </select>
           ${t.type==='income'?'<span style="font-size:10px;color:var(--text3);text-align:center">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text);max-width:100%;min-width:0">${cats.map(c=>`<option${c===t.cat?' selected':''}>${esc(c)}</option>`).join('')}</select>`}
         </div>
         <div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center">
           <input type="text" value="${esc(t.desc||'')}" onchange="updateTxField(${t.id},'desc',this.value)" placeholder="내용" style="border:none;background:transparent;color:var(--text);font-size:12px;font-weight:500;padding:0;min-width:0">
-          <input type="text" value="${fmtN(t.amt)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateTxField(${t.id},'amt',this.value)" style="border:none;background:transparent;text-align:right;font-weight:700;color:${t.type==='income'?'var(--green)':'var(--red)'};font-size:12px;padding:0;white-space:nowrap">
+          <input type="text" value="${fmtN(t.amt)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateTxField(${t.id},'amt',this.value)" style="border:none;background:transparent;text-align:right;font-weight:700;color:${amtColor};font-size:12px;padding:0;white-space:nowrap">
         </div>
       </div>`;
     }).join('');
@@ -2154,25 +2202,32 @@ function renderTxList(){
     }
     if(!txEditMode){
       /* 보기 모드: 읽기 전용 표 */
-      document.getElementById('tx-tbody').innerHTML=list.map(t=>`
-        <tr>
+      document.getElementById('tx-tbody').innerHTML=list.map(t=>{
+        const planned=isPlanned(t);
+        const amtColor=t.type==='income'?'var(--green)':planned?'var(--amber)':'var(--red)';
+        const prefix=t.type==='income'?'+':'-';
+        const badge=planned?plannedBadge:'';
+        return`<tr class="${planned?'tx-planned-row':''}">
           <td style="font-size:13px;color:var(--text2);white-space:nowrap">${t.date}</td>
-          <td style="font-size:13px">${esc(t.desc||'')||'<span style="color:var(--text3)">—</span>'}</td>
-          <td style="font-size:13px;color:var(--text2)">${t.type==='income'?'수입':'지출'}</td>
+          <td style="font-size:13px">${badge}${esc(t.desc||'')||'<span style="color:var(--text3)">—</span>'}</td>
+          <td style="font-size:13px;color:var(--text2)">${txTypeLabel(t.type)}</td>
           <td style="font-size:13px;color:var(--text2)">${t.type==='income'?'—':esc(t.cat||'')}</td>
-          <td style="text-align:right;font-weight:700;font-size:13px;color:${t.type==='income'?'var(--green)':'var(--red)'}">${t.type==='income'?'+':'-'}${fmt(t.amt)}</td>
-        </tr>`).join('');
+          <td style="text-align:right;font-weight:700;font-size:13px;color:${amtColor}">${prefix}${fmt(t.amt)}</td>
+        </tr>`;
+      }).join('');
       return;
     }
     /* 수정 모드: 편집 가능 표 */
     document.getElementById('tx-tbody').innerHTML=list.map(t=>{
-      const cats=t.type==='expense'?EXPENSE_CATS:[];
+      const planned=isPlanned(t);
+      const cats=(t.type==='expense'||planned)?EXPENSE_CATS:[];
+      const amtColor=t.type==='income'?'var(--green)':planned?'var(--amber)':'var(--red)';
       const catCell=t.type==='income'?`<td style="color:var(--text3);font-size:12px">—</td>`
         :`<td><select onchange="updateTxField(${t.id},'cat',this.value)"
             style="border:1px solid var(--border);border-radius:6px;font-size:12px;padding:3px 6px;background:var(--surface);color:var(--text);width:auto">
             ${cats.map(c=>`<option${c===t.cat?' selected':''}>${esc(c)}</option>`).join('')}
           </select></td>`;
-      return`<tr>
+      return`<tr class="${planned?'tx-planned-row':''}">
         <td><input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)"
             style="border:1px solid var(--border);border-radius:6px;font-size:12px;padding:3px 6px;background:var(--surface);color:var(--text);width:130px"></td>
         <td><input type="text" value="${esc(t.desc||'')}" onchange="updateTxField(${t.id},'desc',this.value)"
@@ -2181,11 +2236,12 @@ function renderTxList(){
             style="border:1px solid var(--border);border-radius:6px;font-size:12px;padding:3px 6px;background:var(--surface);color:var(--text);width:auto">
             <option${t.type==='expense'?' selected':''} value="expense">지출</option>
             <option${t.type==='income'?' selected':''} value="income">수입</option>
+            <option${planned?' selected':''} value="expense_planned">지출(예상)</option>
           </select></td>
         ${catCell}
         <td style="text-align:right">
           <input type="text" value="${fmtN(t.amt)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateTxField(${t.id},'amt',this.value)"
-            style="border:none;background:transparent;text-align:right;width:110px;font-weight:700;color:${t.type==='income'?'var(--green)':'var(--red)'};font-size:13px"></td>
+            style="border:none;background:transparent;text-align:right;width:110px;font-weight:700;color:${amtColor};font-size:13px"></td>
         <td><button class="btn-ghost" onclick="delTx(${t.id})">&#10005;</button></td>
       </tr>`;
     }).join('');
