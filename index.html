@@ -24,6 +24,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
@@ -931,8 +932,8 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
    핵심 상태 및 PIN 변수 (최상단 배치)
 ============================== */
 var pinBuffer = '';
-var failCount = 0;
-var lockUntil = 0;
+var failCount = parseInt(localStorage.getItem('bch_fail_count') || '0', 10);
+var lockUntil = parseInt(localStorage.getItem('bch_lock_until') || '0', 10);
 var fbReady = false;
 
 /* ==============================
@@ -944,6 +945,10 @@ function pinInput(n){
     const sec = Math.ceil((lockUntil - now) / 1000);
     document.getElementById('pin-error').textContent = '잠금 중입니다. ' + sec + '초 후 시도해주세요.';
     return;
+  } else if(lockUntil !== 0){
+    /* 잠금 시간이 지났으면 정리 (새로고침해도 더 이상 의미 없는 값 남기지 않기) */
+    lockUntil = 0;
+    localStorage.removeItem('bch_lock_until');
   }
   if(pinBuffer.length >= 4) return;
   pinBuffer += n;
@@ -1249,6 +1254,12 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const ROOT = 'beomcho';
 
+/* 익명 인증 — Firebase 규칙(auth != null)을 통과하기 위해 필요.
+   화면에는 아무것도 표시되지 않으며, PIN 검증/세션 복원 전에 완료를 기다립니다. */
+const authReady = firebase.auth().signInAnonymously().catch(err=>{
+  console.error('익명 인증 실패:', err);
+});
+
 /* 인증 지속성(Persistence) 명시적 설정 (iOS 웹앱 상태 유지 보장) */
 
 /* ==============================
@@ -1267,6 +1278,8 @@ async function checkPin(){
       errEl.textContent = '⚠️ 보안 환경(HTTPS)이 아니면 기능을 사용할 수 없습니다.';
       return;
     }
+    /* 익명 인증이 끝나야 Firebase 규칙(auth != null)을 통과해 읽기가 가능합니다 */
+    await authReady;
     const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
     const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
 
@@ -1283,6 +1296,7 @@ async function checkPin(){
     } else {
       /* 실패 시 피드백 */
       failCount++;
+      localStorage.setItem('bch_fail_count', failCount);
       for(let i = 0; i < 4; i++) {
         const d = document.getElementById('d' + i);
         if(d) d.style.background = 'var(--red)';
@@ -1295,6 +1309,8 @@ async function checkPin(){
       if(failCount >= 5){
         lockUntil = Date.now() + 60000;
         failCount = 0;
+        localStorage.setItem('bch_lock_until', lockUntil);
+        localStorage.setItem('bch_fail_count', failCount);
         errEl.textContent = '5회 실패. 1분간 잠금됩니다.';
       } else {
         errEl.textContent = 'PIN이 틀렸습니다. (' + failCount + '/5)';
@@ -1308,6 +1324,10 @@ async function checkPin(){
 
 /* 로그인 성공 시 화면 전환 최적화 */
 function successLogin(authKey) {
+  failCount = 0;
+  lockUntil = 0;
+  localStorage.removeItem('bch_fail_count');
+  localStorage.removeItem('bch_lock_until');
   sessionStorage.setItem('bch_auth', authKey);
   
   /* 화면 전환을 먼저 수행하여 체감 속도 향상 */
@@ -1325,11 +1345,33 @@ function successLogin(authKey) {
   }
 }
 
-/* 새로고침 시 세션 유지 — initDataListener 호출은 함수 선언 후 아래에서 실행 */
+/* 새로고침 시 세션 복원 — sessionStorage 키 존재 여부만으로 판단하지 않고,
+   Firebase에 저장된 PIN 해시와 다시 한번 대조한 뒤에만 데이터 리스너를 시작합니다.
+   화면은 우선 즉시 숨겨 체감 속도를 유지하고, 검증에 실패하면 다시 PIN 화면을 띄웁니다. */
 const _savedAuth = sessionStorage.getItem('bch_auth');
 if(_savedAuth){
   document.getElementById('pin-screen').classList.add('hidden');
 }
+
+async function verifySession(){
+  if(!_savedAuth) return;
+  try{
+    await authReady;
+    const snap = await db.ref(ROOT + '/auth/pin_hash').get();
+    if(snap.exists() && snap.val().trim().toLowerCase().slice(0, 16) === _savedAuth){
+      initDataListener();
+    } else {
+      /* 위조되었거나 PIN이 변경된 세션 — 즉시 로그아웃 처리 */
+      sessionStorage.removeItem('bch_auth');
+      document.getElementById('pin-screen').classList.remove('hidden');
+    }
+  } catch(e){
+    console.error('세션 검증 실패:', e);
+    sessionStorage.removeItem('bch_auth');
+    document.getElementById('pin-screen').classList.remove('hidden');
+  }
+}
+verifySession();
 
 /* ==============================
    상태
@@ -3248,8 +3290,7 @@ function initDataListener() {
   });
 }
 
-/* 새로고침 시 세션 복원 — 모든 함수/변수 선언 후 실행 */
-if(_savedAuth){ initDataListener(); }
+/* 데이터 리스너 시작은 verifySession() / successLogin()에서 검증 후 호출됩니다. */
 </script>
 </body>
 </html>
