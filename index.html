@@ -705,7 +705,10 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 <div id="page-home" class="page active">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
     <div class="page-title">대시보드</div>
-    <button class="btn btn-sm" id="dashboard-edit-toggle" onclick="toggleDashboardEdit()">✏ 수정</button>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-sm" onclick="showRestoreModal()" style="border-color:var(--border2);background:var(--surface2)">🕒 복구</button>
+      <button class="btn btn-sm" id="dashboard-edit-toggle" onclick="toggleDashboardEdit()">✏ 수정</button>
+    </div>
   </div>
   <div class="page-sub" id="home-sub"></div>
   <!-- ⑨ 유동/고정 잔액 + 권장 일일 금액 -->
@@ -890,6 +893,23 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
     </button>
   </div>
 </div>
+<!-- 백업 복구 팝업(모달) -->
+<div class="tx-modal-overlay" id="restore-modal-overlay" onclick="if(event.target===this)closeRestoreModal()">
+  <div class="tx-modal" role="dialog" aria-modal="true" aria-labelledby="restore-modal-title">
+    <div class="tx-modal-header">
+      <div class="card-title" id="restore-modal-title" style="margin-bottom:0">백업 데이터 복구</div>
+      <button class="tx-modal-close" onclick="closeRestoreModal()" aria-label="닫기">&times;</button>
+    </div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:14px">복구할 백업 시점을 선택하세요. 복구 시 현재 데이터는 덮어씌워집니다.</div>
+    <div id="restore-list" style="max-height:300px;overflow-y:auto;margin-bottom:16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2)">
+      <div style="text-align:center;padding:20px;color:var(--text3)">백업 목록을 불러오는 중...</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="closeRestoreModal()" style="flex:1">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 새 거래 팝업(모달) -->
 <div class="tx-modal-overlay" id="tx-modal-overlay" onclick="if(event.target===this)closeTxModal()">
   <div class="tx-modal" role="dialog" aria-modal="true" aria-labelledby="tx-modal-title">
@@ -3229,8 +3249,129 @@ function addSave(group,name,dir){
   saveAll();renderSavings();_restoreSavingsLock();
 }
 
+function showRestoreModal(){
+  const overlay=document.getElementById('restore-modal-overlay');
+  if(!overlay)return;
+  overlay.classList.add('show');
+  document.body.style.overflow='hidden';
+  loadRestoreBackups();
+}
+function closeRestoreModal(){
+  const overlay=document.getElementById('restore-modal-overlay');
+  if(!overlay)return;
+  overlay.classList.remove('show');
+  document.body.style.overflow='';
+}
+async function loadRestoreBackups(){
+  const listEl=document.getElementById('restore-list');
+  if(!listEl)return;
+  listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3)">백업 목록을 불러오는 중...</div>';
+  try {
+    await authReady;
+    const snap = await db.ref(ROOT + '/_backups').orderByKey().get();
+    if(!snap.exists()){
+      listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3)">저장된 백업이 없습니다.</div>';
+      return;
+    }
+    const backups = snap.val();
+    const keys = Object.keys(backups).sort().reverse();
+    let html = '';
+    keys.forEach(k => {
+      const txCount = backups[k].txs ? backups[k].txs.length : 0;
+      html += `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border)">
+          <div style="text-align:left">
+            <div style="font-weight:600;font-size:14px;color:var(--text)">${k} 백업</div>
+            <div style="font-size:11px;color:var(--text3)">거래 내역 ${txCount}건</div>
+          </div>
+          <button class="btn btn-sm btn-p" onclick="restoreBackup('${k}')">복구</button>
+        </div>
+      `;
+    });
+    listEl.innerHTML = html || '<div style="text-align:center;padding:20px;color:var(--text3)">저장된 백업이 없습니다.</div>';
+  } catch(e) {
+    console.error(e);
+    listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red)">불러오기 실패: ${e.message}</div>`;
+  }
+}
+async function restoreBackup(date) {
+  if (!confirm(`${date} 백업으로 데이터를 복구하시겠습니까?\n복구 진행 전 현재 데이터가 자동으로 백업됩니다.`)) return;
+  try {
+    // 1. 현재 데이터를 '복구전' 백업으로 자동 저장
+    const currentSnap = await db.ref(ROOT).get();
+    if (currentSnap.exists()) {
+      const currentData = currentSnap.val();
+      delete currentData._backups; // 백업 내 백업 중복 방지
+      const d = new Date();
+      const datePart = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const timePart = String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0') + String(d.getSeconds()).padStart(2,'0');
+      const backupKey = `${datePart}_복구전_${timePart}`;
+      await db.ref(ROOT + '/_backups/' + backupKey).set(currentData);
+    }
 
-
+    const snap = await db.ref(ROOT + '/_backups/' + date).get();
+    if (!snap.exists()) {
+      alert('백업 데이터를 찾을 수 없습니다.');
+      return;
+    }
+    const backupData = snap.val();
+    
+    txs = backupData.txs || [];
+    budgets = backupData.budgets || BUDGET_DEFAULT;
+    targetBudgets = backupData.targetBudgets || [0,0,0,0,0];
+    weeklyAdjustments = backupData.weeklyAdjustments || [0,0,0,0,0];
+    annualEvents = backupData.annualEvents || ANNUAL_EVENTS_DEFAULT;
+    longSave = backupData.longSave || LONG_SAVE_DEFAULT;
+    shortSave = backupData.shortSave || SHORT_SAVE_DEFAULT;
+    fixedCustom = (backupData.fixedCustom || []).map(normalizeFixedCustomItem).filter(Boolean);
+    budgetCustom = normalizeBudgetCustom(backupData.budgetCustom || {});
+    
+    rawFixedList().forEach(i => {
+      const k = fixedKey(i);
+      ['_amt','_day','_hidden','_name'].forEach(s => localStorage.removeItem(k+s));
+      localStorage.removeItem(varCheckKey(k, i.name));
+    });
+    
+    if(backupData.fixedChecks) {
+      Object.entries(backupData.fixedChecks).forEach(([k,v]) => {
+        if(k.startsWith('var_')) localStorage.setItem(k.slice(4), v);
+        else localStorage.setItem(k, v);
+      });
+    }
+    if(backupData.fixedAmts) Object.entries(backupData.fixedAmts).forEach(([k,v])=>localStorage.setItem(k,v));
+    if(backupData.fixedDays) Object.entries(backupData.fixedDays).forEach(([k,v])=>localStorage.setItem(k,v));
+    if(backupData.fixedNames) Object.entries(backupData.fixedNames).forEach(([k,v])=>localStorage.setItem(k,v));
+    if(backupData.fixedBudgetManual) localStorage.setItem('bch_fixed_budget_manual', backupData.fixedBudgetManual);
+    if(backupData.monthlyBudgetManual) localStorage.setItem('bch_monthly_budget_manual', backupData.monthlyBudgetManual);
+    if(backupData.theme) localStorage.setItem('bch_theme', backupData.theme);
+    
+    saveLocal();
+    
+    const _now = Date.now();
+    myLastSaveTime = _now;
+    localStorage.setItem('bch_last_updated', _now);
+    
+    await db.ref(ROOT).update({
+      txs, budgets, targetBudgets, weeklyAdjustments, annualEvents, longSave, shortSave,
+      fixedChecks: getFixedChecks(),
+      fixedAmts: getFixedAmts(),
+      fixedDays: getFixedDays(),
+      fixedNames: getFixedNames(),
+      fixedCustom,
+      budgetCustom,
+      fixedBudgetManual: localStorage.getItem('bch_fixed_budget_manual')||null,
+      monthlyBudgetManual: localStorage.getItem('bch_monthly_budget_manual')||null,
+      theme: localStorage.getItem('bch_theme')||null,
+      _updated: _now
+    });
+    
+    alert('성공적으로 복구되었습니다.');
+    location.reload();
+  } catch(e) {
+    console.error(e);
+    alert('복구 중 오류가 발생했습니다: ' + e.message);
+  }
+}
 
 /* ==============================
    초기화 — Firebase에서 먼저 로드, 실시간 변경 감지
@@ -3254,6 +3395,44 @@ function initDataListener() {
 
   setSyncStatus('syncing');
 
+  /* ==============================
+     자동 백업 — 하루에 한 번, 그날의 마지막 동기화 상태를
+     beomcho/_backups/YYYY-MM-DD 경로에 따로 저장합니다.
+     실수로 데이터를 지우거나 잘못 고쳤을 때 되돌릴 수 있는 안전망 역할입니다.
+     30일치만 보관하고 그보다 오래된 백업은 자동으로 정리합니다.
+  ============================== */
+  function todayLocalDateStr(){
+    const d = new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+
+  function pruneOldBackups(){
+    db.ref(ROOT + '/_backups').orderByKey().get().then(snap=>{
+      if(!snap.exists()) return;
+      const keys = Object.keys(snap.val()).sort();
+      const KEEP = 30;
+      if(keys.length > KEEP){
+        keys.slice(0, keys.length - KEEP).forEach(k=>{
+          db.ref(ROOT + '/_backups/' + k).remove();
+        });
+      }
+    }).catch(err=>console.error('백업 정리 실패:', err));
+  }
+
+  function maybeBackupToday(data){
+    if(!data) return;
+    const today = todayLocalDateStr();
+    if(localStorage.getItem('bch_last_backup_date') === today) return; /* 오늘 이미 백업함 */
+    const snapshotData = Object.assign({}, data);
+    delete snapshotData._backups; /* 백업 안에 백업이 중첩 저장되지 않도록 제외 */
+    db.ref(ROOT + '/_backups/' + today).set(snapshotData)
+      .then(()=>{
+        localStorage.setItem('bch_last_backup_date', today);
+        pruneOldBackups();
+      })
+      .catch(err=>console.error('자동 백업 실패:', err));
+  }
+
   /* Firebase 실시간 리스너 — 다른 기기에서 변경되면 자동으로 반영 */
   db.ref(ROOT).on('value', snapshot=>{
     const data=snapshot.val();
@@ -3265,6 +3444,7 @@ function initDataListener() {
         applied=true;
         if(incomingTime) localStorage.setItem('bch_last_updated', incomingTime);
       }
+      maybeBackupToday(data);
     }
 
     if(!fbReady){
