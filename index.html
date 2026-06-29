@@ -1690,7 +1690,15 @@ function updateMonthlyBudgetManual(val){
   localStorage.setItem('bch_monthly_budget_manual',parseNum(val));
   renderHome();
 }
-function escJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+function escJs(v){
+  return String(v)
+    .replace(/\\/g,'\\\\')
+    .replace(/'/g,"\\'")
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
 
 /* ==============================
    ⑦ 테마 토글
@@ -2454,7 +2462,7 @@ function renderBudget(){
     </div>`;
   incomeItems.forEach(cat=>{
     col1+=`<div class="budget-row-grid">
-      <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetIncome('${escJs(cat)}',this.value)"
+      <input type="text" class="budget-name-input" value="${esc(cat)}" onchange="renameBudgetIncome('${escJs(cat)}',this.value)"
         style="font-size:12px;padding:4px 6px;border-radius:6px;width:100%;min-width:0;color:var(--text2)">
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);if(!budgetEditMode)renderBudget()"
         style="width:100%;text-align:right;padding:6px 2px 6px 8px;font-size:13px">
@@ -2469,7 +2477,7 @@ function renderBudget(){
     </div>`;
   savingItems.forEach(cat=>{
     col1+=`<div class="budget-row-grid">
-      <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetSaving('${escJs(cat)}',this.value)"
+      <input type="text" class="budget-name-input" value="${esc(cat)}" onchange="renameBudgetSaving('${escJs(cat)}',this.value)"
         style="font-size:12px;padding:4px 6px;border-radius:6px;width:100%;min-width:0;color:var(--purple-dark)">
       <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="setBudget('${cat}',this.value);if(!budgetEditMode)renderBudget()"
         style="width:100%;text-align:right;padding:6px 2px 6px 8px;font-size:13px">
@@ -2493,7 +2501,7 @@ function renderBudget(){
     </div>`;
     cats.forEach(cat=>{
       col2+=`<div class="budget-row-grid-sm">
-        <input type="text" class="budget-name-input" value="${escJs(cat)}" onchange="renameBudgetGroup('${escJs(gn)}','${escJs(cat)}',this.value)"
+        <input type="text" class="budget-name-input" value="${esc(cat)}" onchange="renameBudgetGroup('${escJs(gn)}','${escJs(cat)}',this.value)"
           style="font-size:12px;color:var(--text2);padding:4px 6px;border-radius:6px;width:100%;min-width:0">
         <input type="text" class="num-input" value="${fmtN(budgets[cat]||0)}" oninput="formatNumInput(this)" inputmode="numeric"
           onchange="setBudget('${cat}',this.value);if(!budgetEditMode)renderBudget()"
@@ -2874,7 +2882,7 @@ function renderFixed(){
             <div>
               <div style="display:flex; align-items:center; flex:1;">
             ${isToday?'<span style="color:var(--amber);font-weight:600;margin-right:4px;">★</span>':''}
-            <input type="text" class="fixed-name-input" value="${localStorage.getItem(k+'_name') || item.name}" onchange="updateFixedItemName('${k}',this.value,${isCustom})" style="font-size:14px; width:100%; max-width:180px; padding:2px 4px; border-radius:6px; border:1px solid transparent; ${isDone?'text-decoration:line-through; opacity:0.6;':''} ${isToday?'color:var(--amber);font-weight:600;':''}">
+            <input type="text" class="fixed-name-input" value="${esc(localStorage.getItem(k+'_name') || item.name)}" onchange="updateFixedItemName('${k}',this.value,${isCustom})" style="font-size:14px; width:100%; max-width:180px; padding:2px 4px; border-radius:6px; border:1px solid transparent; ${isDone?'text-decoration:line-through; opacity:0.6;':''} ${isToday?'color:var(--amber);font-weight:600;':''}">
           </div>
               <div class="fi-meta" style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">
                 <span>매달</span>
