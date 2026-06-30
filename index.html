@@ -367,6 +367,21 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 /* +/- 버튼도 수정 모드에서만 */
 #page-savings .save-li-actions{display:none}
 #page-savings.savings-edit-on .save-li-actions{display:inline-flex}
+/* 보유 미국 ETF 카드 */
+.etf-card{border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px}
+.etf-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.etf-card-top .etf-ticker-wrap{flex:1;min-width:0}
+#page-savings .etf-ticker-input{width:100%;box-sizing:border-box;font-size:13px;font-weight:700;border:1px solid var(--border);border-radius:6px;padding:5px 8px}
+.etf-fields{display:flex;flex-direction:column;gap:6px}
+.etf-row-2col{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.etf-field label{display:block;font-size:9px;color:var(--text3);margin-bottom:2px}
+#page-savings .etf-field input{width:100%;box-sizing:border-box;text-align:right;font-size:11px;border:1px solid var(--border);border-radius:6px;padding:5px 5px}
+#page-savings .etf-field .save-li-actions .btn-sm{padding:4px 8px !important;font-size:11px !important}
+.etf-summary{font-size:10px;color:var(--text3);margin-top:8px;line-height:1.5}
+@media(max-width:480px){
+  .etf-field label{font-size:8.5px}
+  #page-savings .etf-field input{font-size:10.5px;padding:4px}
+}
 /* 거래 내역: 모바일=카드리스트, PC=테이블 */
 @media(max-width:768px){
   .tx-table-wrap{display:none}
@@ -1232,6 +1247,8 @@ const SHORT_SAVE_DEFAULT={
   '비상금':{bal:5500000,monthly:0,color:'#34c759'},
   '주식':{bal:8770000,monthly:0,color:'#ff453a'}
 };
+/* 보유 미국 ETF 목록 기본값 (종목 없으면 빈 배열) */
+const STOCK_HOLDINGS_DEFAULT=[];
 
 /* ==============================
    Firebase 초기화
@@ -1408,6 +1425,9 @@ if(weeklyAdjustments.length===0){
 let annualEvents=JSON.parse(localStorage.getItem('bch_events')||JSON.stringify(ANNUAL_EVENTS_DEFAULT));
 let longSave=JSON.parse(localStorage.getItem('bch_long_save')||JSON.stringify(LONG_SAVE_DEFAULT));
 let shortSave=JSON.parse(localStorage.getItem('bch_short_save')||JSON.stringify(SHORT_SAVE_DEFAULT));
+let stockHoldings=JSON.parse(localStorage.getItem('bch_stock_holdings')||JSON.stringify(STOCK_HOLDINGS_DEFAULT));
+let stockFx=JSON.parse(localStorage.getItem('bch_stock_fx')||'{"rate":1380,"updated":0}');
+let etfCardCollapsed=JSON.parse(localStorage.getItem('bch_etf_collapsed')||'false');
 
 /* 색상 및 이름 업데이트 마이그레이션 함수 */
 function migrateShortSaveColors(){
@@ -1482,6 +1502,8 @@ function saveLocal(){
   localStorage.setItem('bch_events',JSON.stringify(annualEvents));
   localStorage.setItem('bch_long_save',JSON.stringify(longSave));
   localStorage.setItem('bch_short_save',JSON.stringify(shortSave));
+  localStorage.setItem('bch_stock_holdings',JSON.stringify(stockHoldings));
+  localStorage.setItem('bch_stock_fx',JSON.stringify(stockFx));
   localStorage.setItem(FIXED_STORAGE_KEY,JSON.stringify(fixedCustom));
   localStorage.setItem(BUDGET_CUSTOM_KEY,JSON.stringify(budgetCustom));
 }
@@ -1500,6 +1522,7 @@ function saveAll(){
     localStorage.setItem('bch_last_updated',_now);
     db.ref(ROOT).update({
       txs,budgets,targetBudgets,weeklyAdjustments,annualEvents,longSave,shortSave,
+      stockHoldings,stockFx,
       fixedChecks:getFixedChecks(),
       fixedAmts:getFixedAmts(),
       fixedDays:getFixedDays(),
@@ -1579,6 +1602,8 @@ function applyFirebaseData(data){
     shortSave=data.shortSave;
     if(migrateShortSaveColors()) setTimeout(saveAll, 100);
   }
+  if(data.stockHoldings!==undefined)stockHoldings=data.stockHoldings||[];
+  if(data.stockFx)stockFx=data.stockFx;
   if(data.fixedCustom!==undefined){
     const incoming=Array.isArray(data.fixedCustom)?data.fixedCustom:[];
     fixedCustom=incoming.map(normalizeFixedCustomItem).filter(Boolean);
@@ -3035,14 +3060,30 @@ function renderSavings(){
   }  html+=`</ul></div>`;
 
   /* 단기 저축 */
+  /* 보유 미국 ETF 기반 자동 계산 (환율/시세 반영) — shortTotal 계산 전에 '주식' 보유액 동기화 */
+  const fxRate=stockFx.rate||1380;
+  const holdingsCalc=stockHoldings.map(h=>{
+    const shares=h.shares||0, price=h.price||0, yieldPct=h.yieldPct||0;
+    const valueUSD=shares*price;
+    const valueKRW=Math.round(valueUSD*fxRate);
+    const monthlyDivKRW=Math.round(valueUSD*(yieldPct/100)/12*fxRate*0.85); /* 미국 원천징수 15% 가정 */
+    return{...h,valueUSD,valueKRW,monthlyDivKRW};
+  });
+  const hasHoldings=stockHoldings.length>0;
+  const holdingsTotalKRW=holdingsCalc.reduce((s,h)=>s+h.valueKRW,0);
+  const holdingsMonthlyDiv=holdingsCalc.reduce((s,h)=>s+h.monthlyDivKRW,0);
+  if(hasHoldings && shortSave['주식']){
+    shortSave['주식'].bal=holdingsTotalKRW;
+    localStorage.setItem('bch_short_save',JSON.stringify(shortSave));
+  }
   const sVals=Object.values(shortSave);
   const shortTotal=sVals.reduce((s,v)=>s+v.bal,0);
   const shortMKey='savedThisMonth_'+curMonth();
   let shortThisMonth=0;
   sVals.forEach(v=>{shortThisMonth+=(v[shortMKey]||0);});
-  /* 주식 배당 계산: 주식보유액 × 0.11456 / 12 × 0.846 */
+  /* 주식 배당 계산: 보유 ETF가 있으면 실제 종목별 배당수익률 기반, 없으면 기존 추정치 사용 */
   const stockBal=shortSave['주식']?.bal||0;
-  const dividend=Math.round(stockBal*0.11456/12*0.846/10000)*10000;
+  const dividend=hasHoldings?holdingsMonthlyDiv:Math.round(stockBal*0.11456/12*0.846/10000)*10000;
 
   /* 투자 비율 도넛 */
   const shortNames=Object.keys(shortSave);
@@ -3053,7 +3094,7 @@ function renderSavings(){
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${shortThisMonth!==0?'8px':'14px'}">
       <div class="card-title" style="margin-bottom:0">단기 저축</div>
       <div style="text-align:right">
-        <div style="font-size:14px;font-weight:700;color:var(--teal)">${fmt(shortTotal)}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--teal)">${fmt(Math.round(shortTotal/10000)*10000)}</div>
         <div style="font-size:11px;color:var(--text3)">월 주식 배당 예상 약 ${Math.round(dividend/10000)}만원</div>
       </div>
     </div>
@@ -3066,6 +3107,8 @@ function renderSavings(){
   Object.entries(shortSave).forEach(([name,v],si)=>{
     const itemColor=v.color || APPLE_COLORS[si%APPLE_COLORS.length];
     const pct=shortTotal>0?Math.round(v.bal/shortTotal*100):0;
+    /* '주식' 항목은 ETF 자동환산 시 만원 단위로 반올림해 표기 (정확한 원 단위는 보유 ETF 카드에서 확인) */
+    const displayBal=(name==='주식'&&hasHoldings)?Math.round(v.bal/10000)*10000:v.bal;
     html+=`<li class="fi save-li">
       <div class="save-li-inner">
         <div class="save-li-main" style="flex:1">
@@ -3076,7 +3119,7 @@ function renderSavings(){
         <div style="display:flex;align-items:center;gap:6px;white-space:nowrap;margin-left:auto">
           <div style="display:flex;align-items:center;gap:2px">
             <span style="font-size:9px;color:var(--text3)">보유액</span>
-            <input type="text" value="${fmtN(v.bal)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('short','${name}','bal',this.value)" style="width:65px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;font-weight:700;color:${itemColor};padding:2px 3px">
+            <input type="text" value="${fmtN(displayBal)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('short','${name}','bal',this.value)" style="width:65px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;font-weight:700;color:${itemColor};padding:2px 3px">
           </div>
           <div style="display:flex;align-items:center;gap:2px">
             <span style="font-size:9px;color:var(--text3)">월저축</span>
@@ -3111,6 +3154,62 @@ function renderSavings(){
   <div class="card">
     <div class="card-title">월별 저축 추이</div>
     <div style="position:relative;height:200px"><canvas id="save-trend" role="img" aria-label="월별 저축 추이">저축 추이</canvas></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${etfCardCollapsed?'0':'10px'};flex-wrap:wrap;gap:6px">
+      <div style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="toggleEtfCollapse()">
+        <span style="font-size:11px;color:var(--text3);transition:transform .15s;display:inline-block;transform:rotate(${etfCardCollapsed?'-90deg':'0deg'})">▾</span>
+        <div class="card-title" style="margin-bottom:0">보유 미국 ETF${hasHoldings?` <span style="font-size:11px;font-weight:400;color:var(--text3)">(${stockHoldings.length}종목 · ${fmt(holdingsTotalKRW)})</span>`:''}</div>
+      </div>
+      <button class="btn btn-sm" id="stock-refresh-btn" onclick="refreshStockPrices()" style="font-size:11px">🔄 시세·환율 새로고침</button>
+    </div>
+    ${etfCardCollapsed?'':`
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">
+      종목코드와 보유수량을 입력하면 현재가·배당수익률을 자동 조회해 환율(₩${fxRate?Math.round(fxRate).toLocaleString('ko-KR'):'-'}/$)을 반영한 원화 환산액과 예상 월 배당금을 계산해요. 종목에 따라 자동 조회가 안 될 수 있어요 — 그럴 땐 현재가·배당수익률을 직접 입력해 주세요.
+      ${stockFx.updated?`<br>환율 갱신: ${new Date(stockFx.updated).toLocaleString('ko-KR')}`:''}
+    </div>
+    <div>
+      ${holdingsCalc.map((h,idx)=>`<div class="etf-card">
+        <div class="etf-card-top">
+          <div class="etf-ticker-wrap">
+            <input type="text" class="etf-ticker-input" value="${h.ticker||''}" placeholder="티커(예: SCHD)" onchange="updateStockHolding(${idx},'ticker',this.value)">
+          </div>
+          <div class="save-li-actions">
+            <button class="btn btn-sm" onclick="removeStockHolding(${idx})" style="padding:3px 7px;font-size:10px">삭제</button>
+          </div>
+        </div>
+        <div class="etf-fields">
+          <div class="etf-field">
+            <label>수량</label>
+            <div style="display:flex;align-items:center;gap:4px">
+              <input type="text" value="${h.shares||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'shares',this.value)" style="flex:1;min-width:0">
+              <div class="save-li-actions" style="gap:3px">
+                <button class="btn btn-sm" onclick="adjustStockShares(${idx},1)">+</button>
+                <button class="btn btn-sm" onclick="adjustStockShares(${idx},-1)">−</button>
+              </div>
+            </div>
+          </div>
+          <div class="etf-row-2col">
+            <div class="etf-field">
+              <label>현재가$</label>
+              <input type="text" value="${h.price||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'price',this.value)">
+            </div>
+            <div class="etf-field">
+              <label>배당%</label>
+              <input type="text" value="${h.yieldPct||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'yieldPct',this.value)">
+            </div>
+          </div>
+        </div>
+        <div class="etf-summary">
+          ≈ ${fmt(h.valueKRW)} · 예상 월배당 ${fmt(h.monthlyDivKRW)}${h.lastError?'<br>⚠ 자동조회 실패 — 직접 입력해 주세요':''}
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="save-li-actions" style="margin-top:8px">
+      <button class="btn btn-sm" onclick="addStockHolding()" style="font-size:11px">+ 종목 추가</button>
+    </div>
+    ${hasHoldings?`<div style="margin-top:10px;font-size:12px;color:var(--text2)">합계: <b>${fmt(holdingsTotalKRW)}</b> · 예상 월 배당: <b>${fmt(holdingsMonthlyDiv)}</b></div>`:''}
+    `}
   </div>`;
 
   document.getElementById('save-content').innerHTML=html;
@@ -3209,15 +3308,18 @@ function cancelSavingsEdit(){
   if(savingsBeforeEdit){
     longSave = JSON.parse(JSON.stringify(savingsBeforeEdit.long));
     shortSave = JSON.parse(JSON.stringify(savingsBeforeEdit.short));
+    stockHoldings = JSON.parse(JSON.stringify(savingsBeforeEdit.stock));
     savingsBeforeEdit=null;
   }
   savingsEditMode=false;
+  saveLocal();
   renderSavings();
 }
 function toggleSavingsEdit(){
   savingsBeforeEdit = {
     long: JSON.parse(JSON.stringify(longSave)),
-    short: JSON.parse(JSON.stringify(shortSave))
+    short: JSON.parse(JSON.stringify(shortSave)),
+    stock: JSON.parse(JSON.stringify(stockHoldings))
   };
   savingsEditMode=true;
   renderSavings();
@@ -3236,6 +3338,79 @@ function updateSave(group,name,field,val){
   if(!store[name])return;
   store[name][field]=parseNum(val);
   saveAll();
+}
+/* ===== 보유 미국 ETF 관리 ===== */
+function toggleEtfCollapse(){
+  etfCardCollapsed=!etfCardCollapsed;
+  localStorage.setItem('bch_etf_collapsed',JSON.stringify(etfCardCollapsed));
+  renderSavings();_restoreSavingsLock();
+}
+function parseDecimal(val){
+  const n=parseFloat(String(val).replace(/[^0-9.\-]/g,''));
+  return isNaN(n)?0:n;
+}
+function addStockHolding(){
+  stockHoldings.push({ticker:'',shares:0,price:0,yieldPct:0});
+  saveAll();renderSavings();_restoreSavingsLock();
+}
+function removeStockHolding(idx){
+  if(!stockHoldings[idx])return;
+  stockHoldings.splice(idx,1);
+  saveAll();renderSavings();_restoreSavingsLock();
+}
+function updateStockHolding(idx,field,val){
+  if(!stockHoldings[idx])return;
+  if(field==='ticker')stockHoldings[idx].ticker=String(val).trim().toUpperCase();
+  else stockHoldings[idx][field]=parseDecimal(val);
+  saveAll();renderSavings();_restoreSavingsLock();
+}
+function adjustStockShares(idx,delta){
+  if(!stockHoldings[idx])return;
+  const cur=stockHoldings[idx].shares||0;
+  stockHoldings[idx].shares=Math.max(0,Math.round((cur+delta)*10000)/10000);
+  saveAll();renderSavings();_restoreSavingsLock();
+}
+/* 환율(무료 API) + 종목 시세·배당수익률(야후 파이낸스, CORS 프록시 경유) 자동 조회 */
+async function refreshStockPrices(){
+  const btn=document.getElementById('stock-refresh-btn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ 조회 중...';}
+  try{
+    try{
+      const fxRes=await fetch('https://open.er-api.com/v6/latest/USD');
+      const fxData=await fxRes.json();
+      if(fxData && fxData.rates && fxData.rates.KRW){
+        stockFx={rate:fxData.rates.KRW,updated:Date.now()};
+      }
+    }catch(e){console.warn('환율 조회 실패',e);}
+
+    for(const h of stockHoldings){
+      h.lastError=false;
+      if(!h.ticker)continue;
+      const sym=encodeURIComponent(h.ticker.trim().toUpperCase());
+      try{
+        const url=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}`;
+        const res=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+        const data=await res.json();
+        const price=data?.chart?.result?.[0]?.meta?.regularMarketPrice;
+        if(price)h.price=price;else h.lastError=true;
+      }catch(e){console.warn(h.ticker+' 시세 조회 실패',e);h.lastError=true;}
+      try{
+        const qUrl=`https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=summaryDetail`;
+        const qRes=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(qUrl)}`);
+        const qData=await qRes.json();
+        const dy=qData?.quoteSummary?.result?.[0]?.summaryDetail?.dividendYield?.raw;
+        if(dy)h.yieldPct=Math.round(dy*10000)/100;
+      }catch(e){console.warn(h.ticker+' 배당수익률 조회 실패',e);}
+    }
+    saveAll();
+    renderSavings();_restoreSavingsLock();
+    showToast('시세·환율 업데이트 완료 (일부 종목은 자동조회가 안 될 수 있어요)');
+  }catch(e){
+    showToast('업데이트 중 오류가 발생했어요');
+  }finally{
+    const b=document.getElementById('stock-refresh-btn');
+    if(b){b.disabled=false;b.textContent='🔄 시세·환율 새로고침';}
+  }
 }
 function addSave(group,name,dir){
   const store=group==='long'?longSave:shortSave;
@@ -3323,6 +3498,8 @@ async function restoreBackup(date) {
     annualEvents = backupData.annualEvents || ANNUAL_EVENTS_DEFAULT;
     longSave = backupData.longSave || LONG_SAVE_DEFAULT;
     shortSave = backupData.shortSave || SHORT_SAVE_DEFAULT;
+    stockHoldings = backupData.stockHoldings || [];
+    stockFx = backupData.stockFx || {rate:1380,updated:0};
     fixedCustom = (backupData.fixedCustom || []).map(normalizeFixedCustomItem).filter(Boolean);
     budgetCustom = normalizeBudgetCustom(backupData.budgetCustom || {});
     
