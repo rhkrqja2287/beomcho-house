@@ -832,7 +832,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
           <button class="icon-btn" onclick="txNextMonth()" aria-label="다음 달">&#8594;</button>
         </div>
         <select id="filter-type" onchange="renderTxList()" style="width:auto;padding:6px 10px;font-size:12px">
-          <option value="">전체</option><option value="income">수입</option><option value="expense">지출</option><option value="expense_planned">지출(예상)</option>
+          <option value="">전체</option><option value="expense">지출</option><option value="expense_planned">지출(예상)</option><option value="income">수입</option>
         </select>
       </div>
     </div>
@@ -947,8 +947,8 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
         <label>유형</label>
         <select id="tx-type" onchange="updateCats()" style="padding:7px 10px">
           <option value="expense">지출</option>
-          <option value="income">수입</option>
           <option value="expense_planned">지출(예상)</option>
+          <option value="income">수입</option>
         </select>
       </div>
       <div id="cat-wrap">
@@ -2187,9 +2187,12 @@ function updateTxField(id,field,value){
     const t=txs.find(t=>t.id===id);if(!t)return;
     if(field==='amt')t.amt=parseNum(value);
     else if(field==='type'){
+      const prevType=t.type;
       t.type=value;
-      /* ① 유형 바꾸면 카테고리 초기화 */
-      t.cat=(value==='income')?'—':EXPENSE_CATS[0];
+      /* expense ↔ expense_planned 전환 시 카테고리 유지, 수입으로 바꿀 때만 초기화 */
+      if(value==='income') t.cat='—';
+      else if(prevType==='income') t.cat=EXPENSE_CATS[0];
+      /* expense ↔ expense_planned: t.cat 그대로 */
     } else t[field]=value;
     saveAll();renderTxList();renderHome();
   }catch(e){
@@ -2283,8 +2286,8 @@ function renderTxList(){
           <input type="date" value="${t.date}" onchange="updateTxField(${t.id},'date',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:9px;padding:2px 2px;background:var(--surface);color:var(--text);max-width:100%;min-width:0;-webkit-appearance:none;appearance:none;overflow:hidden">
           <select onchange="updateTxField(${t.id},'type',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text);max-width:100%;min-width:0">
             <option${t.type==='expense'?' selected':''} value="expense">지출</option>
-            <option${t.type==='income'?' selected':''} value="income">수입</option>
             <option${planned?' selected':''} value="expense_planned">지출(예상)</option>
+            <option${t.type==='income'?' selected':''} value="income">수입</option>
           </select>
           ${t.type==='income'?'<span style="font-size:10px;color:var(--text3);text-align:center">—</span>':`<select onchange="updateTxField(${t.id},'cat',this.value)" style="border:1px solid var(--border);border-radius:5px;font-size:10px;padding:2px 2px;background:var(--surface);color:var(--text);max-width:100%;min-width:0">${cats.map(c=>`<option${c===t.cat?' selected':''}>${esc(c)}</option>`).join('')}</select>`}
         </div>
@@ -2340,8 +2343,8 @@ function renderTxList(){
         <td><select onchange="updateTxField(${t.id},'type',this.value)"
             style="border:1px solid var(--border);border-radius:6px;font-size:12px;padding:3px 6px;background:var(--surface);color:var(--text);width:auto">
             <option${t.type==='expense'?' selected':''} value="expense">지출</option>
-            <option${t.type==='income'?' selected':''} value="income">수입</option>
             <option${planned?' selected':''} value="expense_planned">지출(예상)</option>
+            <option${t.type==='income'?' selected':''} value="income">수입</option>
           </select></td>
         ${catCell}
         <td style="text-align:right">
@@ -2583,7 +2586,7 @@ function renderBudget(){
   /* ③② col3 예산 대비 잔액 — txs에서 대분류(EXPENSE_CATS) 기준으로 직접 집계 */
   const mStr2=curMonth();
   const expByBigCat={};
-  txs.filter(t=>t.date.startsWith(mStr2)&&t.type==='expense').forEach(t=>{
+  txs.filter(t=>t.date.startsWith(mStr2)&&(t.type==='expense'||t.type==='expense_planned')).forEach(t=>{
     expByBigCat[t.cat]=(expByBigCat[t.cat]||0)+t.amt;
   });
 
