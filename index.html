@@ -372,12 +372,12 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 .etf-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
 .etf-card-top .etf-ticker-wrap{flex:1;min-width:0}
 #page-savings .etf-ticker-input{width:100%;box-sizing:border-box;font-size:13px;font-weight:700;border:1px solid var(--border);border-radius:6px;padding:5px 8px}
-.etf-fields{display:flex;flex-direction:column;gap:6px}
-.etf-row-2col{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.etf-fields{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.etf-qty-field{grid-column:1/-1}
 .etf-field label{display:block;font-size:9px;color:var(--text3);margin-bottom:2px}
 #page-savings .etf-field input{width:100%;box-sizing:border-box;text-align:right;font-size:11px;border:1px solid var(--border);border-radius:6px;padding:5px 5px}
 #page-savings .etf-field .save-li-actions .btn-sm{padding:4px 8px !important;font-size:11px !important}
-.etf-summary{font-size:10px;color:var(--text3);margin-top:8px;line-height:1.5}
+.etf-summary{font-size:10px;color:var(--text3);margin-top:8px;line-height:1.5;grid-column:1/-1}
 @media(max-width:480px){
   .etf-field label{font-size:8.5px}
   #page-savings .etf-field input{font-size:10.5px;padding:4px}
@@ -738,8 +738,12 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
       <div id="weekly-focus-container"></div>
       
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:20px">
-        <div class="card-title" style="margin-bottom:0;font-size:13px;color:var(--text3)">주간 지출 리스트</div>
+        <div style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 0" onclick="toggleWeeklyCollapse()">
+          <span id="weekly-collapse-arrow" style="font-size:16px;color:var(--text2);display:inline-block;transition:transform .2s">▾</span>
+          <div class="card-title" style="margin-bottom:0;font-size:13px;color:var(--text2)">주간 지출 리스트</div>
+        </div>
       </div>
+      <div id="weekly-bars-outer">
       <div id="weekly-budget-edit-wrap" style="display:none;flex-direction:column;gap:10px;margin-bottom:16px;background:var(--surface2);padding:14px;border-radius:12px;border:1px solid var(--border)">
         <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:10px;font-size:11px;color:var(--text3);padding-bottom:6px;border-bottom:1px solid var(--border)">
           <span>주차</span><span style="text-align:center">목표 예산</span><span style="text-align:center">조정 금액</span>
@@ -802,6 +806,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
         </div>
       </div>
       <div id="weekly-bars-container"></div>
+      </div><!-- /weekly-bars-outer -->
     </div>
     <div class="card" style="flex:1">
       <div class="card-title">최근 거래</div>
@@ -1428,6 +1433,7 @@ let shortSave=JSON.parse(localStorage.getItem('bch_short_save')||JSON.stringify(
 let stockHoldings=JSON.parse(localStorage.getItem('bch_stock_holdings')||JSON.stringify(STOCK_HOLDINGS_DEFAULT));
 let stockFx=JSON.parse(localStorage.getItem('bch_stock_fx')||'{"rate":1380,"updated":0}');
 let etfCardCollapsed=JSON.parse(localStorage.getItem('bch_etf_collapsed')||'false');
+let weeklyCollapsed=JSON.parse(localStorage.getItem('bch_weekly_collapsed')||'false');
 
 /* 색상 및 이름 업데이트 마이그레이션 함수 */
 function migrateShortSaveColors(){
@@ -2077,22 +2083,26 @@ function renderHome(){
     }
 
     weeklyHtml += `
-      <div style="margin-bottom:12px; ${isCurrentWeek ? 'opacity:0.5;' : ''}">
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+      <div style="margin-bottom:14px;${isCurrentWeek?'opacity:0.5;':''}">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
           <div>
-            <span style="font-weight:600;color:var(--text2)">${i+1}주차</span>
+            <span style="font-weight:600;color:var(--text2);font-size:12px">${i+1}주차</span>
             <span style="font-size:9px;color:var(--text3);margin-left:4px">${range}</span>
           </div>
-          <span style="font-weight:700;color:${barCls==='over'?'var(--red)':barCls==='warn'?'var(--amber)':'var(--green)'};font-size:10px">${statusText}</span>
+          <span style="font-size:12px;font-weight:600;color:${remain>=0?'var(--green)':'var(--red)'}">잔여 ${fmt(Math.abs(remain))}</span>
         </div>
-        <div class="pw" style="height:4px;margin-bottom:3px"><div class="pb ${barCls}" style="width:${Math.min(100, Math.max(0, pct))}%"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3)">
-          <span>지출 ${fmt(spent)}</span>
-          <span>가용 ${fmt(available)}</span>
+        <div class="pw" style="height:4px;margin-bottom:4px"><div class="pb ${barCls}" style="width:${Math.min(100,Math.max(0,pct))}%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
+          <span>예산 ${fmt(available)} / 지출 ${fmt(spent)}</span>
+          <span>${statusText}</span>
         </div>
       </div>`;
   }
   document.getElementById('weekly-focus-container').innerHTML = focusHtml || '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">이번 주차 정보를 찾을 수 없습니다.</div>';
+  const barsOuter=document.getElementById('weekly-bars-outer');
+  if(barsOuter) barsOuter.style.display=weeklyCollapsed?'none':'block';
+  const arrow=document.getElementById('weekly-collapse-arrow');
+  if(arrow) arrow.style.transform=weeklyCollapsed?'rotate(-90deg)':'rotate(0deg)';
   document.getElementById('weekly-bars-container').innerHTML=weeklyHtml;
 
   /* 최근 거래 */
@@ -2857,7 +2867,7 @@ function renderFixed(){
 
   /* ④ fixed-summary 하나로 통합 — 중복 g3 제거, 건수 표기 포함 */
   const pct=total>0?Math.max(0,Math.min(100,Math.round(pendingAmt/total*100))):0;
-  const fBarCls=pct<30?'ok':pct<70?'warn':'over';
+  const fBarCls=pct>70?'ok':pct>30?'warn':'over';
   document.getElementById('fixed-summary').innerHTML=`
     <div class="g3" style="margin-bottom:10px">
       <div class="metric">
@@ -3157,51 +3167,57 @@ function renderSavings(){
   </div>
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${etfCardCollapsed?'0':'10px'};flex-wrap:wrap;gap:6px">
-      <div style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="toggleEtfCollapse()">
-        <span style="font-size:11px;color:var(--text3);transition:transform .15s;display:inline-block;transform:rotate(${etfCardCollapsed?'-90deg':'0deg'})">▾</span>
+      <div style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:2px 0" onclick="toggleEtfCollapse()">
+        <span style="font-size:16px;color:var(--text2);transition:transform .2s;display:inline-block;transform:rotate(${etfCardCollapsed?'-90deg':'0deg'})">▾</span>
         <div class="card-title" style="margin-bottom:0">보유 미국 ETF${hasHoldings?` <span style="font-size:11px;font-weight:400;color:var(--text3)">(${stockHoldings.length}종목 · ${fmt(holdingsTotalKRW)})</span>`:''}</div>
       </div>
       <button class="btn btn-sm" id="stock-refresh-btn" onclick="refreshStockPrices()" style="font-size:11px">🔄 시세·환율 새로고침</button>
     </div>
     ${etfCardCollapsed?'':`
-    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">
-      종목코드와 보유수량을 입력하면 현재가·배당수익률을 자동 조회해 환율(₩${fxRate?Math.round(fxRate).toLocaleString('ko-KR'):'-'}/$)을 반영한 원화 환산액과 예상 월 배당금을 계산해요. 종목에 따라 자동 조회가 안 될 수 있어요 — 그럴 땐 현재가·배당수익률을 직접 입력해 주세요.
-      ${stockFx.updated?`<br>환율 갱신: ${new Date(stockFx.updated).toLocaleString('ko-KR')}`:''}
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <div style="font-size:11px;color:var(--text3);flex:1;min-width:180px">
+        환율(₩/$) · 자동 조회 후 직접 수정 가능
+        ${stockFx.updated?`<span style="font-size:10px;margin-left:4px;color:var(--text3)">갱신: ${new Date(stockFx.updated).toLocaleString('ko-KR')}</span>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-size:11px;color:var(--text3)">₩</span>
+        <input type="text" id="fx-rate-input" value="${Math.round(fxRate).toLocaleString('ko-KR')}" inputmode="numeric" oninput="formatNumInput(this)" onchange="updateFxRate(this.value)" style="width:80px;text-align:right;font-size:13px;font-weight:700;border:1px solid var(--border);border-radius:6px;padding:4px 6px">
+        <span style="font-size:11px;color:var(--text3)">/$</span>
+      </div>
     </div>
-    <div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:10px">종목에 따라 자동 조회가 안 될 수 있어요 — 현재가·배당수익률을 직접 입력해 주세요.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       ${holdingsCalc.map((h,idx)=>`<div class="etf-card">
-        <div class="etf-card-top">
-          <div class="etf-ticker-wrap">
-            <input type="text" class="etf-ticker-input" value="${h.ticker||''}" placeholder="티커(예: SCHD)" onchange="updateStockHolding(${idx},'ticker',this.value)">
-          </div>
-          <div class="save-li-actions">
-            <button class="btn btn-sm" onclick="removeStockHolding(${idx})" style="padding:3px 7px;font-size:10px">삭제</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <input type="text" class="etf-ticker-input" value="${h.ticker||''}" placeholder="티커" onchange="updateStockHolding(${idx},'ticker',this.value)" style="font-size:12px;font-weight:700;border:1px solid var(--border);border-radius:6px;padding:3px 6px;width:0;flex:1;min-width:0">
+          <div class="save-li-actions" style="margin-left:4px;flex-shrink:0">
+            <button class="btn btn-sm" onclick="removeStockHolding(${idx})" style="padding:1px 5px;font-size:9px">삭제</button>
           </div>
         </div>
-        <div class="etf-fields">
-          <div class="etf-field">
-            <label>수량</label>
-            <div style="display:flex;align-items:center;gap:4px">
-              <input type="text" value="${h.shares||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'shares',this.value)" style="flex:1;min-width:0">
-              <div class="save-li-actions" style="gap:3px">
-                <button class="btn btn-sm" onclick="adjustStockShares(${idx},1)">+</button>
-                <button class="btn btn-sm" onclick="adjustStockShares(${idx},-1)">−</button>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div>
+            <div style="font-size:9px;color:var(--text3);margin-bottom:1px">수량</div>
+            <div style="display:flex;align-items:center;gap:3px">
+              <input type="text" value="${h.shares||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'shares',this.value)" style="flex:1;min-width:0;text-align:right;font-size:11px;border:1px solid var(--border);border-radius:5px;padding:3px 4px">
+              <div class="save-li-actions" style="gap:2px;flex-shrink:0">
+                <button class="btn btn-sm" onclick="adjustStockShares(${idx},1)" style="padding:2px 5px;font-size:10px">+</button>
+                <button class="btn btn-sm" onclick="adjustStockShares(${idx},-1)" style="padding:2px 5px;font-size:10px">−</button>
               </div>
             </div>
           </div>
-          <div class="etf-row-2col">
-            <div class="etf-field">
-              <label>현재가$</label>
-              <input type="text" value="${h.price||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'price',this.value)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+            <div>
+              <div style="font-size:9px;color:var(--text3);margin-bottom:1px">현재가$</div>
+              <input type="text" value="${h.price||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'price',this.value)" style="width:100%;box-sizing:border-box;text-align:right;font-size:11px;border:1px solid var(--border);border-radius:5px;padding:3px 4px">
             </div>
-            <div class="etf-field">
-              <label>배당%</label>
-              <input type="text" value="${h.yieldPct||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'yieldPct',this.value)">
+            <div>
+              <div style="font-size:9px;color:var(--text3);margin-bottom:1px">배당%</div>
+              <input type="text" value="${h.yieldPct||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'yieldPct',this.value)" style="width:100%;box-sizing:border-box;text-align:right;font-size:11px;border:1px solid var(--border);border-radius:5px;padding:3px 4px">
             </div>
           </div>
         </div>
-        <div class="etf-summary">
-          ≈ ${fmt(h.valueKRW)} · 예상 월배당 ${fmt(h.monthlyDivKRW)}${h.lastError?'<br>⚠ 자동조회 실패 — 직접 입력해 주세요':''}
+        <div style="font-size:9px;color:var(--text3);margin-top:6px;line-height:1.4">
+          ≈ ${fmt(h.valueKRW)}<br>월배당 ${fmt(h.monthlyDivKRW)}${h.lastError?'<br>⚠ 자동조회 실패':''}
         </div>
       </div>`).join('')}
     </div>
@@ -3340,10 +3356,22 @@ function updateSave(group,name,field,val){
   saveAll();
 }
 /* ===== 보유 미국 ETF 관리 ===== */
+function toggleWeeklyCollapse(){
+  weeklyCollapsed=!weeklyCollapsed;
+  localStorage.setItem('bch_weekly_collapsed',JSON.stringify(weeklyCollapsed));
+  const barsOuter=document.getElementById('weekly-bars-outer');
+  if(barsOuter) barsOuter.style.display=weeklyCollapsed?'none':'block';
+  const arrow=document.getElementById('weekly-collapse-arrow');
+  if(arrow) arrow.style.transform=weeklyCollapsed?'rotate(-90deg)':'rotate(0deg)';
+}
 function toggleEtfCollapse(){
   etfCardCollapsed=!etfCardCollapsed;
   localStorage.setItem('bch_etf_collapsed',JSON.stringify(etfCardCollapsed));
   renderSavings();_restoreSavingsLock();
+}
+function updateFxRate(val){
+  const n=parseNum(val);
+  if(n>0){stockFx.rate=n;stockFx.updated=Date.now();saveLocal();renderSavings();_restoreSavingsLock();}
 }
 function parseDecimal(val){
   const n=parseFloat(String(val).replace(/[^0-9.\-]/g,''));
