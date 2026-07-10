@@ -367,20 +367,42 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 /* +/- 버튼도 수정 모드에서만 */
 #page-savings .save-li-actions{display:none}
 #page-savings.savings-edit-on .save-li-actions{display:inline-flex}
-/* 보유 미국 ETF 카드 */
-.etf-card{border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px}
-.etf-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
-.etf-card-top .etf-ticker-wrap{flex:1;min-width:0}
-#page-savings .etf-ticker-input{width:100%;box-sizing:border-box;font-size:13px;font-weight:700;border:1px solid var(--border);border-radius:6px;padding:5px 8px}
-.etf-fields{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.etf-qty-field{grid-column:1/-1}
+/* 보유 미국 ETF 카드 — 항상 1행 2열 */
+.etf-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap}
+.etf-head-left{display:flex;align-items:center;gap:8px;cursor:pointer;padding:2px 0;min-width:0;flex:1}
+.etf-head-right{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.etf-fx-input{width:68px;text-align:right;font-size:12px;font-weight:700;border:1px solid var(--border);border-radius:6px;padding:4px 5px}
+.etf-grid{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:8px;
+  margin-top:10px;
+  width:100%;
+}
+.etf-card{border:1px solid var(--border);border-radius:10px;padding:8px;background:var(--surface);min-width:0;box-sizing:border-box}
+.etf-card-top{display:flex;justify-content:space-between;align-items:center;gap:4px;margin-bottom:6px}
+#page-savings .etf-ticker-input{width:0;flex:1;min-width:0;box-sizing:border-box;font-size:12px;font-weight:700;border:1px solid var(--border);border-radius:6px;padding:4px 6px}
 .etf-field label{display:block;font-size:9px;color:var(--text3);margin-bottom:2px}
-#page-savings .etf-field input{width:100%;box-sizing:border-box;text-align:right;font-size:11px;border:1px solid var(--border);border-radius:6px;padding:5px 5px}
-#page-savings .etf-field .save-li-actions .btn-sm{padding:4px 8px !important;font-size:11px !important}
-.etf-summary{font-size:10px;color:var(--text3);margin-top:8px;line-height:1.5;grid-column:1/-1}
+#page-savings .etf-field input{width:100%;box-sizing:border-box;text-align:right;font-size:11px;border:1px solid var(--border);border-radius:5px;padding:4px 5px}
+.etf-qty-field{margin-bottom:5px}
+.etf-qty-row{display:flex;align-items:center;gap:3px}
+.etf-qty-row input{flex:1;min-width:0}
+.etf-price-row{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+/* 평가액 · 월배당 — 라벨+값 2칸 분리 */
+.etf-result{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)}
+.etf-result-item{min-width:0}
+.etf-result-item .etf-result-label{font-size:9px;color:var(--text3);margin-bottom:1px}
+.etf-result-item .etf-result-value{font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.etf-result-item.div .etf-result-value{color:var(--green)}
+.etf-err{color:var(--amber);font-size:9px;margin-top:3px}
+.etf-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap}
+.etf-total{font-size:12px;color:var(--text2);display:flex;gap:10px;flex-wrap:wrap}
+.etf-total span b{font-weight:700}
 @media(max-width:480px){
-  .etf-field label{font-size:8.5px}
-  #page-savings .etf-field input{font-size:10.5px;padding:4px}
+  .etf-grid{gap:6px}
+  .etf-card{padding:7px}
+  #page-savings .etf-field input{font-size:10.5px;padding:3px 4px}
+  .etf-result-item .etf-result-value{font-size:10px}
 }
 /* 거래 내역: 모바일=카드리스트, PC=테이블 */
 @media(max-width:768px){
@@ -3168,67 +3190,78 @@ function renderSavings(){
   <div class="card">
     <div class="card-title">월별 저축 추이</div>
     <div style="position:relative;height:200px"><canvas id="save-trend" role="img" aria-label="월별 저축 추이">저축 추이</canvas></div>
-  </div>
+  </div>`;
+
+  let timeStr = '미조회';
+  if(stockFx.updated){
+    const uD = new Date(stockFx.updated);
+    timeStr = `${p2(uD.getMonth()+1)}.${p2(uD.getDate())} ${p2(uD.getHours())}:${p2(uD.getMinutes())}`;
+  }
+
+  html+=`
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${etfCardCollapsed?'0':'10px'};flex-wrap:wrap;gap:6px">
-      <div style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:2px 0" onclick="toggleEtfCollapse()">
+    <div class="etf-head">
+      <div class="etf-head-left" onclick="toggleEtfCollapse()">
         <span style="font-size:16px;color:var(--text2);transition:transform .2s;display:inline-block;transform:rotate(${etfCardCollapsed?'-90deg':'0deg'})">▾</span>
-        <div class="card-title" style="margin-bottom:0">보유 미국 ETF${hasHoldings?` <span style="font-size:11px;font-weight:400;color:var(--text3)">(${stockHoldings.length}종목 · ${fmt(holdingsTotalKRW)})</span>`:''}</div>
+        <div class="card-title" style="margin-bottom:0">보유 미국 ETF${hasHoldings?` <span style="font-size:11px;font-weight:400;color:var(--text3)">(${stockHoldings.length}종목/${timeStr})</span>`:''}</div>
       </div>
-      <button class="btn btn-sm" id="stock-refresh-btn" onclick="refreshStockPrices()" style="font-size:11px">🔄 시세·환율 새로고침</button>
+      <div class="etf-head-right">
+        <div class="save-li-actions" style="margin-right:4px">
+          <button class="btn btn-sm" onclick="addStockHolding()" style="font-size:11px">+ 종목 추가</button>
+        </div>
+        <button class="btn btn-sm" id="stock-refresh-btn" onclick="refreshStockPrices()" style="font-size:11px" title="새로고침">🔄</button>
+      </div>
     </div>
     ${etfCardCollapsed?'':`
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-      <div style="font-size:11px;color:var(--text3);flex:1;min-width:180px">
-        환율(₩/$) · 자동 조회 후 직접 수정 가능
-        ${stockFx.updated?`<span style="font-size:10px;margin-left:4px;color:var(--text3)">갱신: ${new Date(stockFx.updated).toLocaleString('ko-KR')}</span>`:''}
-      </div>
-      <div style="display:flex;align-items:center;gap:4px">
-        <span style="font-size:11px;color:var(--text3)">₩</span>
-        <input type="text" id="fx-rate-input" value="${Math.round(fxRate).toLocaleString('ko-KR')}" inputmode="numeric" oninput="formatNumInput(this)" onchange="updateFxRate(this.value)" style="width:80px;text-align:right;font-size:13px;font-weight:700;border:1px solid var(--border);border-radius:6px;padding:4px 6px">
-        <span style="font-size:11px;color:var(--text3)">/$</span>
-      </div>
-    </div>
-    <div style="font-size:10px;color:var(--text3);margin-bottom:10px">종목에 따라 자동 조회가 안 될 수 있어요 — 현재가·배당수익률을 직접 입력해 주세요.</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      ${holdingsCalc.map((h,idx)=>`<div class="etf-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <input type="text" class="etf-ticker-input" value="${h.ticker||''}" placeholder="티커" onchange="updateStockHolding(${idx},'ticker',this.value)" style="font-size:12px;font-weight:700;border:1px solid var(--border);border-radius:6px;padding:3px 6px;width:0;flex:1;min-width:0">
-          <div class="save-li-actions" style="margin-left:4px;flex-shrink:0">
-            <button class="btn btn-sm" onclick="removeStockHolding(${idx})" style="padding:1px 5px;font-size:9px">삭제</button>
+    <div class="etf-grid">
+      ${holdingsCalc.map((h,idx)=>`<div class="etf-card" style="position:relative">
+        <div class="save-li-actions" style="position:absolute;top:4px;right:6px">
+          <button class="btn-ghost" onclick="removeStockHolding(${idx})" style="font-size:14px;padding:2px;color:var(--text3);line-height:1" title="종목 삭제">×</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;align-items:end">
+          <div class="etf-field">
+            <label>티커</label>
+            <input type="text" class="etf-ticker-input" value="${h.ticker||''}" placeholder="티커" onchange="updateStockHolding(${idx},'ticker',this.value)" style="width:100%">
+          </div>
+          <div class="etf-field">
+            <label>수량</label>
+            <input type="text" value="${h.shares||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'shares',this.value)">
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <div>
-            <div style="font-size:9px;color:var(--text3);margin-bottom:1px">수량</div>
-            <div style="display:flex;align-items:center;gap:3px">
-              <input type="text" value="${h.shares||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'shares',this.value)" style="flex:1;min-width:0;text-align:right;font-size:11px;border:1px solid var(--border);border-radius:5px;padding:3px 4px">
-              <div class="save-li-actions" style="gap:2px;flex-shrink:0">
-                <button class="btn btn-sm" onclick="adjustStockShares(${idx},1)" style="padding:2px 5px;font-size:10px">+</button>
-                <button class="btn btn-sm" onclick="adjustStockShares(${idx},-1)" style="padding:2px 5px;font-size:10px">−</button>
-              </div>
-            </div>
+        <div class="etf-price-row">
+          <div class="etf-field">
+            <label>현재가 $</label>
+            <input type="text" value="${h.price||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'price',this.value)">
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
-            <div>
-              <div style="font-size:9px;color:var(--text3);margin-bottom:1px">현재가$</div>
-              <input type="text" value="${h.price||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'price',this.value)" style="width:100%;box-sizing:border-box;text-align:right;font-size:11px;border:1px solid var(--border);border-radius:5px;padding:3px 4px">
-            </div>
-            <div>
-              <div style="font-size:9px;color:var(--text3);margin-bottom:1px">배당%</div>
-              <input type="text" value="${h.yieldPct||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'yieldPct',this.value)" style="width:100%;box-sizing:border-box;text-align:right;font-size:11px;border:1px solid var(--border);border-radius:5px;padding:3px 4px">
-            </div>
+          <div class="etf-field">
+            <label>배당 %</label>
+            <input type="text" value="${h.yieldPct||0}" inputmode="decimal" onchange="updateStockHolding(${idx},'yieldPct',this.value)">
           </div>
         </div>
-        <div style="font-size:9px;color:var(--text3);margin-top:6px;line-height:1.4">
-          ≈ ${fmt(h.valueKRW)}<br>월배당 ${fmt(h.monthlyDivKRW)}${h.lastError?'<br>⚠ 자동조회 실패':''}
+        <div class="etf-result">
+          <div class="etf-result-item">
+            <div class="etf-result-label">평가액</div>
+            <div class="etf-result-value">${fmt(h.valueKRW)}</div>
+          </div>
+          <div class="etf-result-item div">
+            <div class="etf-result-label">월배당</div>
+            <div class="etf-result-value">${fmt(h.monthlyDivKRW)}</div>
+          </div>
         </div>
+        ${h.lastError === 'manual' ? '<div class="etf-err" style="color:var(--text3)">✓ 수동 입력 완료</div>' : h.lastError ? '<div class="etf-err">⚠ 시세 조회 실패 — 직접 입력</div>' : ''}
       </div>`).join('')}
     </div>
-    <div class="save-li-actions" style="margin-top:8px">
-      <button class="btn btn-sm" onclick="addStockHolding()" style="font-size:11px">+ 종목 추가</button>
+    <div class="etf-footer">
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-size:11px;color:var(--text3)">₩</span>
+        <input type="text" id="fx-rate-input" class="etf-fx-input" value="${Math.round(fxRate).toLocaleString('ko-KR')}" inputmode="numeric" oninput="formatNumInput(this)" onchange="updateFxRate(this.value)" title="환율(₩/$)">
+        <span style="font-size:11px;color:var(--text3)">/$</span>
+      </div>
+      ${hasHoldings?`<div class="etf-total">
+        <span>합계 <b>${fmt(holdingsTotalKRW)}</b></span>
+        <span>월배당 <b style="color:var(--green)">${fmt(holdingsMonthlyDiv)}</b></span>
+      </div>`:''}
     </div>
-    ${hasHoldings?`<div style="margin-top:10px;font-size:12px;color:var(--text2)">합계: <b>${fmt(holdingsTotalKRW)}</b> · 예상 월 배당: <b>${fmt(holdingsMonthlyDiv)}</b></div>`:''}
     `}
   </div>`;
 
@@ -3394,6 +3427,9 @@ function updateStockHolding(idx,field,val){
   if(!stockHoldings[idx])return;
   if(field==='ticker')stockHoldings[idx].ticker=String(val).trim().toUpperCase();
   else stockHoldings[idx][field]=parseDecimal(val);
+  if(field==='price'){
+    stockHoldings[idx].lastError='manual';
+  }
   saveAll();renderSavings();_restoreSavingsLock();
 }
 function adjustStockShares(idx,delta){
@@ -3405,7 +3441,8 @@ function adjustStockShares(idx,delta){
 /* 환율(무료 API) + 종목 시세·배당수익률(야후 파이낸스, CORS 프록시 경유) 자동 조회 */
 async function refreshStockPrices(){
   const btn=document.getElementById('stock-refresh-btn');
-  if(btn){btn.disabled=true;btn.textContent='⏳ 조회 중...';}
+  if(btn){btn.disabled=true;btn.textContent='⏳';}
+  let failN=0;
   try{
     try{
       const fxRes=await fetch('https://open.er-api.com/v6/latest/USD');
@@ -3424,8 +3461,8 @@ async function refreshStockPrices(){
         const res=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
         const data=await res.json();
         const price=data?.chart?.result?.[0]?.meta?.regularMarketPrice;
-        if(price)h.price=price;else h.lastError=true;
-      }catch(e){console.warn(h.ticker+' 시세 조회 실패',e);h.lastError=true;}
+        if(price)h.price=price;else{h.lastError=true;failN++;}
+      }catch(e){console.warn(h.ticker+' 시세 조회 실패',e);h.lastError=true;failN++;}
       try{
         const qUrl=`https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=summaryDetail`;
         const qRes=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(qUrl)}`);
@@ -3436,12 +3473,13 @@ async function refreshStockPrices(){
     }
     saveAll();
     renderSavings();_restoreSavingsLock();
-    showToast('시세·환율 업데이트 완료 (일부 종목은 자동조회가 안 될 수 있어요)');
+    if(failN>0) showToast(`갱신 완료 · ${failN}개 종목 수동 입력`);
+    else showToast('시세·환율 갱신 완료');
   }catch(e){
-    showToast('업데이트 중 오류가 발생했어요');
+    showToast('업데이트 오류');
   }finally{
     const b=document.getElementById('stock-refresh-btn');
-    if(b){b.disabled=false;b.textContent='🔄 시세·환율 새로고침';}
+    if(b){b.disabled=false;b.textContent='🔄';}
   }
 }
 function addSave(group,name,dir){
