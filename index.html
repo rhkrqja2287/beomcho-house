@@ -752,10 +752,12 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   <div class="g3" id="home-metrics" style="min-height:90px"></div>
   <div class="row2">
     <div class="card" style="flex:1.3">
-      <div class="card-title">이번 달 지출 내역</div>
-      <div id="home-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;font-size:12px;color:var(--text3)"></div>
-      <div style="position:relative;height:200px"><canvas id="donut-home" role="img" aria-label="카테고리별 지출">지출 비율</canvas></div>
-      
+      <div class="card-title">사용량 그래프</div>
+      <div style="position:relative;height:180px;margin-bottom:12px"><canvas id="cumulative-spent-chart" role="img" aria-label="누적 지출 추이">누적 지출</canvas></div>
+
+      <div id="home-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;font-size:11px;color:var(--text3)"></div>
+      <div style="position:relative;height:24px;margin-bottom:12px"><canvas id="bar-home" role="img" aria-label="카테고리별 지출">지출 비율</canvas></div>
+
       <div class="divider"></div>
       <div id="weekly-focus-container"></div>
       
@@ -1961,14 +1963,58 @@ function renderHome(){
       <span style="width:10px;height:10px;border-radius:2px;background:${sortedColors[i]}"></span>
       ${k} ${Math.round(cats[k]/total*100)}%
     </span>`).join('') : '<div style="color:var(--text3);padding:10px 0;">이번 달 지출 내역이 없습니다.</div>';
-  dc('donut-home');
-  const chartCanvas = document.getElementById('donut-home');
+  dc('bar-home');
+  const chartCanvas = document.getElementById('bar-home');
   if(catKeys.length) {
     chartCanvas.style.display = 'block';
-    requestAnimationFrame(()=>{charts['donut-home']=new Chart(chartCanvas,{
-      type:'doughnut',
-      data:{labels:catKeys,datasets:[{data:catKeys.map(k=>cats[k]),backgroundColor:sortedColors,borderWidth:2,borderColor:'transparent'}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'65%'}
+    requestAnimationFrame(()=>{charts['bar-home']=new Chart(chartCanvas,{
+      type:'bar',
+      data:{
+        labels:['지출 비율'],
+        datasets:catKeys.map((k,i)=>({
+          label:k,
+          data:[Math.round(cats[k]/total*100)],
+          backgroundColor:sortedColors[i],
+          borderRadius: 0,
+          borderWidth:0
+        }))
+      },
+      options:{
+        indexAxis:'y',
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            enabled: false,
+            external: function(context) {
+              let tooltipEl = document.getElementById('bar-home-tooltip');
+              if (!tooltipEl) {
+                tooltipEl = document.createElement('div');
+                tooltipEl.id = 'bar-home-tooltip';
+                tooltipEl.style.cssText = 'position:fixed;background:rgba(30,30,30,0.92);color:#fff;border-radius:8px;padding:6px 10px;font-size:12px;pointer-events:none;z-index:9999;white-space:nowrap;display:none;';
+                document.body.appendChild(tooltipEl);
+              }
+              const tooltip = context.tooltip;
+              if (tooltip.opacity === 0) { tooltipEl.style.display = 'none'; return; }
+              const ds = tooltip.dataPoints[0];
+              const label = ds.dataset.label;
+              const color = ds.dataset.backgroundColor;
+              const amount = fmtN(cats[label]);
+              tooltipEl.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px;vertical-align:middle"></span>${label}  ${amount}`;
+              const canvasRect = context.chart.canvas.getBoundingClientRect();
+              tooltipEl.style.display = 'block';
+              const ttH = tooltipEl.offsetHeight;
+              tooltipEl.style.left = (canvasRect.left + tooltip.caretX - tooltipEl.offsetWidth/2) + 'px';
+              tooltipEl.style.top = (canvasRect.top - ttH - 8) + 'px';
+            }
+          }
+        },
+        scales:{
+          x:{stacked:true,min:0,max:100,grid:{display:false},ticks:{callback:v=>v+'%',color:'#8e8e93',font:{size:10}}},
+          y:{stacked:true,grid:{display:false},display:false}
+        }
+      }
     });});
   } else {
     chartCanvas.style.display = 'none';
@@ -2140,6 +2186,106 @@ function renderHome(){
       <span style="font-size:13px;font-weight:700;color:${amtColor}">${prefix}${fmt(t.amt)}</span>
     </div>`;
   }).join('')||'<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">거래 내역이 없어요</div>';
+
+  // Cumulative Spent Line Chart
+  dc('cumulative-spent-chart');
+  const cumCanvas = document.getElementById('cumulative-spent-chart');
+  if(cumCanvas){
+    const daysInMonth = new Date(y2, mm2, 0).getDate();
+    const dailySpent = Array(daysInMonth).fill(0);
+    txs.forEach(t=>{
+      if(t.date.startsWith(curM_str)){
+        const d = parseInt(t.date.split('-')[2]);
+        if(d >= 1 && d <= daysInMonth){
+          if(t.type === 'expense' || t.type === 'expense_planned'){
+            dailySpent[d - 1] += t.amt;
+          }
+        }
+      }
+    });
+    const cumulativeSpent = [];
+    let sum = 0;
+    for(let d = 1; d <= daysInMonth; d++){
+      sum += dailySpent[d - 1];
+      cumulativeSpent.push(sum);
+    }
+
+    const labels = Array.from({length: cumulativeSpent.length}, (_, i) => `${mm2}.${i+1}`);
+    const isDark = document.body.classList.contains('dark');
+    const budgetVal = (sumAvailable > 0 ? sumAvailable : (monthlyBudgetManual || 0)) + monthInc;
+    const todayIdx = Math.min(new Date().getDate(), daysInMonth) - 1;
+    const todayPointRadii = cumulativeSpent.map((_, i) => i === todayIdx ? 6 : 0);
+    const todayPointColors = cumulativeSpent.map((_, i) => i === todayIdx ? (isDark ? '#0a84ff' : '#007aff') : 'transparent');
+    const todayPointBorder = cumulativeSpent.map((_, i) => i === todayIdx ? '#fff' : 'transparent');
+
+    requestAnimationFrame(()=>{charts['cumulative-spent-chart'] = new Chart(cumCanvas, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: '누적 지출',
+            data: cumulativeSpent,
+            borderColor: isDark ? '#0a84ff' : '#007aff',
+            backgroundColor: isDark ? 'rgba(10, 132, 255, 0.1)' : 'rgba(0, 122, 255, 0.08)',
+            fill: true,
+            borderWidth: 2.5,
+            pointRadius: todayPointRadii,
+            pointBackgroundColor: todayPointColors,
+            pointBorderColor: todayPointBorder,
+            pointBorderWidth: 2,
+            tension: 0.4
+          },
+          {
+            label: '목표 예산',
+            data: Array(cumulativeSpent.length).fill(budgetVal),
+            borderColor: '#ff453a',
+            borderDash: [5, 5],
+            fill: false,
+            borderWidth: 1.5,
+            pointRadius: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        clip: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: { label: (ctx) => ` ${fmt(ctx.parsed.y)}` },
+            filter: (item) => item.datasetIndex === 0
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              callback: function(value, index, values) {
+                if (index === 0 || index === values.length - 1) {
+                  return this.getLabelForValue(value);
+                }
+                return '';
+              },
+              autoSkip: false,
+              color: '#8e8e93',
+              font: { size: 10 }
+            },
+            grid: { display: false }
+          },
+          y: {
+            ticks: {
+              callback: v => Math.round(v/10000)+'만',
+              color: '#8e8e93',
+              font: { size: 10 }
+            },
+            beginAtZero: true,
+            grid: { color: 'rgba(142,142,147,0.15)' }
+          }
+        }
+      }
+    });});
+  }
 }
 
 /* ==============================
