@@ -1588,6 +1588,12 @@ function getFixedChecks(){
     const v=localStorage.getItem(legacy);
     if(v)o['var_'+legacy]=v;
   });
+  /* 삭제된 하드코딩 항목의 hidden 플래그도 저장 (다른 기기에서 되살아나는 버그 방지) */
+  Object.values(FIXED).flat().forEach(i=>{
+    const k=fixedKey(i)+'_hidden';
+    const v=localStorage.getItem(k);
+    if(v==='1')o['hidden_'+fixedKey(i)]='1';
+  });
   return o;
 }
 function getFixedAmts(){
@@ -1644,8 +1650,16 @@ function applyFirebaseData(data){
     persistBudgetCustom();
   }
   if(data.fixedChecks)Object.entries(data.fixedChecks).forEach(([k,v])=>{
-    if(k.startsWith('var_'))localStorage.setItem(k.slice(4),v);
-    else localStorage.setItem(k,v);
+    if(k.startsWith('hidden_')){
+      /* 삭제된 하드코딩 항목 hidden 플래그 복원 */
+      const realKey=k.slice(7)+'_hidden';
+      if(v==='1')localStorage.setItem(realKey,'1');
+      else localStorage.removeItem(realKey);
+    } else if(k.startsWith('var_')){
+      localStorage.setItem(k.slice(4),v);
+    } else {
+      localStorage.setItem(k,v);
+    }
   });
   if(data.fixedAmts)Object.entries(data.fixedAmts).forEach(([k,v])=>localStorage.setItem(k,v));
   if(data.fixedDays)Object.entries(data.fixedDays).forEach(([k,v])=>localStorage.setItem(k,v));
