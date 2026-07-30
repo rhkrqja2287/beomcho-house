@@ -76,7 +76,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display'
 .inner{max-width:1200px;margin:0 auto}
 .page{display:none;padding:28px 32px;box-sizing:border-box;max-width:900px;overflow-x:hidden}
 .page.active{display:block}
-.page-title{font-size:22px;font-weight:700;margin-bottom:4px}
+.page-title{font-size:22px;font-weight:700;margin-bottom:4px;min-width:120px;display:inline-block;white-space:nowrap}
 .page-sub{font-size:13px;color:var(--text3);margin-bottom:22px}
 .g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
 .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
@@ -148,7 +148,10 @@ tr:hover td{background:var(--surface2)}
 .tab-row{display:flex;gap:2px;margin-bottom:18px;border-bottom:1px solid var(--border)}
 .tab-btn{padding:8px 14px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
 .tab-btn.active{color:var(--purple-dark);border-bottom-color:var(--purple);font-weight:500}
-.month-nav{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.page-header-wrap{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:nowrap}
+.page-header-left{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.page-header-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.month-nav{display:flex;align-items:center;gap:12px;margin-bottom:0}
 .month-label{font-size:18px;font-weight:700;min-width:110px}
 .icon-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2)}
 .icon-btn:hover{background:var(--surface2)}
@@ -248,7 +251,14 @@ tr:hover td{background:var(--surface2)}
     -webkit-overflow-scrolling:touch;
   }
   .page{padding:14px 12px;max-width:100%;overflow-x:hidden}
-  .page-title{font-size:18px}
+  .page-header-wrap{gap:4px !important;margin-bottom:12px !important;flex-wrap:nowrap !important;align-items:flex-start !important}
+  .page-header-left{gap:3px !important;min-width:0;flex-direction:column !important;align-items:flex-start !important}
+  .page-header-right{gap:4px !important}
+  .page-title{font-size:15px !important;min-width:80px !important;display:inline-block !important;white-space:nowrap !important}
+  .month-nav{gap:2px !important;margin-bottom:0 !important}
+  .month-label{font-size:12px !important;min-width:75px !important;display:inline-block !important;white-space:nowrap !important;text-align:center !important;padding:0 1px}
+  .icon-btn{width:22px !important;height:22px !important;border-radius:5px !important;font-size:11px !important;flex-shrink:0}
+  .page-header-right .btn-sm, .page-header-right select{padding:3px 6px !important;font-size:11px !important;white-space:nowrap}
   /* 그리드 조정 */
   .g4{grid-template-columns:repeat(2,1fr);gap:8px}
   .g3{grid-template-columns:repeat(2,1fr);gap:8px}
@@ -708,7 +718,7 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
       <div id="sync-status" style="font-size:10px;color:var(--text3);margin-top:2px">연결 중…</div>
     </div>
     <!-- ⑦ 테마 버튼 -->
-    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀ 라이트</button>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">라이트</button>
   </div>
   <nav class="nav">
     <button class="nav-item active" onclick="goPage('home')">
@@ -740,11 +750,18 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 
 <!-- 대시보드 -->
 <div id="page-home" class="page active">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-    <div class="page-title">대시보드</div>
-    <div style="display:flex;gap:6px">
-      <button class="btn btn-sm" onclick="showRestoreModal()" style="border-color:var(--border2);background:var(--surface2)">🕒 복구</button>
-      <button class="btn btn-sm" id="dashboard-edit-toggle" onclick="toggleDashboardEdit()">✏ 수정</button>
+  <div class="page-header-wrap">
+    <div class="page-header-left">
+      <div class="page-title" style="margin-bottom:0">대시보드</div>
+      <div class="month-nav" style="margin-bottom:0">
+        <button class="icon-btn" onclick="homePrevMonth()" aria-label="이전 달">&#8592;</button>
+        <span class="month-label" id="home-month-label" style="text-align:center"></span>
+        <button class="icon-btn" onclick="homeNextMonth()" aria-label="다음 달">&#8594;</button>
+      </div>
+    </div>
+    <div class="page-header-right">
+      <button class="btn btn-sm" onclick="showRestoreModal()" style="border-color:var(--border2);background:var(--surface2)">복구</button>
+      <button class="btn btn-sm" id="dashboard-edit-toggle" onclick="toggleDashboardEdit()">수정</button>
     </div>
   </div>
   <div class="page-sub" id="home-sub"></div>
@@ -768,72 +785,12 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
         </div>
       </div>
       <div id="weekly-bars-outer">
-      <div id="weekly-budget-edit-wrap" style="display:none;flex-direction:column;gap:10px;margin-bottom:16px;background:var(--surface2);padding:14px;border-radius:12px;border:1px solid var(--border)">
-        <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:10px;font-size:11px;color:var(--text3);padding-bottom:6px;border-bottom:1px solid var(--border)">
-          <span>주차</span><span style="text-align:center">목표 예산</span><span style="text-align:center">조정 금액</span>
-        </div>
-        <!-- 1주 -->
-        <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:8px;align-items:center">
-          <span style="font-size:12px;font-weight:600;color:var(--text2)">1주</span>
-          <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[0]=parseNum(this.value)">
-          <div style="display:flex;align-items:center;gap:4px">
-            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right;flex:1;min-width:0" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[0]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
-            <button class="btn" onclick="applyWeeklyAdjust(0,-1)" title="목표 예산에서 빼기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--red);border-color:var(--red)">−</button>
-            <button class="btn" onclick="applyWeeklyAdjust(0,1)" title="목표 예산에 더하기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--blue);border-color:var(--blue)">+</button>
-          </div>
-        </div>
-        <!-- 2주 -->
-        <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:8px;align-items:center">
-          <span style="font-size:12px;font-weight:600;color:var(--text2)">2주</span>
-          <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[1]=parseNum(this.value)">
-          <div style="display:flex;align-items:center;gap:4px">
-            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right;flex:1;min-width:0" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[1]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
-            <button class="btn" onclick="applyWeeklyAdjust(1,-1)" title="목표 예산에서 빼기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--red);border-color:var(--red)">−</button>
-            <button class="btn" onclick="applyWeeklyAdjust(1,1)" title="목표 예산에 더하기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--blue);border-color:var(--blue)">+</button>
-          </div>
-        </div>
-        <!-- 3주 -->
-        <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:8px;align-items:center">
-          <span style="font-size:12px;font-weight:600;color:var(--text2)">3주</span>
-          <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[2]=parseNum(this.value)">
-          <div style="display:flex;align-items:center;gap:4px">
-            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right;flex:1;min-width:0" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[2]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
-            <button class="btn" onclick="applyWeeklyAdjust(2,-1)" title="목표 예산에서 빼기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--red);border-color:var(--red)">−</button>
-            <button class="btn" onclick="applyWeeklyAdjust(2,1)" title="목표 예산에 더하기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--blue);border-color:var(--blue)">+</button>
-          </div>
-        </div>
-        <!-- 4주 -->
-        <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:8px;align-items:center">
-          <span style="font-size:12px;font-weight:600;color:var(--text2)">4주</span>
-          <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[3]=parseNum(this.value)">
-          <div style="display:flex;align-items:center;gap:4px">
-            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right;flex:1;min-width:0" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[3]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
-            <button class="btn" onclick="applyWeeklyAdjust(3,-1)" title="목표 예산에서 빼기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--red);border-color:var(--red)">−</button>
-            <button class="btn" onclick="applyWeeklyAdjust(3,1)" title="목표 예산에 더하기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--blue);border-color:var(--blue)">+</button>
-          </div>
-        </div>
-        <!-- 5주 -->
-        <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:8px;align-items:center">
-          <span style="font-size:12px;font-weight:600;color:var(--text2)">5주</span>
-          <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="targetBudgets[4]=parseNum(this.value)">
-          <div style="display:flex;align-items:center;gap:4px">
-            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right;flex:1;min-width:0" placeholder="0" oninput="formatNumInput(this)" onchange="weeklyAdjustments[4]=parseNum(this.value);this.style.color=parseNum(this.value)>=0?'var(--blue)':'var(--red)'">
-            <button class="btn" onclick="applyWeeklyAdjust(4,-1)" title="목표 예산에서 빼기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--red);border-color:var(--red)">−</button>
-            <button class="btn" onclick="applyWeeklyAdjust(4,1)" title="목표 예산에 더하기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--blue);border-color:var(--blue)">+</button>
-          </div>
-        </div>
-        <!-- 이번달 총 예산 -->
-        <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:8px;align-items:center;padding-top:10px;margin-top:2px;border-top:1px solid var(--border)">
-          <span style="font-size:12px;font-weight:600;color:var(--text2)">총액</span>
-          <input type="text" id="monthly-budget-input" class="num-input" inputmode="numeric" placeholder="이번달 총 예산" style="padding:6px;font-size:13px;text-align:right" oninput="formatNumInput(this)" onchange="updateMonthlyBudgetManual(this.value)">
-          <span id="monthly-budget-need" style="font-size:12px;font-weight:700;text-align:right;padding-right:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
-        </div>
-      </div>
+      <div id="weekly-budget-edit-wrap" style="display:none;flex-direction:column;gap:10px;margin-bottom:16px;background:var(--surface2);padding:14px;border-radius:12px;border:1px solid var(--border)"></div>
       <div id="weekly-bars-container"></div>
       </div><!-- /weekly-bars-outer -->
     </div>
     <div class="card" style="flex:1">
-      <div class="card-title">최근 거래</div>
+      <div class="card-title" id="home-recent-title">최근 거래</div>
       <div id="home-recent"></div>
     </div>
   </div>
@@ -841,25 +798,23 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 
 <!-- 거래 내역 -->
 <div id="page-input" class="page">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-    <div class="page-title">거래 내역</div>
-    <span id="tx-edit-controls" style="display:flex;gap:6px"><button class="btn btn-sm" id="tx-edit-toggle" onclick="toggleTxEdit()">✏ 수정</button></span>
-  </div>
-  <div class="page-sub">수입과 지출 내역을 확인하세요</div>
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-      <div class="card-title" style="margin-bottom:0">거래 내역</div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <div class="month-nav" style="margin-bottom:0;gap:6px">
-          <button class="icon-btn" onclick="txPrevMonth()" aria-label="이전 달">&#8592;</button>
-          <span class="month-label" id="tx-month-label" style="font-size:15px;min-width:88px"></span>
-          <button class="icon-btn" onclick="txNextMonth()" aria-label="다음 달">&#8594;</button>
-        </div>
-        <select id="filter-type" onchange="renderTxList()" style="width:auto;padding:6px 10px;font-size:12px">
-          <option value="">전체</option><option value="expense">지출</option><option value="expense_planned">지출(예상)</option><option value="income">수입</option>
-        </select>
+  <div class="page-header-wrap">
+    <div class="page-header-left">
+      <div class="page-title" style="margin-bottom:0">거래 내역</div>
+      <div class="month-nav" style="margin-bottom:0">
+        <button class="icon-btn" onclick="txPrevMonth()" aria-label="이전 달">&#8592;</button>
+        <span class="month-label" id="tx-month-label" style="text-align:center"></span>
+        <button class="icon-btn" onclick="txNextMonth()" aria-label="다음 달">&#8594;</button>
       </div>
     </div>
+    <div class="page-header-right">
+      <select id="filter-type" onchange="renderTxList()" style="width:auto;padding:6px 10px;font-size:12px">
+        <option value="">전체</option><option value="expense">지출</option><option value="expense_planned">지출(예상)</option><option value="income">수입</option>
+      </select>
+      <span id="tx-edit-controls" style="display:flex;gap:6px"><button class="btn btn-sm" id="tx-edit-toggle" onclick="toggleTxEdit()">수정</button></span>
+    </div>
+  </div>
+  <div class="card">
     <table>
       <thead><tr></tr></thead>
       <tbody id="tx-tbody"></tbody>
@@ -870,19 +825,23 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 
 <!-- 소비 캘린더 -->
 <div id="page-calendar" class="page">
-  <div class="page-title">소비 캘린더</div>
-  <div class="month-nav">
-    <button class="icon-btn" onclick="calPrev()">&#8592;</button>
-    <span class="month-label" id="cal-label"></span>
-    <button class="icon-btn" onclick="calNext()">&#8594;</button>
+  <div class="page-header-wrap">
+    <div class="page-header-left">
+      <div class="page-title" style="margin-bottom:0">소비 캘린더</div>
+      <div class="month-nav" style="margin-bottom:0">
+        <button class="icon-btn" onclick="calPrev()" aria-label="이전 달">&#8592;</button>
+        <span class="month-label" id="cal-label" style="text-align:center"></span>
+        <button class="icon-btn" onclick="calNext()" aria-label="다음 달">&#8594;</button>
+      </div>
+    </div>
   </div>
-  <div id="cal-summary"></div>
-  <div class="card"><div class="cal-grid" id="cal-grid"></div></div>
+  <div id="cal-summary" style="margin-bottom:4px"></div>
+  <div class="card" style="margin-bottom:8px"><div class="cal-grid" id="cal-grid"></div></div>
   <!-- ② 전체 일정 수정 가능 -->
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div class="card-title" style="margin-bottom:0">연간 주요 일정</div>
-      <button class="btn btn-sm" onclick="toggleCalEdit()" id="cal-edit-btn">✏ 수정</button>
+      <button class="btn btn-sm" onclick="toggleCalEdit()" id="cal-edit-btn">수정</button>
     </div>
     <div id="cal-events"></div>
   </div>
@@ -890,9 +849,11 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 
 <!-- 예산 관리 -->
 <div id="page-budget" class="page">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-    <div class="page-title">예산 관리</div>
-    <button class="btn btn-sm" id="budget-edit-toggle" onclick="toggleBudgetEdit()">✏ 수정</button>
+  <div class="page-header-wrap">
+    <div class="page-title" style="margin-bottom:0">예산 관리</div>
+    <div class="page-header-right">
+      <button class="btn btn-sm" id="budget-edit-toggle" onclick="toggleBudgetEdit()">수정</button>
+    </div>
   </div>
   <div class="page-sub">카테고리별 예산 설정 및 잔여 확인</div>
   <div id="budget-container"></div>
@@ -900,9 +861,11 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 
 <!-- 고정 지출 -->
 <div id="page-fixed" class="page">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-    <div class="page-title">고정 지출</div>
-    <button class="btn btn-sm" id="fixed-edit-toggle" onclick="toggleFixedEdit()">✏ 수정</button>
+  <div class="page-header-wrap">
+    <div class="page-title" style="margin-bottom:0">고정 지출</div>
+    <div class="page-header-right">
+      <button class="btn btn-sm" id="fixed-edit-toggle" onclick="toggleFixedEdit()">수정</button>
+    </div>
   </div>
   <div class="page-sub">매달 정기적으로 나가는 비용을 체크하세요</div>
   <div id="fixed-today-alert"></div>
@@ -919,9 +882,11 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 
 <!-- 저축 금액 -->
 <div id="page-savings" class="page">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-    <div class="page-title">저축 금액</div>
-    <button class="btn btn-sm" id="savings-edit-toggle" onclick="toggleSavingsEdit()">✏ 수정</button>
+  <div class="page-header-wrap">
+    <div class="page-title" style="margin-bottom:0">저축 금액</div>
+    <div class="page-header-right">
+      <button class="btn btn-sm" id="savings-edit-toggle" onclick="toggleSavingsEdit()">수정</button>
+    </div>
   </div>
   <div class="page-sub">장기 저축과 단기 저축 현황을 확인하세요</div>
   <div id="save-content"></div>
@@ -1451,6 +1416,7 @@ if(weeklyAdjustments.length===0){
   if(oldReduced.length>0) weeklyAdjustments=oldReduced.map(v=>-v);
   else weeklyAdjustments=[0,0,0,0,0];
 }
+let monthlyWeeklyData=JSON.parse(localStorage.getItem('bch_monthly_weekly_data')||'{}');
 let annualEvents=JSON.parse(localStorage.getItem('bch_events')||JSON.stringify(ANNUAL_EVENTS_DEFAULT));
 let longSave=JSON.parse(localStorage.getItem('bch_long_save')||JSON.stringify(LONG_SAVE_DEFAULT));
 let shortSave=JSON.parse(localStorage.getItem('bch_short_save')||JSON.stringify(SHORT_SAVE_DEFAULT));
@@ -1488,6 +1454,7 @@ let fixedCustom=loadFixedCustom();
 let budgetCustom=loadBudgetCustom();
 let calDate=new Date();
 let txListDate=new Date();
+let homeDate=new Date();
 let currentFixedTab='전체';
 let calEditMode=false;
 let charts={};
@@ -1534,6 +1501,7 @@ function saveLocal(){
   localStorage.setItem('bch_short_save',JSON.stringify(shortSave));
   localStorage.setItem('bch_stock_holdings',JSON.stringify(stockHoldings));
   localStorage.setItem('bch_stock_fx',JSON.stringify(stockFx));
+  localStorage.setItem('bch_monthly_weekly_data',JSON.stringify(monthlyWeeklyData));
   localStorage.setItem(FIXED_STORAGE_KEY,JSON.stringify(fixedCustom));
   localStorage.setItem(BUDGET_CUSTOM_KEY,JSON.stringify(budgetCustom));
 }
@@ -1552,7 +1520,7 @@ function saveAll(){
     localStorage.setItem('bch_last_updated',_now);
     db.ref(ROOT).update({
       txs,budgets,targetBudgets,weeklyAdjustments,annualEvents,longSave,shortSave,
-      stockHoldings,stockFx,
+      stockHoldings,stockFx,monthlyWeeklyData,
       fixedChecks:getFixedChecks(),
       fixedAmts:getFixedAmts(),
       fixedDays:getFixedDays(),
@@ -1587,12 +1555,6 @@ function getFixedChecks(){
     const legacy=varFixedKey(name);
     const v=localStorage.getItem(legacy);
     if(v)o['var_'+legacy]=v;
-  });
-  /* 삭제된 하드코딩 항목의 hidden 플래그도 저장 (다른 기기에서 되살아나는 버그 방지) */
-  Object.values(FIXED).flat().forEach(i=>{
-    const k=fixedKey(i)+'_hidden';
-    const v=localStorage.getItem(k);
-    if(v==='1')o['hidden_'+fixedKey(i)]='1';
   });
   return o;
 }
@@ -1632,6 +1594,10 @@ function applyFirebaseData(data){
     weeklyAdjustments=data.reducedBudgets.map(v=>-v);
     localStorage.setItem('bch_weekly_adj',JSON.stringify(weeklyAdjustments));
   }
+  if(data.monthlyWeeklyData!==undefined){
+    monthlyWeeklyData=data.monthlyWeeklyData||{};
+    localStorage.setItem('bch_monthly_weekly_data',JSON.stringify(monthlyWeeklyData));
+  }
   if(data.annualEvents)annualEvents=data.annualEvents;
   if(data.longSave)longSave=data.longSave;
   if(data.shortSave){
@@ -1650,16 +1616,8 @@ function applyFirebaseData(data){
     persistBudgetCustom();
   }
   if(data.fixedChecks)Object.entries(data.fixedChecks).forEach(([k,v])=>{
-    if(k.startsWith('hidden_')){
-      /* 삭제된 하드코딩 항목 hidden 플래그 복원 */
-      const realKey=k.slice(7)+'_hidden';
-      if(v==='1')localStorage.setItem(realKey,'1');
-      else localStorage.removeItem(realKey);
-    } else if(k.startsWith('var_')){
-      localStorage.setItem(k.slice(4),v);
-    } else {
-      localStorage.setItem(k,v);
-    }
+    if(k.startsWith('var_'))localStorage.setItem(k.slice(4),v);
+    else localStorage.setItem(k,v);
   });
   if(data.fixedAmts)Object.entries(data.fixedAmts).forEach(([k,v])=>localStorage.setItem(k,v));
   if(data.fixedDays)Object.entries(data.fixedDays).forEach(([k,v])=>localStorage.setItem(k,v));
@@ -1760,23 +1718,86 @@ function parseNum(val){
   const n=parseInt(s.replace(/[^0-9]/g,''))||0;
   return isNeg?-n:n;
 }
+function getMonthlyWeeklyData(m){
+  if(!m) m=homeMonthStr();
+  if(monthlyWeeklyData[m]){
+    const d=monthlyWeeklyData[m];
+    return {
+      targetBudgets: Array.isArray(d.targetBudgets)?[...d.targetBudgets]:[0,0,0,0,0],
+      weeklyAdjustments: Array.isArray(d.weeklyAdjustments)?[...d.weeklyAdjustments]:[0,0,0,0,0],
+      monthlyBudgetManual: parseNum(d.monthlyBudgetManual||0)
+    };
+  }
+  if(m===curMonth()){
+    const tb=JSON.parse(localStorage.getItem('bch_target_budgets')||'[0,0,0,0,0]');
+    const wa=JSON.parse(localStorage.getItem('bch_weekly_adj')||'[0,0,0,0,0]');
+    const mb=parseNum(localStorage.getItem('bch_monthly_budget_manual')||'0');
+    return {
+      targetBudgets: tb.length?tb:[0,0,0,0,0],
+      weeklyAdjustments: wa.length?wa:[0,0,0,0,0],
+      monthlyBudgetManual: mb
+    };
+  }
+  return {
+    targetBudgets: [0,0,0,0,0],
+    weeklyAdjustments: [0,0,0,0,0],
+    monthlyBudgetManual: 0
+  };
+}
+function setMonthlyWeeklyData(m, data){
+  if(!m) m=homeMonthStr();
+  monthlyWeeklyData[m]={
+    targetBudgets: data.targetBudgets||[0,0,0,0,0],
+    weeklyAdjustments: data.weeklyAdjustments||[0,0,0,0,0],
+    monthlyBudgetManual: parseNum(data.monthlyBudgetManual||0)
+  };
+}
+function updateWeeklyTargetBudget(idx, val){
+  const m=homeMonthStr();
+  const d=getMonthlyWeeklyData(m);
+  d.targetBudgets[idx]=parseNum(val);
+  setMonthlyWeeklyData(m, d);
+  targetBudgets=d.targetBudgets;
+  saveAll();
+}
+function updateWeeklyAdjBudget(idx, val, el){
+  const m=homeMonthStr();
+  const d=getMonthlyWeeklyData(m);
+  const n=parseNum(val);
+  d.weeklyAdjustments[idx]=n;
+  if(el) el.style.color=n>=0?'var(--blue)':'var(--red)';
+  setMonthlyWeeklyData(m, d);
+  weeklyAdjustments=d.weeklyAdjustments;
+  saveAll();
+}
 /* 조정액 입력칸의 숫자를 목표 예산(왼쪽)에 +/- 적용하고, 조정액은 0으로 초기화 */
 function applyWeeklyAdjust(idx,sign){
+  const m=homeMonthStr();
+  const d=getMonthlyWeeklyData(m);
   const adjInput=document.querySelectorAll('.weekly-adj-input')[idx];
   const targetInput=document.querySelectorAll('.target-budget-input')[idx];
   if(!adjInput||!targetInput)return;
   const delta=Math.abs(parseNum(adjInput.value));
   if(!delta)return;
-  targetBudgets[idx]=Math.max(0,(targetBudgets[idx]||0)+sign*delta);
-  weeklyAdjustments[idx]=0;
-  targetInput.value=fmtN(targetBudgets[idx]);
+  d.targetBudgets[idx]=Math.max(0,(d.targetBudgets[idx]||0)+sign*delta);
+  d.weeklyAdjustments[idx]=0;
+  setMonthlyWeeklyData(m, d);
+  targetBudgets=d.targetBudgets;
+  weeklyAdjustments=d.weeklyAdjustments;
+  targetInput.value=fmtN(d.targetBudgets[idx]);
   adjInput.value=fmtN(0);
   adjInput.style.color='';
+  saveAll();
   renderHome();
 }
 /* 이번달 총 예산(수동 입력) 저장 */
 function updateMonthlyBudgetManual(val){
-  localStorage.setItem('bch_monthly_budget_manual',parseNum(val));
+  const m=homeMonthStr();
+  const d=getMonthlyWeeklyData(m);
+  d.monthlyBudgetManual=parseNum(val);
+  setMonthlyWeeklyData(m, d);
+  localStorage.setItem('bch_monthly_budget_manual', d.monthlyBudgetManual);
+  saveAll();
   renderHome();
 }
 function escJs(v){
@@ -1795,12 +1816,12 @@ function escJs(v){
 function toggleTheme(){
   const isDark=document.body.classList.toggle('dark');
   localStorage.setItem('bch_theme',isDark?'dark':'light');
-  document.getElementById('theme-btn').textContent=isDark?'☀ 라이트':'🌙 다크';
+  document.getElementById('theme-btn').textContent=isDark?'라이트':'다크';
   saveAll(); /* 테마도 Firebase에 동기화 */
 }
 (function initTheme(){
   const t=localStorage.getItem('bch_theme');
-  if(t==='dark'){document.body.classList.add('dark');document.getElementById('theme-btn').textContent='☀ 라이트';}
+  if(t==='dark'){document.body.classList.add('dark');document.getElementById('theme-btn').textContent='라이트';}
 })();
 
 /* ==============================
@@ -1905,17 +1926,30 @@ function toggleDashboardEdit(){
   commitPendingFields();
   dashboardEditMode=!dashboardEditMode;
   const btn=document.getElementById('dashboard-edit-toggle');
-  if(btn) btn.textContent=dashboardEditMode?'✓ 완료':'✏ 수정';
+  if(btn) btn.textContent=dashboardEditMode?'완료':'수정';
   const wrap=document.getElementById('weekly-budget-edit-wrap');
   if(wrap) wrap.style.display=dashboardEditMode?'flex':'none';
   if(!dashboardEditMode) saveAll();
   renderHome();
 }
 
+function homeMonthStr(){return`${homeDate.getFullYear()}-${p2(homeDate.getMonth()+1)}`;}
+function renderHomeMonthLabel(){
+  const el=document.getElementById('home-month-label');
+  if(el)el.textContent=`${homeDate.getFullYear()}년 ${homeDate.getMonth()+1}월`;
+}
+function homePrevMonth(){homeDate.setDate(1);homeDate.setMonth(homeDate.getMonth()-1);renderHome();}
+function homeNextMonth(){homeDate.setDate(1);homeDate.setMonth(homeDate.getMonth()+1);renderHome();}
 function renderHome(){
-  const m=curMonth();
+  renderHomeMonthLabel();
+  const m=homeMonthStr();
+  const curWData=getMonthlyWeeklyData(m);
+  targetBudgets=curWData.targetBudgets;
+  weeklyAdjustments=curWData.weeklyAdjustments;
+  const monthlyBudgetManual=curWData.monthlyBudgetManual;
+  const isCurrentMonth=(m===curMonth());
   const data=monthlyData()[m]||{income:0,expense:0,cats:{}};
-  document.getElementById('home-sub').textContent=m.replace('-','년 ')+'월 현황 (v1.7)';
+  document.getElementById('home-sub').textContent='';
 
   /* 유동 지출 잔액 계산 — 순지출(지출-수입) 기준 */
   const varBudget=totalVarBudget();
@@ -1925,10 +1959,10 @@ function renderHome(){
   const varRemain=varBudget-netSpent;
   const varPct=varBudget>0?Math.max(0,Math.min(100,Math.round(varRemain/varBudget*100))):0;
 
-  /* 하루 권장 금액 — 수입 반영된 varRemain 사용 */
+  /* 하루 권장 금액 — 이번달일 때만 의미 있음 */
   const now=new Date();
-  const lastDay=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-  const daysLeft=Math.max(1,lastDay-now.getDate()+1);
+  const lastDay=isCurrentMonth?new Date(now.getFullYear(),now.getMonth()+1,0).getDate():new Date(homeDate.getFullYear(),homeDate.getMonth()+1,0).getDate();
+  const daysLeft=isCurrentMonth?Math.max(1,lastDay-now.getDate()+1):lastDay;
   const daily=Math.max(0,Math.round(varRemain/daysLeft));
 
   /* 고정 지출 잔액 */
@@ -1949,9 +1983,9 @@ function renderHome(){
       <div class="metric-sub">${varPct}% 남음${monthInc?` · 수입 ${fmtShort(monthInc)} 반영`:''}</div>
     </div>
     <div class="metric">
-      <div class="metric-label">하루 권장 금액 (${daysLeft}일 남음)</div>
-      <div class="metric-value" style="color:var(--blue)">${fmt(daily)}</div>
-      <div class="metric-sub">순지출 기준${monthInc?' (수입 차감)':''}</div>
+      <div class="metric-label">${isCurrentMonth?`하루 권장 금액 (${daysLeft}일 남음)`:'월간 지출 현황'}</div>
+      <div class="metric-value" style="color:var(--blue)">${isCurrentMonth?fmt(daily):fmt(grossExp)}</div>
+      <div class="metric-sub">${isCurrentMonth?`순지출 기준${monthInc?' (수입 차감)':''}`:monthInc?`수입 ${fmtShort(monthInc)} 포함`:m.replace('-','년 ')+'월'}</div>
     </div>
     <div class="metric">
       <div class="metric-label">고정 지출 잔액</div>
@@ -2035,8 +2069,7 @@ function renderHome(){
   }
 
   /* 주간 지출 및 수입 계산 (달력 주차 기준: 월요일~일요일) */
-  const weeklySpending=[0,0,0,0,0], weeklyIncome=[0,0,0,0,0];
-  const [y2, mm2]=curMonth().split('-').map(Number);
+  const [y2, mm2]=m.split('-').map(Number);
   const lastDate2=new Date(y2, mm2, 0).getDate();
   
   // 주차 범위 계산: 월요일 시작 ~ 일요일 종료
@@ -2045,33 +2078,61 @@ function renderHome(){
   while(startD <= lastDate2){
     let endD=startD;
     const dayOfWeek=new Date(y2, mm2-1, startD).getDay(); // 0:일, 1:월 ...
-    // 이번 주의 끝(일요일) 찾기
     const daysUntilSun = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
     endD = Math.min(lastDate2, startD + daysUntilSun);
     weekRanges.push({start: startD, end: endD});
     startD = endD + 1;
   }
 
-  const curM_str=curMonth();
+  const numWeeks = weekRanges.length;
+  const weeklySpending=Array(numWeeks).fill(0), weeklyIncome=Array(numWeeks).fill(0);
+
   txs.forEach(t=>{
-    if(t.date.startsWith(curM_str)){
+    if(t.date.startsWith(m)){
       const d=parseInt(t.date.split('-')[2]);
       const wIdx=weekRanges.findIndex(r => d >= r.start && d <= r.end);
-      if(wIdx !== -1 && wIdx < 5){
+      if(wIdx !== -1 && wIdx < numWeeks){
         if(t.type==='expense' || t.type==='expense_planned') weeklySpending[wIdx]+=t.amt;
         else weeklyIncome[wIdx]+=t.amt;
       }
     }
   });
 
-  /* 주간 예산 입력값 복원 */
-  const targetInputs=document.querySelectorAll('.target-budget-input');
-  targetInputs.forEach((inp,i)=>{ if(inp) inp.value=fmtN(targetBudgets[i]); });
-  const adjInputs=document.querySelectorAll('.weekly-adj-input');
-  adjInputs.forEach((inp,i)=>{ if(inp) inp.value=fmtN(weeklyAdjustments[i]); });
+  /* 주간 예산 편집 영역 동적 생성 */
+  const editWrap = document.getElementById('weekly-budget-edit-wrap');
+  if (editWrap) {
+    let editHtml = `
+      <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:10px;font-size:11px;color:var(--text3);padding-bottom:6px;border-bottom:1px solid var(--border)">
+        <span>주차</span><span style="text-align:center">목표 예산</span><span style="text-align:center">조정 금액</span>
+      </div>`;
+    
+    for (let i = 0; i < numWeeks; i++) {
+      const tbVal = targetBudgets[i] || 0;
+      const waVal = weeklyAdjustments[i] || 0;
+      editHtml += `
+        <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:8px;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:var(--text2)">${i+1}주</span>
+          <input type="text" class="num-input target-budget-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right" value="${fmtN(tbVal)}" oninput="formatNumInput(this)" onchange="updateWeeklyTargetBudget(${i},this.value)">
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="text" class="num-input weekly-adj-input" inputmode="numeric" style="padding:6px;font-size:13px;text-align:right;flex:1;min-width:0;color:${waVal>=0?'var(--blue)':'var(--red)'}" placeholder="0" value="${fmtN(waVal)}" oninput="formatNumInput(this)" onchange="updateWeeklyAdjBudget(${i},this.value,this)">
+            <button class="btn" onclick="applyWeeklyAdjust(${i},-1)" title="목표 예산에서 빼기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--red);border-color:var(--red)">−</button>
+            <button class="btn" onclick="applyWeeklyAdjust(${i},1)" title="목표 예산에 더하기" style="padding:4px;min-width:26px;height:31px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--blue);border-color:var(--blue)">+</button>
+          </div>
+        </div>`;
+    }
+
+    editHtml += `
+      <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:8px;align-items:center;padding-top:10px;margin-top:2px;border-top:1px solid var(--border)">
+        <span style="font-size:12px;font-weight:600;color:var(--text2)">총액</span>
+        <input type="text" id="monthly-budget-input" class="num-input" inputmode="numeric" placeholder="이번달 총 예산" style="padding:6px;font-size:13px;text-align:right" value="${monthlyBudgetManual?fmtN(monthlyBudgetManual):''}" oninput="formatNumInput(this)" onchange="updateMonthlyBudgetManual(this.value)">
+        <span id="monthly-budget-need" style="font-size:12px;font-weight:700;text-align:right;padding-right:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+      </div>`;
+
+    editWrap.innerHTML = editHtml;
+  }
 
   // [월간 총예산 비교] 로직 시작
-  const todayD = new Date().getDate();
+  const todayD = isCurrentMonth ? new Date().getDate() : -1; /* 과거/미래달엔 이번주 하이라이트 없음 */
   let sumAvailable = 0; // 5주차 가용예산(목표+조정) 합계 — 이번달 총 예산과 비교용
 
   for (let i = 0; i < weekRanges.length; i++) {
@@ -2081,7 +2142,6 @@ function renderHome(){
   }
 
   // 이번달 총 예산(수동 입력) 대비 조절 필요 금액 표시
-  const monthlyBudgetManual = parseNum(localStorage.getItem('bch_monthly_budget_manual') || '0');
   const monthlyBudgetInput = document.getElementById('monthly-budget-input');
   if (monthlyBudgetInput) monthlyBudgetInput.value = monthlyBudgetManual ? fmtN(monthlyBudgetManual) : '';
   const monthlyNeedEl = document.getElementById('monthly-budget-need');
@@ -2133,7 +2193,7 @@ function renderHome(){
       }
     }
     
-    const range = weekRanges[i] ? `${rangeToFullDate(curM_str, weekRanges[i])}` : '';
+    const range = weekRanges[i] ? `${rangeToFullDate(m, weekRanges[i])}` : '';
     const isCurrentWeek = todayD >= weekRanges[i].start && todayD <= weekRanges[i].end;
 
     if (isCurrentWeek) {
@@ -2188,12 +2248,15 @@ function renderHome(){
   if(arrow) arrow.style.transform=weeklyCollapsed?'rotate(-90deg)':'rotate(0deg)';
   document.getElementById('weekly-bars-container').innerHTML=weeklyHtml;
 
-  /* 최근 거래 */
-  document.getElementById('home-recent').innerHTML=txs.slice(0,6).map(t=>{
+  /* 최근 거래 — 선택한 월 기준 */
+  const recentTitle = document.getElementById('home-recent-title');
+  if(recentTitle) recentTitle.textContent = isCurrentMonth ? '최근 거래' : `${mm2}월 거래`;
+  const monthTxs = txs.filter(t=>t.date.startsWith(m));
+  document.getElementById('home-recent').innerHTML=monthTxs.slice(0,6).map(t=>{
     const planned=isPlanned(t);
     const amtColor=t.type==='income'?'var(--green)':planned?'var(--amber)':'var(--red)';
     const prefix=t.type==='income'?'+':'-';
-    const badge=planned?'<span style="color:var(--amber);font-weight:700;margin-right:4px">★예상)</span>':'';
+    const badge=planned?'<span style="color:var(--amber);font-weight:700;margin-right:4px">★예상</span>':'';
     return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);${planned?'background:var(--amber-light);border-radius:6px;padding-left:6px':''}">
       <div><div style="font-size:13px;font-weight:500">${badge}${esc(t.desc||t.cat||'—')}</div>
         <div style="font-size:11px;color:var(--text3)">${t.date}${t.cat&&t.cat!=='—'?' · '+t.cat:''}</div></div>
@@ -2208,7 +2271,7 @@ function renderHome(){
     const daysInMonth = new Date(y2, mm2, 0).getDate();
     const dailySpent = Array(daysInMonth).fill(0);
     txs.forEach(t=>{
-      if(t.date.startsWith(curM_str)){
+      if(t.date.startsWith(m)){
         const d = parseInt(t.date.split('-')[2]);
         if(d >= 1 && d <= daysInMonth){
           if(t.type === 'expense' || t.type === 'expense_planned'){
@@ -2226,8 +2289,8 @@ function renderHome(){
 
     const labels = Array.from({length: cumulativeSpent.length}, (_, i) => `${mm2}.${i+1}`);
     const isDark = document.body.classList.contains('dark');
-    const budgetVal = (sumAvailable > 0 ? sumAvailable : (monthlyBudgetManual || 0)) + monthInc;
-    const todayIdx = Math.min(new Date().getDate(), daysInMonth) - 1;
+    const budgetVal = (sumAvailable > 0 ? sumAvailable : (monthlyBudgetManual > 0 ? monthlyBudgetManual : varBudget)) + monthInc;
+    const todayIdx = isCurrentMonth ? Math.min(new Date().getDate(), daysInMonth) - 1 : -1;
     const todayPointRadii = cumulativeSpent.map((_, i) => i === todayIdx ? 6 : 0);
     const todayPointColors = cumulativeSpent.map((_, i) => i === todayIdx ? (isDark ? '#0a84ff' : '#007aff') : 'transparent');
     const todayPointBorder = cumulativeSpent.map((_, i) => i === todayIdx ? '#fff' : 'transparent');
@@ -2294,6 +2357,7 @@ function renderHome(){
               font: { size: 10 }
             },
             beginAtZero: true,
+            suggestedMax: budgetVal > 0 ? budgetVal * 1.05 : undefined,
             grid: { color: 'rgba(142,142,147,0.15)' }
           }
         }
@@ -2394,9 +2458,9 @@ function _renderTxEditControls(){
   const wrap=document.getElementById('tx-edit-controls');
   if(!wrap)return;
   wrap.innerHTML=txEditMode
-    ?`<button class="btn btn-sm" style="background:var(--amber);color:#fff;border-color:var(--amber)" onclick="saveTxEdit()">✓ 저장</button>
-      <button class="btn btn-sm" onclick="cancelTxEdit()">✕ 취소</button>`
-    :`<button class="btn btn-sm" id="tx-edit-toggle" onclick="toggleTxEdit()">✏ 수정</button>`;
+    ?`<button class="btn btn-sm" style="background:var(--amber);color:#fff;border-color:var(--amber)" onclick="saveTxEdit()">저장</button>
+      <button class="btn btn-sm" onclick="cancelTxEdit()">취소</button>`
+    :`<button class="btn btn-sm" id="tx-edit-toggle" onclick="toggleTxEdit()">수정</button>`;
 }
 function toggleTxEdit(){
   txsBeforeEdit=JSON.parse(JSON.stringify(txs));
@@ -2557,7 +2621,7 @@ function renderCalendar(){
   const varPct=varBudget>0?Math.max(0,Math.min(100,Math.round(varRemain/varBudget*100))):0;
   const barCls=varPct<20?'over':varPct<50?'warn':'ok';
   document.getElementById('cal-summary').innerHTML=`
-    <div class="g3" style="margin-bottom:10px">
+    <div class="g3" style="margin-bottom:6px">
       <div class="metric"><div class="metric-label">유동 지출 예산</div><div class="metric-value">${fmt(varBudget)}</div></div>
       <div class="metric">
         <div class="metric-label">이번 달 사용 (순지출)</div>
@@ -2568,7 +2632,7 @@ function renderCalendar(){
         <div class="metric-value" style="color:#007aff">${fmt(varRemain)}</div>
         <div class="metric-sub">${varPct}% 남음</div></div>
     </div>
-    <div class="pw" style="height:9px;margin-bottom:18px"><div class="pb ${barCls}" style="width:${varPct}%"></div></div>`;
+    <div class="pw" style="height:9px;margin-bottom:8px"><div class="pb ${barCls}" style="width:${varPct}%"></div></div>`;
 
   /* 캘린더 */
   const today=new Date();
@@ -2623,7 +2687,7 @@ function toggleCalEdit(){
   calEditMode=!calEditMode;
   const calBtn=document.getElementById('cal-edit-btn');
   if(calBtn){
-    calBtn.textContent=calEditMode?'✓ 완료':'✏ 수정';
+    calBtn.textContent=calEditMode?'완료':'수정';
     calBtn.style.background=calEditMode?'var(--amber)':'';
     calBtn.style.color=calEditMode?'#fff':'';
     calBtn.style.borderColor=calEditMode?'var(--amber)':'';
@@ -2818,17 +2882,20 @@ function renderBudget(){
   /* 헤더 버튼 업데이트 */
   const header = document.querySelector('#page-budget > div:first-child');
   if (header) {
+    header.className = 'page-header-wrap';
     if (budgetEditMode) {
       header.innerHTML = `
-        <div class="page-title">예산 관리</div>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-sm" style="background:var(--amber);color:#fff;border-color:var(--amber)" onclick="saveBudgetEdit()">✓ 저장</button>
-          <button class="btn btn-sm" onclick="cancelBudgetEdit()">✕ 취소</button>
+        <div class="page-title" style="margin-bottom:0">예산 관리</div>
+        <div class="page-header-right">
+          <button class="btn btn-sm" style="background:var(--amber);color:#fff;border-color:var(--amber)" onclick="saveBudgetEdit()">저장</button>
+          <button class="btn btn-sm" onclick="cancelBudgetEdit()">취소</button>
         </div>`;
     } else {
       header.innerHTML = `
-        <div class="page-title">예산 관리</div>
-        <button class="btn btn-sm" id="budget-edit-toggle" onclick="toggleBudgetEdit()">✏ 수정</button>`;
+        <div class="page-title" style="margin-bottom:0">예산 관리</div>
+        <div class="page-header-right">
+          <button class="btn btn-sm" id="budget-edit-toggle" onclick="toggleBudgetEdit()">수정</button>
+        </div>`;
     }
   }
 }
@@ -3148,17 +3215,20 @@ function renderFixed(){
   /* fixed-list 렌더 후 헤더 버튼 업데이트 */
   const header = document.querySelector('#page-fixed > div:first-child');
   if (header) {
+    header.className = 'page-header-wrap';
     if (fixedEditMode) {
       header.innerHTML = `
-        <div class="page-title">고정 지출</div>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-sm" style="background:var(--amber);color:#fff;border-color:var(--amber)" onclick="saveFixedEdit()">✓ 저장</button>
-          <button class="btn btn-sm" onclick="cancelFixedEdit()">✕ 취소</button>
+        <div class="page-title" style="margin-bottom:0">고정 지출</div>
+        <div class="page-header-right">
+          <button class="btn btn-sm" style="background:var(--amber);color:#fff;border-color:var(--amber)" onclick="saveFixedEdit()">저장</button>
+          <button class="btn btn-sm" onclick="cancelFixedEdit()">취소</button>
         </div>`;
     } else {
       header.innerHTML = `
-        <div class="page-title">고정 지출</div>
-        <button class="btn btn-sm" id="fixed-edit-toggle" onclick="toggleFixedEdit()">✏ 수정</button>`;
+        <div class="page-title" style="margin-bottom:0">고정 지출</div>
+        <div class="page-header-right">
+          <button class="btn btn-sm" id="fixed-edit-toggle" onclick="toggleFixedEdit()">수정</button>
+        </div>`;
     }
   }
   /* fixed-list에 클래스 토글 */
@@ -3369,7 +3439,7 @@ function renderSavings(){
         <div class="save-li-actions" style="margin-right:4px">
           <button class="btn btn-sm" onclick="addStockHolding()" style="font-size:11px">+ 종목 추가</button>
         </div>
-        <button class="btn btn-sm" id="stock-refresh-btn" onclick="refreshStockPrices()" style="font-size:11px" title="새로고침">🔄</button>
+        <button class="btn btn-sm" id="stock-refresh-btn" onclick="refreshStockPrices()" style="font-size:11px" title="새로고침">새로고침</button>
       </div>
     </div>
     ${etfCardCollapsed?'':`
@@ -3494,17 +3564,20 @@ function renderSavings(){
   /* 저축 렌더 후 헤더 버튼 업데이트 */
   const header = document.querySelector('#page-savings > div:first-child');
   if (header) {
+    header.className = 'page-header-wrap';
     if (savingsEditMode) {
       header.innerHTML = `
-        <div class="page-title">저축 금액</div>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-sm" style="background:var(--amber);color:#fff;border-color:var(--amber)" onclick="saveSavingsEdit()">✓ 저장</button>
-          <button class="btn btn-sm" onclick="cancelSavingsEdit()">✕ 취소</button>
+        <div class="page-title" style="margin-bottom:0">저축 금액</div>
+        <div class="page-header-right">
+          <button class="btn btn-sm" style="background:var(--amber);color:#fff;border-color:var(--amber)" onclick="saveSavingsEdit()">저장</button>
+          <button class="btn btn-sm" onclick="cancelSavingsEdit()">취소</button>
         </div>`;
     } else {
       header.innerHTML = `
-        <div class="page-title">저축 금액</div>
-        <button class="btn btn-sm" id="savings-edit-toggle" onclick="toggleSavingsEdit()">✏ 수정</button>`;
+        <div class="page-title" style="margin-bottom:0">저축 금액</div>
+        <div class="page-header-right">
+          <button class="btn btn-sm" id="savings-edit-toggle" onclick="toggleSavingsEdit()">수정</button>
+        </div>`;
     }
   }
   _restoreSavingsLock();
@@ -3601,7 +3674,7 @@ function adjustStockShares(idx,delta){
 /* 환율(무료 API) + 종목 시세·배당수익률(야후 파이낸스, CORS 프록시 경유) 자동 조회 */
 async function refreshStockPrices(){
   const btn=document.getElementById('stock-refresh-btn');
-  if(btn){btn.disabled=true;btn.textContent='⏳';}
+  if(btn){btn.disabled=true;btn.textContent='갱신 중...';}
   let failN=0;
   try{
     try{
@@ -3639,7 +3712,7 @@ async function refreshStockPrices(){
     showToast('업데이트 오류');
   }finally{
     const b=document.getElementById('stock-refresh-btn');
-    if(b){b.disabled=false;b.textContent='🔄';}
+    if(b){b.disabled=false;b.textContent='새로고침';}
   }
 }
 function addSave(group,name,dir){
@@ -3732,6 +3805,7 @@ async function restoreBackup(date) {
     stockFx = backupData.stockFx || {rate:1380,updated:0};
     fixedCustom = (backupData.fixedCustom || []).map(normalizeFixedCustomItem).filter(Boolean);
     budgetCustom = normalizeBudgetCustom(backupData.budgetCustom || {});
+    monthlyWeeklyData = backupData.monthlyWeeklyData || {};
     
     rawFixedList().forEach(i => {
       const k = fixedKey(i);
