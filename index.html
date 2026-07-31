@@ -1452,9 +1452,11 @@ function migrateShortSaveColors(){
 /* 색상 마이그레이션은 initDataListener 이후 Firebase 데이터 로드 완료 시점에만 실행 */
 let fixedCustom=loadFixedCustom();
 let budgetCustom=loadBudgetCustom();
-let calDate=new Date();
-let txListDate=new Date();
-let homeDate=new Date();
+/* ── 공유 월 변수: 대시보드·거래내역·캘린더가 함께 사용 ── */
+let globalDate=new Date();
+let calDate=globalDate;
+let txListDate=globalDate;
+let homeDate=globalDate;
 let currentFixedTab='전체';
 let calEditMode=false;
 let charts={};
@@ -1938,8 +1940,19 @@ function renderHomeMonthLabel(){
   const el=document.getElementById('home-month-label');
   if(el)el.textContent=`${homeDate.getFullYear()}년 ${homeDate.getMonth()+1}월`;
 }
-function homePrevMonth(){homeDate.setDate(1);homeDate.setMonth(homeDate.getMonth()-1);renderHome();}
-function homeNextMonth(){homeDate.setDate(1);homeDate.setMonth(homeDate.getMonth()+1);renderHome();}
+/* 대시보드·거래내역·캘린더 월 라벨을 한번에 갱신 */
+function renderSyncedMonthLabels(){
+  const y=globalDate.getFullYear(),m=globalDate.getMonth()+1;
+  const label=`${y}년 ${m}월`;
+  const hEl=document.getElementById('home-month-label');
+  if(hEl)hEl.textContent=label;
+  const tEl=document.getElementById('tx-month-label');
+  if(tEl)tEl.textContent=label;
+  const cEl=document.getElementById('cal-label');
+  if(cEl)cEl.textContent=label;
+}
+function homePrevMonth(){globalDate=new Date(globalDate.getFullYear(),globalDate.getMonth()-1,1);calDate=txListDate=homeDate=globalDate;renderHome();renderSyncedMonthLabels();}
+function homeNextMonth(){globalDate=new Date(globalDate.getFullYear(),globalDate.getMonth()+1,1);calDate=txListDate=homeDate=globalDate;renderHome();renderSyncedMonthLabels();}
 function renderHome(){
   renderHomeMonthLabel();
   const m=homeMonthStr();
@@ -2450,7 +2463,6 @@ function updateTxField(id,field,value){
 function renderInput(){
   document.getElementById('tx-date').value=todayStr();
   updateCats();
-  txListDate.setDate(1);
   renderTxMonthLabel();
   renderTxList();
 }
@@ -2699,16 +2711,16 @@ function updateAnnualEvent(mo,val){
   const idx=annualEvents.findIndex(e=>e.month===mo);
   if(idx>=0)annualEvents[idx].text=val;
 }
-function calPrev(){calDate.setMonth(calDate.getMonth()-1);renderCalendar();}
-function calNext(){calDate.setMonth(calDate.getMonth()+1);renderCalendar();}
+function calPrev(){globalDate=new Date(globalDate.getFullYear(),globalDate.getMonth()-1,1);calDate=txListDate=homeDate=globalDate;renderCalendar();renderSyncedMonthLabels();}
+function calNext(){globalDate=new Date(globalDate.getFullYear(),globalDate.getMonth()+1,1);calDate=txListDate=homeDate=globalDate;renderCalendar();renderSyncedMonthLabels();}
 function txMonthKey(){return`${txListDate.getFullYear()}-${p2(txListDate.getMonth()+1)}`;}
 function renderTxMonthLabel(){
   const el=document.getElementById('tx-month-label');
   if(!el)return;
   el.textContent=`${txListDate.getFullYear()}년 ${txListDate.getMonth()+1}월`;
 }
-function txPrevMonth(){txListDate.setDate(1);txListDate.setMonth(txListDate.getMonth()-1);renderTxList();}
-function txNextMonth(){txListDate.setDate(1);txListDate.setMonth(txListDate.getMonth()+1);renderTxList();}
+function txPrevMonth(){globalDate=new Date(globalDate.getFullYear(),globalDate.getMonth()-1,1);calDate=txListDate=homeDate=globalDate;renderTxList();renderSyncedMonthLabels();}
+function txNextMonth(){globalDate=new Date(globalDate.getFullYear(),globalDate.getMonth()+1,1);calDate=txListDate=homeDate=globalDate;renderTxList();renderSyncedMonthLabels();}
 
 /* ==============================
    ③ 예산 관리
