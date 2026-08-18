@@ -2136,8 +2136,8 @@ function renderHome(){
 
     editHtml += `
       <div style="display:grid;grid-template-columns:32px 1fr 1.3fr;gap:8px;align-items:center;padding-top:10px;margin-top:2px;border-top:1px solid var(--border)">
-        <span style="font-size:12px;font-weight:600;color:var(--text2)">총액</span>
-        <input type="text" id="monthly-budget-input" class="num-input" inputmode="numeric" placeholder="이번달 총 예산" style="padding:6px;font-size:13px;text-align:right" value="${monthlyBudgetManual?fmtN(monthlyBudgetManual):''}" oninput="formatNumInput(this)" onchange="updateMonthlyBudgetManual(this.value)">
+        <span style="font-size:12px;font-weight:600;color:var(--text2)">한도</span>
+        <input type="text" id="monthly-budget-input" class="num-input" inputmode="numeric" placeholder="이번달 한도" style="padding:6px;font-size:13px;text-align:right" value="${monthlyBudgetManual?fmtN(monthlyBudgetManual):''}" oninput="formatNumInput(this)" onchange="updateMonthlyBudgetManual(this.value)">
         <span id="monthly-budget-need" style="font-size:12px;font-weight:700;text-align:right;padding-right:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
       </div>`;
 
@@ -2302,7 +2302,7 @@ function renderHome(){
 
     const labels = Array.from({length: cumulativeSpent.length}, (_, i) => `${mm2}.${i+1}`);
     const isDark = document.body.classList.contains('dark');
-    const budgetVal = (sumAvailable > 0 ? sumAvailable : (monthlyBudgetManual > 0 ? monthlyBudgetManual : varBudget)) + monthInc;
+    const budgetVal = monthlyBudgetManual > 0 ? monthlyBudgetManual : (sumAvailable > 0 ? sumAvailable : varBudget);
     const todayIdx = isCurrentMonth ? Math.min(new Date().getDate(), daysInMonth) - 1 : -1;
     const todayPointRadii = cumulativeSpent.map((_, i) => i === todayIdx ? 6 : 0);
     const todayPointColors = cumulativeSpent.map((_, i) => i === todayIdx ? (isDark ? '#0a84ff' : '#007aff') : 'transparent');
@@ -2327,7 +2327,7 @@ function renderHome(){
             tension: 0.4
           },
           {
-            label: '목표 예산',
+            label: '한도',
             data: Array(cumulativeSpent.length).fill(budgetVal),
             borderColor: '#ff453a',
             borderDash: [5, 5],
@@ -2370,7 +2370,7 @@ function renderHome(){
               font: { size: 10 }
             },
             beginAtZero: true,
-            suggestedMax: budgetVal > 0 ? budgetVal * 1.05 : undefined,
+            suggestedMax: budgetVal > 0 ? Math.max(budgetVal, Math.max(...cumulativeSpent)) * 1.05 : undefined,
             grid: { color: 'rgba(142,142,147,0.15)' }
           }
         }
