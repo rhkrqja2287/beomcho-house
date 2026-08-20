@@ -1527,6 +1527,7 @@ function saveAll(){
       fixedAmts:getFixedAmts(),
       fixedDays:getFixedDays(),
       fixedNames:getFixedNames(),
+      fixedHiddenKeys:getFixedHiddenKeys(),
       fixedCustom,
       budgetCustom,
       fixedBudgetManual:localStorage.getItem('bch_fixed_budget_manual')||null,
@@ -1573,6 +1574,11 @@ function getFixedDays(){
 function getFixedNames(){
   const o={};
   rawFixedList().forEach(i=>{const k=fixedKey(i)+'_name';const v=localStorage.getItem(k);if(v)o[k]=v;});
+  return o;
+}
+function getFixedHiddenKeys(){
+  const o={};
+  rawFixedList().forEach(i=>{const k=fixedKey(i)+'_hidden';const v=localStorage.getItem(k);if(v==='1')o[k]='1';});
   return o;
 }
 /* Firebase → 로컬 상태에 반영 */
@@ -1624,6 +1630,11 @@ function applyFirebaseData(data){
   if(data.fixedAmts)Object.entries(data.fixedAmts).forEach(([k,v])=>localStorage.setItem(k,v));
   if(data.fixedDays)Object.entries(data.fixedDays).forEach(([k,v])=>localStorage.setItem(k,v));
   if(data.fixedNames)Object.entries(data.fixedNames).forEach(([k,v])=>localStorage.setItem(k,v));
+  if(data.fixedHiddenKeys){
+    /* 먼저 기존 _hidden 항목 초기화 후 Firebase 값으로 덮어쓰기 */
+    rawFixedList().forEach(i=>localStorage.removeItem(fixedKey(i)+'_hidden'));
+    Object.entries(data.fixedHiddenKeys).forEach(([k,v])=>localStorage.setItem(k,v));
+  }
   if(data.fixedBudgetManual)localStorage.setItem('bch_fixed_budget_manual',data.fixedBudgetManual);
   if(data.monthlyBudgetManual)localStorage.setItem('bch_monthly_budget_manual',data.monthlyBudgetManual);
   if(data.theme){
@@ -3834,6 +3845,10 @@ async function restoreBackup(date) {
     if(backupData.fixedAmts) Object.entries(backupData.fixedAmts).forEach(([k,v])=>localStorage.setItem(k,v));
     if(backupData.fixedDays) Object.entries(backupData.fixedDays).forEach(([k,v])=>localStorage.setItem(k,v));
     if(backupData.fixedNames) Object.entries(backupData.fixedNames).forEach(([k,v])=>localStorage.setItem(k,v));
+    if(backupData.fixedHiddenKeys){
+      rawFixedList().forEach(i=>localStorage.removeItem(fixedKey(i)+'_hidden'));
+      Object.entries(backupData.fixedHiddenKeys).forEach(([k,v])=>localStorage.setItem(k,v));
+    }
     if(backupData.fixedBudgetManual) localStorage.setItem('bch_fixed_budget_manual', backupData.fixedBudgetManual);
     if(backupData.monthlyBudgetManual) localStorage.setItem('bch_monthly_budget_manual', backupData.monthlyBudgetManual);
     if(backupData.theme) localStorage.setItem('bch_theme', backupData.theme);
@@ -3850,6 +3865,7 @@ async function restoreBackup(date) {
       fixedAmts: getFixedAmts(),
       fixedDays: getFixedDays(),
       fixedNames: getFixedNames(),
+      fixedHiddenKeys: getFixedHiddenKeys(),
       fixedCustom,
       budgetCustom,
       fixedBudgetManual: localStorage.getItem('bch_fixed_budget_manual')||null,
