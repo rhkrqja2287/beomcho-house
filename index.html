@@ -374,9 +374,24 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   user-select:auto;
   -webkit-user-select:auto;
 }
-/* +/- 버튼도 수정 모드에서만 */
-#page-savings .save-li-actions{display:none}
-#page-savings.savings-edit-on .save-li-actions{display:inline-flex}
+/* +/- 버튼 — 공간 항상 확보, 숨김은 visibility로 */
+#page-savings .save-li-actions{visibility:hidden;pointer-events:none}
+#page-savings.savings-edit-on .save-li-actions{visibility:visible;pointer-events:auto}
+/* save-add-row — 수정 모드에서만 표시 */
+#page-savings .save-add-row{display:none;pointer-events:none}
+#page-savings.savings-edit-on .save-add-row{display:flex;pointer-events:auto}
+/* save-del-btn은 save-li-actions 안에 있으므로 별도 처리 불필요 */
+/* 삭제 버튼 */
+.save-del-btn{width:20px;height:20px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--text3);font-size:10px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0;transition:all .15s}
+.save-del-btn:hover{color:var(--red);border-color:var(--red);background:var(--red-light)}
+/* 이름 래퍼: span과 input을 같은 공간에 겹쳐서 레이아웃 고정 */
+.save-name-wrap{position:relative;display:inline-flex;align-items:center;min-width:0;flex:1}
+.save-li-name{font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.save-name-input{position:absolute;inset:0;width:100%;font-size:13px;font-weight:600;padding:1px 4px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);opacity:0;pointer-events:none;cursor:default;box-sizing:border-box}
+#page-savings.savings-edit-on .save-name-input{opacity:1;pointer-events:auto;cursor:text}
+#page-savings.savings-edit-on .save-li-name{opacity:0}
+/* 단기 저축 오른쪽 컬럼 구조 */
+.save-short-right-col{display:flex;flex-direction:column}
 /* 보유 미국 ETF 카드 — 항상 1행 2열 */
 .etf-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap}
 .etf-head-left{display:flex;align-items:center;gap:8px;cursor:pointer;padding:2px 0;min-width:0;flex:1}
@@ -3320,7 +3335,12 @@ function renderSavings(){
   Object.values(longSaveOrdered).forEach(v=>{longThisMonth+=(v[longMKey]||0);});
   html+=`<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${longThisMonth!==0?'8px':'14px'}">
-      <div class="card-title" style="margin-bottom:0">장기 저축</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="card-title" style="margin-bottom:0">장기 저축</div>
+        <div class="save-add-row save-li-actions" style="margin:0">
+          <button class="btn btn-sm" style="border-style:dashed;color:var(--text3);padding:2px 8px;font-size:11px" onclick="addSaveItem('long')">+ 추가</button>
+        </div>
+      </div>
       <span style="font-size:14px;font-weight:700;color:var(--blue)">${fmt(longTotal)}</span>
     </div>
     ${longThisMonth!==0?`<div style="background:var(--blue-light);border-radius:8px;padding:8px 12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
@@ -3329,26 +3349,35 @@ function renderSavings(){
     </div>`:''}
     <ul class="fl">`;
   for(const[name,v] of Object.entries(longSaveOrdered)){
+    const safeN=name.replace(/'/g,"\\'");
     html+=`<li class="fi save-li">
       <div class="save-li-inner">
-        <div class="save-li-main" style="flex:1"><span class="save-li-name">${name}</span></div>
+        <div class="save-li-main" style="flex:1;min-width:0;overflow:hidden">
+          <button class="save-del-btn save-li-actions" onclick="deleteSaveItem('long','${safeN}')" title="삭제">✕</button>
+          <span class="save-name-wrap">
+            <span class="save-li-name">${name}</span>
+            <input class="save-name-input" type="text" value="${name}" onchange="renameSaveItem('long','${safeN}',this.value)">
+          </span>
+        </div>
         <div style="display:flex;align-items:center;gap:6px;white-space:nowrap;margin-left:auto">
           <div style="display:flex;align-items:center;gap:2px">
             <span style="font-size:9px;color:var(--text3)">보유액</span>
-            <input type="text" value="${fmtN(v.bal)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('long','${name}','bal',this.value)" style="width:70px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;font-weight:700;color:var(--blue);padding:2px 3px">
+            <input type="text" value="${fmtN(v.bal)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('long','${safeN}','bal',this.value)" style="width:70px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;font-weight:700;color:var(--blue);padding:2px 3px">
           </div>
           <div style="display:flex;align-items:center;gap:2px">
             <span style="font-size:9px;color:var(--text3)">월저축</span>
-            <input type="text" value="${fmtN(v.monthly)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('long','${name}','monthly',this.value)" style="width:60px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--green);padding:2px 3px">
+            <input type="text" value="${fmtN(v.monthly)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('long','${safeN}','monthly',this.value)" style="width:60px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--green);padding:2px 3px">
           </div>
           <div style="display:flex;gap:2px">
-            <button class="btn btn-sm" onclick="addSave('long','${name}',1)" style="padding:1px 5px;font-size:9px">+</button>
-            <button class="btn btn-sm" onclick="addSave('long','${name}',-1)" style="padding:1px 5px;font-size:9px">−</button>
+            <button class="btn btn-sm" onclick="addSave('long','${safeN}',1)" style="padding:1px 5px;font-size:9px">+</button>
+            <button class="btn btn-sm" onclick="addSave('long','${safeN}',-1)" style="padding:1px 5px;font-size:9px">−</button>
           </div>
         </div>
       </div>
     </li>`;
-  }  html+=`</ul></div>`;
+  }
+  html+=`</ul>
+  </div>`;
 
   /* 단기 저축 */
   /* 보유 미국 ETF 기반 자동 계산 (환율/시세 반영) — shortTotal 계산 전에 '주식' 보유액 동기화 */
@@ -3383,7 +3412,12 @@ function renderSavings(){
 
   html+=`<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${shortThisMonth!==0?'8px':'14px'}">
-      <div class="card-title" style="margin-bottom:0">단기 저축</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="card-title" style="margin-bottom:0">단기 저축</div>
+        <div class="save-add-row save-li-actions" style="margin:0">
+          <button class="btn btn-sm" style="border-style:dashed;color:var(--text3);padding:2px 8px;font-size:11px" onclick="addSaveItem('short')">+ 추가</button>
+        </div>
+      </div>
       <div style="text-align:right">
         <div style="font-size:14px;font-weight:700;color:var(--teal)">${fmt(Math.round(shortTotal/10000)*10000)}</div>
         <div style="font-size:11px;color:var(--text3)">월 주식 배당 예상 약 ${Math.round(dividend/10000)}만원</div>
@@ -3400,31 +3434,37 @@ function renderSavings(){
     const pct=shortTotal>0?Math.round(v.bal/shortTotal*100):0;
     /* '주식' 항목은 ETF 자동환산 시 만원 단위로 반올림해 표기 (정확한 원 단위는 보유 ETF 카드에서 확인) */
     const displayBal=(name==='주식'&&hasHoldings)?Math.round(v.bal/10000)*10000:v.bal;
+    const safeN=name.replace(/'/g,"\\'");
     html+=`<li class="fi save-li">
       <div class="save-li-inner">
-        <div class="save-li-main" style="flex:1">
+        <div class="save-li-main" style="flex:1;min-width:0;overflow:hidden">
+          <button class="save-del-btn save-li-actions" onclick="deleteSaveItem('short','${safeN}')" title="삭제">✕</button>
           <span class="pct-dot" style="background:${itemColor}"></span>
-          <div class="save-li-main"><span class="save-li-name">${name}</span></div>
+          <span class="save-name-wrap">
+            <span class="save-li-name">${name}</span>
+            <input class="save-name-input" type="text" value="${name}" onchange="renameSaveItem('short','${safeN}',this.value)">
+          </span>
           <span style="font-size:9px;color:var(--text3);white-space:nowrap">${pct}%</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;white-space:nowrap;margin-left:auto">
           <div style="display:flex;align-items:center;gap:2px">
             <span style="font-size:9px;color:var(--text3)">보유액</span>
-            <input type="text" value="${fmtN(displayBal)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('short','${name}','bal',this.value)" style="width:65px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;font-weight:700;color:${itemColor};padding:2px 3px">
+            <input type="text" value="${fmtN(displayBal)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('short','${safeN}','bal',this.value)" style="width:65px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;font-weight:700;color:${itemColor};padding:2px 3px">
           </div>
           <div style="display:flex;align-items:center;gap:2px">
             <span style="font-size:9px;color:var(--text3)">월저축</span>
-            <input type="text" value="${fmtN(v.monthly)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('short','${name}','monthly',this.value)" style="width:55px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--green);padding:2px 3px">
+            <input type="text" value="${fmtN(v.monthly)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('short','${safeN}','monthly',this.value)" style="width:55px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--green);padding:2px 3px">
           </div>
           <div style="display:flex;gap:2px">
-            <button class="btn btn-sm" onclick="addSave('short','${name}',1)" style="padding:1px 5px;font-size:9px">+</button>
-            <button class="btn btn-sm" onclick="addSave('short','${name}',-1)" style="padding:1px 5px;font-size:9px">−</button>
+            <button class="btn btn-sm" onclick="addSave('short','${safeN}',1)" style="padding:1px 5px;font-size:9px">+</button>
+            <button class="btn btn-sm" onclick="addSave('short','${safeN}',-1)" style="padding:1px 5px;font-size:9px">−</button>
           </div>
         </div>
       </div>
     </li>`;
   });
   html+=`</ul>
+      <div class="save-short-right-col">
       <div>
         <div style="font-size:12px;color:var(--text3);margin-bottom:8px;text-align:center">투자 비율</div>
         <div style="position:relative;height:160px"><canvas id="save-donut" role="img" aria-label="단기 저축 투자 비율">투자비율</canvas></div>
@@ -3439,6 +3479,7 @@ function renderSavings(){
             </div>`;
           }).join('')}
         </div>
+      </div>
       </div>
     </div>
   </div>
@@ -3649,6 +3690,51 @@ function updateSave(group,name,field,val){
   if(!store[name])return;
   store[name][field]=parseNum(val);
   saveAll();
+}
+/* ===== 저축 항목 추가 / 삭제 / 이름변경 ===== */
+function _makeUniqueSaveName(store, base){
+  let name=base, n=2;
+  while(store[name]!==undefined){ name=base+' '+n; n++; }
+  return name;
+}
+function addSaveItem(group){
+  const store=group==='long'?longSave:shortSave;
+  const APPLE_COLORS=['#0040a1','#82d7ff','#34c759','#ff453a','#af52de','#ff2d55','#ffcc00','#5ac8fa'];
+  const name=_makeUniqueSaveName(store,'새 항목');
+  if(group==='long'){
+    store[name]={bal:0,monthly:0};
+  } else {
+    const idx=Object.keys(store).length;
+    store[name]={bal:0,monthly:0,color:APPLE_COLORS[idx%APPLE_COLORS.length]};
+  }
+  saveAll();
+  renderSavings();
+  _restoreSavingsLock();
+}
+function deleteSaveItem(group,name){
+  const store=group==='long'?longSave:shortSave;
+  if(!store[name])return;
+  if(!confirm(`"${name}" 항목을 삭제할까요?`))return;
+  delete store[name];
+  saveAll();
+  renderSavings();
+  _restoreSavingsLock();
+}
+function renameSaveItem(group,oldName,newName){
+  newName=newName.trim();
+  if(!newName||newName===oldName)return;
+  const store=group==='long'?longSave:shortSave;
+  if(!store[oldName])return;
+  if(store[newName]!==undefined){ alert('같은 이름의 항목이 이미 있어요.'); renderSavings(); _restoreSavingsLock(); return; }
+  /* 키 순서 유지하며 이름 변경 */
+  const newStore={};
+  Object.entries(store).forEach(([k,v])=>{ newStore[k===oldName?newName:k]=v; });
+  if(group==='long') Object.assign(longSave,newStore); else Object.assign(shortSave,newStore);
+  if(group==='long'){ for(const k in longSave) delete longSave[k]; Object.assign(longSave,newStore); }
+  else { for(const k in shortSave) delete shortSave[k]; Object.assign(shortSave,newStore); }
+  saveAll();
+  renderSavings();
+  _restoreSavingsLock();
 }
 /* ===== 보유 미국 ETF 관리 ===== */
 function toggleWeeklyCollapse(){
