@@ -336,23 +336,23 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 .pin-del{font-size:16px;color:var(--text3)}
 .pin-error{font-size:13px;color:var(--red);margin-top:14px;min-height:20px}
 
-.save-li{padding:10px 0 !important;display:flex;align-items:center;gap:4px}
-.save-li-inner{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;column-gap:4px;row-gap:4px;width:100%}
-.save-li-name{font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.save-li-main{display:inline-flex;align-items:center;gap:4px;min-width:0}
+.save-li{padding:12px 0 !important;display:flex;align-items:center;gap:4px}
+.save-li-inner{display:flex;flex-direction:column;gap:6px;width:100%}
+.save-li-row1{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
+.save-li-row2{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding-top:2px}
+.save-li-name{font-size:14px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.save-li-main{display:inline-flex;align-items:center;gap:4px;min-width:0;flex:1}
 .save-li-main .save-li-name{flex:1}
 .save-li-group{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;min-width:0}
 .save-li-group input{min-width:0}
-.save-li-actions{display:inline-flex;align-items:center;justify-content:flex-end;gap:3px;justify-self:end;margin-left:auto}
+.save-li-actions{display:inline-flex;align-items:center;justify-content:flex-end;gap:3px;flex-shrink:0}
 @media(max-width:768px){
-  .save-li-inner{grid-template-columns:minmax(0,1fr) auto;align-items:start}
-  .save-li-group.save-li-bal{justify-self:end}
-  .save-li-group.save-li-monthly{grid-column:1}
-  .save-li-actions{grid-column:2;justify-self:end}
-  .save-li-group input{width:72px !important;font-size:10px !important;padding:2px 4px !important}
-  .save-li-name{font-size:11px;font-weight:600}
+  .save-li-name{font-size:12px}
+  .save-li-row1{gap:4px}
+  .save-li-row2{gap:4px}
+  .save-li-group input{width:72px !important;font-size:11px !important;padding:3px 5px !important}
   .save-li-group span{font-size:10px}
-  .save-li-actions .btn-sm{padding:2px 5px !important;font-size:10px !important}
+  .save-li-actions .btn-sm{padding:3px 6px !important;font-size:11px !important}
 }
 /* 저축 input - 기본 읽기 전용 */
 #page-savings input{
@@ -374,12 +374,15 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
   user-select:auto;
   -webkit-user-select:auto;
 }
-/* +/- 버튼 — 공간 항상 확보, 숨김은 visibility로 */
-#page-savings .save-li-actions{visibility:hidden;pointer-events:none}
-#page-savings.savings-edit-on .save-li-actions{visibility:visible;pointer-events:auto}
+/* +/- 버튼 및 2줄 영역 — 공간 항상 확보하지 않고 display:none으로 처리 */
+#page-savings .save-li-actions,
+#page-savings .save-li-row2 {display:none}
+#page-savings.savings-edit-on .save-li-actions,
+#page-savings.savings-edit-on .save-li-row2 {display:inline-flex}
+#page-savings.savings-edit-on .save-li-row2 {display:flex} /* row2는 가로 꽉 채우기 위해 flex */
 /* save-add-row — 수정 모드에서만 표시 */
-#page-savings .save-add-row{display:none;pointer-events:none}
-#page-savings.savings-edit-on .save-add-row{display:flex;pointer-events:auto}
+#page-savings .save-add-row{display:none !important}
+#page-savings.savings-edit-on .save-add-row{display:flex !important}
 /* save-del-btn은 save-li-actions 안에 있으므로 별도 처리 불필요 */
 /* 삭제 버튼 */
 .save-del-btn{width:20px;height:20px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--text3);font-size:10px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0;transition:all .15s}
@@ -392,6 +395,12 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 #page-savings.savings-edit-on .save-li-name{opacity:0}
 /* 단기 저축 오른쪽 컬럼 구조 */
 .save-short-right-col{display:flex;flex-direction:column}
+/* 장기/단기 저축 카드 — 데스크탑에서 좌우 같은 높이로 배치 */
+.save-pair{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;margin-bottom:16px}
+.save-pair > .card{margin-bottom:0}
+@media(min-width:1025px){
+  .save-pair{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+}
 /* 보유 미국 ETF 카드 — 항상 1행 2열 */
 .etf-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap}
 .etf-head-left{display:flex;align-items:center;gap:8px;cursor:pointer;padding:2px 0;min-width:0;flex:1}
@@ -787,6 +796,16 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
       <div class="card-title">사용량 그래프</div>
       <div style="position:relative;height:180px;margin-bottom:12px"><canvas id="cumulative-spent-chart" role="img" aria-label="누적 지출 추이">누적 지출</canvas></div>
 
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;margin-bottom:8px">
+        <div class="card-title" style="margin-bottom:0;font-size:13px;color:var(--text2)">단기 저축 투자 비율</div>
+      </div>
+      <div id="save-legend-home" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;font-size:11px;color:var(--text3);padding-left:10px"></div>
+      <div style="position:relative;height:24px;margin-bottom:12px"><canvas id="bar-save-home" role="img" aria-label="투자 비율">투자 비율</canvas></div>
+
+      <div class="divider"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;margin-bottom:8px">
+        <div class="card-title" style="margin-bottom:0;font-size:13px;color:var(--text2)">카테고리별 지출 비율</div>
+      </div>
       <div id="home-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;font-size:11px;color:var(--text3);padding-left:10px"></div>
       <div style="position:relative;height:24px;margin-bottom:12px"><canvas id="bar-home" role="img" aria-label="카테고리별 지출">지출 비율</canvas></div>
 
@@ -3333,6 +3352,7 @@ function renderSavings(){
   const longMKey='savedThisMonth_'+curMonth();
   let longThisMonth=0;
   Object.values(longSaveOrdered).forEach(v=>{longThisMonth+=(v[longMKey]||0);});
+  html+='<div class="save-pair">';
   html+=`<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${longThisMonth!==0?'8px':'14px'}">
       <div style="display:flex;align-items:center;gap:8px">
@@ -3352,25 +3372,29 @@ function renderSavings(){
     const safeN=name.replace(/'/g,"\\'");
     html+=`<li class="fi save-li">
       <div class="save-li-inner">
-        <div class="save-li-main" style="flex:1;min-width:0;overflow:hidden">
-          <button class="save-del-btn save-li-actions" onclick="deleteSaveItem('long','${safeN}')" title="삭제">✕</button>
-          <span class="save-name-wrap">
-            <span class="save-li-name">${name}</span>
-            <input class="save-name-input" type="text" value="${name}" onchange="renameSaveItem('long','${safeN}',this.value)">
-          </span>
+        <div class="save-li-row1">
+          <div class="save-li-main">
+            <span class="save-name-wrap">
+              <span class="save-li-name">${name}</span>
+              <input class="save-name-input" type="text" value="${name}" onchange="renameSaveItem('long','${safeN}',this.value)">
+            </span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <div class="save-li-group">
+              <span style="font-size:10px;color:var(--text3)">보유액</span>
+              <input type="text" value="${fmtN(v.bal)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('long','${safeN}','bal',this.value)" style="width:85px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:700;color:var(--blue);padding:4px 6px">
+            </div>
+            <button class="save-del-btn save-li-actions" onclick="deleteSaveItem('long','${safeN}')" title="삭제">✕</button>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;white-space:nowrap;margin-left:auto">
-          <div style="display:flex;align-items:center;gap:2px">
-            <span style="font-size:9px;color:var(--text3)">보유액</span>
-            <input type="text" value="${fmtN(v.bal)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('long','${safeN}','bal',this.value)" style="width:70px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;font-weight:700;color:var(--blue);padding:2px 3px">
+        <div class="save-li-row2">
+          <div class="save-li-group">
+            <span style="font-size:10px;color:var(--text3)">월 저축액</span>
+            <input type="text" value="${fmtN(v.monthly)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('long','${safeN}','monthly',this.value)" style="width:80px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--green);padding:3px 6px">
           </div>
-          <div style="display:flex;align-items:center;gap:2px">
-            <span style="font-size:9px;color:var(--text3)">월저축</span>
-            <input type="text" value="${fmtN(v.monthly)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('long','${safeN}','monthly',this.value)" style="width:60px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--green);padding:2px 3px">
-          </div>
-          <div style="display:flex;gap:2px">
-            <button class="btn btn-sm" onclick="addSave('long','${safeN}',1)" style="padding:1px 5px;font-size:9px">+</button>
-            <button class="btn btn-sm" onclick="addSave('long','${safeN}',-1)" style="padding:1px 5px;font-size:9px">−</button>
+          <div class="save-li-actions" style="gap:4px">
+            <button class="btn btn-sm" onclick="addSave('long','${safeN}',1)" style="padding:3px 8px;font-size:10px">+</button>
+            <button class="btn btn-sm" onclick="addSave('long','${safeN}',-1)" style="padding:3px 8px;font-size:10px">−</button>
           </div>
         </div>
       </div>
@@ -3427,8 +3451,7 @@ function renderSavings(){
       <span style="font-size:12px;color:var(--teal)">이번달 저축 누계</span>
       <span style="font-size:14px;font-weight:700;color:${shortThisMonth>=0?'var(--green)':'var(--red)'}">${shortThisMonth>=0?'+':''}${fmt(shortThisMonth)}</span>
     </div>`:''}
-    <div style="display:grid;grid-template-columns:1fr 200px;gap:20px;align-items:start" class="save-grid">
-      <ul class="fl">`;
+    <ul class="fl">`;
   Object.entries(shortSave).forEach(([name,v],si)=>{
     const itemColor=v.color || APPLE_COLORS[si%APPLE_COLORS.length];
     const pct=shortTotal>0?Math.round(v.bal/shortTotal*100):0;
@@ -3437,51 +3460,42 @@ function renderSavings(){
     const safeN=name.replace(/'/g,"\\'");
     html+=`<li class="fi save-li">
       <div class="save-li-inner">
-        <div class="save-li-main" style="flex:1;min-width:0;overflow:hidden">
-          <button class="save-del-btn save-li-actions" onclick="deleteSaveItem('short','${safeN}')" title="삭제">✕</button>
-          <span class="pct-dot" style="background:${itemColor}"></span>
-          <span class="save-name-wrap">
-            <span class="save-li-name">${name}</span>
-            <input class="save-name-input" type="text" value="${name}" onchange="renameSaveItem('short','${safeN}',this.value)">
-          </span>
-          <span style="font-size:9px;color:var(--text3);white-space:nowrap">${pct}%</span>
+        <div class="save-li-row1">
+          <div class="save-li-main">
+            <span class="pct-dot" style="background:${itemColor}"></span>
+            <span class="save-name-wrap">
+              <span class="save-li-name">${name}</span>
+              <input class="save-name-input" type="text" value="${name}" onchange="renameSaveItem('short','${safeN}',this.value)">
+            </span>
+            <span style="font-size:10px;color:var(--text3);white-space:nowrap;margin-left:4px">${pct}%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <div class="save-li-group">
+              <span style="font-size:10px;color:var(--text3)">보유액</span>
+              <input type="text" value="${fmtN(displayBal)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('short','${safeN}','bal',this.value)" style="width:80px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:700;color:${itemColor};padding:4px 6px">
+            </div>
+            <button class="save-del-btn save-li-actions" onclick="deleteSaveItem('short','${safeN}')" title="삭제">✕</button>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;white-space:nowrap;margin-left:auto">
-          <div style="display:flex;align-items:center;gap:2px">
-            <span style="font-size:9px;color:var(--text3)">보유액</span>
-            <input type="text" value="${fmtN(displayBal)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('short','${safeN}','bal',this.value)" style="width:65px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;font-weight:700;color:${itemColor};padding:2px 3px">
+        <div class="save-li-row2">
+          <div class="save-li-group">
+            <span style="font-size:10px;color:var(--text3)">월 저축액</span>
+            <input type="text" value="${fmtN(v.monthly)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('short','${safeN}','monthly',this.value)" style="width:80px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--green);padding:3px 6px">
           </div>
-          <div style="display:flex;align-items:center;gap:2px">
-            <span style="font-size:9px;color:var(--text3)">월저축</span>
-            <input type="text" value="${fmtN(v.monthly)}" oninput="formatNumInput(this)" inputmode="numeric" onchange="updateSave('short','${safeN}','monthly',this.value)" style="width:55px;text-align:right;border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--green);padding:2px 3px">
-          </div>
-          <div style="display:flex;gap:2px">
-            <button class="btn btn-sm" onclick="addSave('short','${safeN}',1)" style="padding:1px 5px;font-size:9px">+</button>
-            <button class="btn btn-sm" onclick="addSave('short','${safeN}',-1)" style="padding:1px 5px;font-size:9px">−</button>
+          <div class="save-li-actions" style="gap:4px">
+            <button class="btn btn-sm" onclick="addSave('short','${safeN}',1)" style="padding:3px 8px;font-size:10px">+</button>
+            <button class="btn btn-sm" onclick="addSave('short','${safeN}',-1)" style="padding:3px 8px;font-size:10px">−</button>
           </div>
         </div>
       </div>
     </li>`;
   });
   html+=`</ul>
-      <div class="save-short-right-col">
-      <div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:8px;text-align:center">투자 비율</div>
-        <div style="position:relative;height:160px"><canvas id="save-donut" role="img" aria-label="단기 저축 투자 비율">투자비율</canvas></div>
-        <div style="margin-top:10px">
-          ${shortNames.map((n,li)=>{
-            const pct=shortTotal>0?Math.round(shortSave[n].bal/shortTotal*100):0;
-            const itemColor=shortSave[n].color || APPLE_COLORS[li%APPLE_COLORS.length];
-            return`<div style="display:flex;align-items:center;gap:5px;font-size:11px;margin-bottom:3px">
-              <span class="pct-dot" style="background:${itemColor}"></span>
-              <span style="color:var(--text2)">${n}</span>
-              <span style="margin-left:auto;font-weight:600">${pct}%</span>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>
-      </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px">투자 비율</div>
+      <div style="position:relative;height:44px"><canvas id="save-bar" role="img" aria-label="단기 저축 투자 비율">투자비율</canvas></div>
     </div>
+  </div>
   </div>
   <div class="card">
     <div class="card-title">월별 저축 추이</div>
@@ -3563,12 +3577,33 @@ function renderSavings(){
 
   document.getElementById('save-content').innerHTML=html;
 
-  /* 도넛 차트 */
-  dc('save-donut');
-  if(shortTotal>0)charts['save-donut']=new Chart(document.getElementById('save-donut'),{
-    type:'doughnut',
-    data:{labels:shortNames,datasets:[{data:shortNames.map(n=>shortSave[n].bal),backgroundColor:shortColors,borderWidth:2,borderColor:'transparent'}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'60%'}
+  /* 투자 비율 막대 차트 (가로 누적 100%) */
+  dc('save-bar');
+  if(shortTotal>0)charts['save-bar']=new Chart(document.getElementById('save-bar'),{
+    type:'bar',
+    data:{
+      labels:['투자 비율'],
+      datasets:shortNames.map((n,i)=>({
+        label:n,
+        data:[Math.max(0,shortSave[n].bal)/shortTotal*100],
+        backgroundColor:shortColors[i],
+        borderWidth:0,
+        borderRadius:0
+      }))
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:(ctx)=>` ${ctx.dataset.label}  ${fmt(shortSave[ctx.dataset.label].bal)} (${Math.round(ctx.parsed.x)}%)`}}
+      },
+      scales:{
+        x:{stacked:true,min:0,max:100,grid:{display:false},ticks:{callback:v=>v+'%',color:'#8e8e93',font:{size:10}}},
+        y:{stacked:true,grid:{display:false},display:false}
+      }
+    }
   });
 
   /* 월별 저축 추이 — 거래 내역 + 저축 +/- 기록 모두 반영, 데이터 없어도 표시 */
