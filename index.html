@@ -397,7 +397,9 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
 .save-short-right-col{display:flex;flex-direction:column}
 /* 장기/단기 저축 카드 — 데스크탑에서 좌우 같은 높이로 배치 */
 .save-pair{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;margin-bottom:16px}
-.save-pair > .card{margin-bottom:0}
+.save-pair > .card{margin-bottom:0;display:flex;flex-direction:column}
+.save-pair .fl{margin-bottom:14px}
+.save-bar-wrap{margin-top:auto;padding-top:14px;border-top:1px solid var(--border)}
 @media(min-width:1025px){
   .save-pair{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
 }
@@ -795,12 +797,6 @@ body:has(#pin-screen:not(.hidden)) { overflow: hidden !important; }
     <div class="card" style="flex:1.3">
       <div class="card-title">사용량 그래프</div>
       <div style="position:relative;height:180px;margin-bottom:12px"><canvas id="cumulative-spent-chart" role="img" aria-label="누적 지출 추이">누적 지출</canvas></div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;margin-bottom:8px">
-        <div class="card-title" style="margin-bottom:0;font-size:13px;color:var(--text2)">단기 저축 투자 비율</div>
-      </div>
-      <div id="save-legend-home" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;font-size:11px;color:var(--text3);padding-left:10px"></div>
-      <div style="position:relative;height:24px;margin-bottom:12px"><canvas id="bar-save-home" role="img" aria-label="투자 비율">투자 비율</canvas></div>
 
       <div class="divider"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;margin-bottom:8px">
@@ -3352,32 +3348,51 @@ function renderSavings(){
   const longMKey='savedThisMonth_'+curMonth();
   let longThisMonth=0;
   Object.values(longSaveOrdered).forEach(v=>{longThisMonth+=(v[longMKey]||0);});
+  /* 장기 저축 파란 계열 팔레트 (막대 + 행 색 점) */
+  const LONG_BLUES=['#0a4fc4','#2f80ff','#5c9dff','#8ab9ff','#b3d3ff'];
+  const longNames=Object.keys(longSaveOrdered);
+  const longColors=longNames.map((n,i)=>LONG_BLUES[i%LONG_BLUES.length]);
+  /* 장기/단기 헤더 높이 정렬용: 한쪽만 '이번달 저축 누계'가 있어도 반대쪽에 같은 높이의 여백을 둠 */
+  let shortThisMonthPre=0;
+  Object.values(shortSave).forEach(v=>{shortThisMonthPre+=(v[longMKey]||0);});
+  const _hasMonthBox=longThisMonth!==0||shortThisMonthPre!==0;
+  const monthBoxHtml=(bg,tc,amt)=>{
+    if(amt===0&&!_hasMonthBox)return '';
+    return `<div style="background:var(--${bg});border-radius:8px;padding:8px 12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center${amt!==0?'':';visibility:hidden'}">
+      <span style="font-size:12px;color:var(--${tc})">이번달 저축 누계</span>
+      <span style="font-size:14px;font-weight:700;color:${amt>=0?'var(--green)':'var(--red)'}">${amt>=0?'+':''}${fmt(amt)}</span>
+    </div>`;
+  };
   html+='<div class="save-pair">';
   html+=`<div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${longThisMonth!==0?'8px':'14px'}">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${_hasMonthBox?'8px':'14px'}">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="card-title" style="margin-bottom:0">장기 저축</div>
         <div class="save-add-row save-li-actions" style="margin:0">
           <button class="btn btn-sm" style="border-style:dashed;color:var(--text3);padding:2px 8px;font-size:11px" onclick="addSaveItem('long')">+ 추가</button>
         </div>
       </div>
-      <span style="font-size:14px;font-weight:700;color:var(--blue)">${fmt(longTotal)}</span>
+      <div style="text-align:right">
+        <div style="font-size:14px;font-weight:700;color:var(--blue)">${fmt(longTotal)}</div>
+        <div style="font-size:11px;visibility:hidden">&nbsp;</div>
+      </div>
     </div>
-    ${longThisMonth!==0?`<div style="background:var(--blue-light);border-radius:8px;padding:8px 12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:12px;color:var(--blue)">이번달 저축 누계</span>
-      <span style="font-size:14px;font-weight:700;color:${longThisMonth>=0?'var(--green)':'var(--red)'}">${longThisMonth>=0?'+':''}${fmt(longThisMonth)}</span>
-    </div>`:''}
+    ${monthBoxHtml('blue-light','blue',longThisMonth)}
     <ul class="fl">`;
   for(const[name,v] of Object.entries(longSaveOrdered)){
     const safeN=name.replace(/'/g,"\\'");
+    const longItemColor=longColors[longNames.indexOf(name)];
+    const longPct=longTotal>0?Math.round(v.bal/longTotal*100):0;
     html+=`<li class="fi save-li">
       <div class="save-li-inner">
         <div class="save-li-row1">
           <div class="save-li-main">
+            <span class="pct-dot" style="background:${longItemColor}"></span>
             <span class="save-name-wrap">
               <span class="save-li-name">${name}</span>
               <input class="save-name-input" type="text" value="${name}" onchange="renameSaveItem('long','${safeN}',this.value)">
             </span>
+            <span style="font-size:10px;color:var(--text3);white-space:nowrap;margin-left:4px">${longPct}%</span>
           </div>
           <div style="display:flex;align-items:center;gap:4px">
             <div class="save-li-group">
@@ -3401,6 +3416,10 @@ function renderSavings(){
     </li>`;
   }
   html+=`</ul>
+    <div class="save-bar-wrap">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px">저축 비율</div>
+      <div style="position:relative;height:44px"><canvas id="save-bar-long" role="img" aria-label="장기 저축 비율">저축비율</canvas></div>
+    </div>
   </div>`;
 
   /* 단기 저축 */
@@ -3435,7 +3454,7 @@ function renderSavings(){
   const shortColors=shortNames.map((n,i)=>shortSave[n].color || APPLE_COLORS[i%APPLE_COLORS.length]);
 
   html+=`<div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${shortThisMonth!==0?'8px':'14px'}">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${_hasMonthBox?'8px':'14px'}">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="card-title" style="margin-bottom:0">단기 저축</div>
         <div class="save-add-row save-li-actions" style="margin:0">
@@ -3447,10 +3466,7 @@ function renderSavings(){
         <div style="font-size:11px;color:var(--text3)">월 주식 배당 예상 약 ${Math.round(dividend/10000)}만원</div>
       </div>
     </div>
-    ${shortThisMonth!==0?`<div style="background:var(--teal-light);border-radius:8px;padding:8px 12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:12px;color:var(--teal)">이번달 저축 누계</span>
-      <span style="font-size:14px;font-weight:700;color:${shortThisMonth>=0?'var(--green)':'var(--red)'}">${shortThisMonth>=0?'+':''}${fmt(shortThisMonth)}</span>
-    </div>`:''}
+    ${monthBoxHtml('teal-light','teal',shortThisMonth)}
     <ul class="fl">`;
   Object.entries(shortSave).forEach(([name,v],si)=>{
     const itemColor=v.color || APPLE_COLORS[si%APPLE_COLORS.length];
@@ -3491,7 +3507,7 @@ function renderSavings(){
     </li>`;
   });
   html+=`</ul>
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+    <div class="save-bar-wrap">
       <div style="font-size:12px;color:var(--text3);margin-bottom:8px">투자 비율</div>
       <div style="position:relative;height:44px"><canvas id="save-bar" role="img" aria-label="단기 저축 투자 비율">투자비율</canvas></div>
     </div>
@@ -3577,34 +3593,39 @@ function renderSavings(){
 
   document.getElementById('save-content').innerHTML=html;
 
-  /* 투자 비율 막대 차트 (가로 누적 100%) */
-  dc('save-bar');
-  if(shortTotal>0)charts['save-bar']=new Chart(document.getElementById('save-bar'),{
-    type:'bar',
-    data:{
-      labels:['투자 비율'],
-      datasets:shortNames.map((n,i)=>({
-        label:n,
-        data:[Math.max(0,shortSave[n].bal)/shortTotal*100],
-        backgroundColor:shortColors[i],
-        borderWidth:0,
-        borderRadius:0
-      }))
-    },
-    options:{
-      indexAxis:'y',
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:(ctx)=>` ${ctx.dataset.label}  ${fmt(shortSave[ctx.dataset.label].bal)} (${Math.round(ctx.parsed.x)}%)`}}
+  /* 비율 막대 차트 (가로 누적 100%) — 장기/단기 공용 */
+  const drawShareBar=(id,names,srcMap,colors,total)=>{
+    dc(id);
+    if(!(total>0))return;
+    charts[id]=new Chart(document.getElementById(id),{
+      type:'bar',
+      data:{
+        labels:['비율'],
+        datasets:names.map((n,i)=>({
+          label:n,
+          data:[Math.max(0,srcMap[n].bal)/total*100],
+          backgroundColor:colors[i],
+          borderWidth:0,
+          borderRadius:0
+        }))
       },
-      scales:{
-        x:{stacked:true,min:0,max:100,grid:{display:false},ticks:{callback:v=>v+'%',color:'#8e8e93',font:{size:10}}},
-        y:{stacked:true,grid:{display:false},display:false}
+      options:{
+        indexAxis:'y',
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:(ctx)=>` ${ctx.dataset.label}  ${fmt(srcMap[ctx.dataset.label].bal)} (${Math.round(ctx.parsed.x)}%)`}}
+        },
+        scales:{
+          x:{stacked:true,min:0,max:100,grid:{display:false},ticks:{callback:v=>v+'%',color:'#8e8e93',font:{size:10}}},
+          y:{stacked:true,grid:{display:false},display:false}
+        }
       }
-    }
-  });
+    });
+  };
+  drawShareBar('save-bar-long',longNames,longSaveOrdered,longColors,longTotal);
+  drawShareBar('save-bar',shortNames,shortSave,shortColors,shortTotal);
 
   /* 월별 저축 추이 — 거래 내역 + 저축 +/- 기록 모두 반영, 데이터 없어도 표시 */
   const monthly=monthlyData();
